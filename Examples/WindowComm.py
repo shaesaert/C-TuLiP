@@ -259,6 +259,6 @@ filename = filename[0:-3] + "_gen"
 #print(filename)
 
 with open(filename+".xml", "w") as f:
-    f.write(dumpsmach.mealy_to_xmi_uml(ctrl_red, env_events=True, outputs={'sys_actions'}, name="CommWindow", relabel=False))
+    f.write(dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs={'sys_actions'}, name="CommWindow", relabel=False))
 
         # import cPickle

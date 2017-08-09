@@ -15,11 +15,8 @@ from __future__ import print_function
 
 import numpy as np
 import sys
-import sys
-#sys.path.append("..")
 
 from tulip import spec, hybrid
-import synth2 as synth
 from tulip.abstract import prop2part, discretize
 from polytope import box2poly
 from Reduce import *
