@@ -31,16 +31,21 @@ import uuid
 from Interface.Transform import *
 
 
-def create_env_event(env_vars, valuation):
+def create_env_event(env_vars, valuation, short=False):
     """
 
     @type env_vars: list
     """
+    if short:
+        f = lambda v: '' if valuation[v] else '!'
+        name_ev = "_".join([f(v) + str(v) for v in env_vars])
+        return name_ev
 
-    return "_".join([str(v) + "_" + str(valuation[v]) for v in env_vars])
+    else :
+        return "_".join([str(v) + "_" + str(valuation[v]) for v in env_vars])
 
 
-def tulip_to_xmi(strat, ctrl_sys):
+def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
     f = StringIO()
 
     name_model = 'Ctrl_modes'
@@ -115,7 +120,8 @@ def tulip_to_xmi(strat, ctrl_sys):
     mdOwnedViews1 += "<mdElement elementClass='PseudoState' xmi:id='" + pseudostate_id + "1" + "'><elementID xmi:idref='" + pseudostate_id + "' /><geometry>" + str(
         100) + ", " + str(
         100) + ", 18, 18</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
-
+    # set Dx, Dy,
+    (Dx,Dy) = 110, 60
     for i, state in enumerate(ctrl.states):
         if (state == "Sinit") | (state in ctrl.states.initial):
             Sinit_id = id(state)
@@ -123,9 +129,9 @@ def tulip_to_xmi(strat, ctrl_sys):
         Refs_text += _refs(state, type='id')
         mdOwnedViews1 += "<mdElement elementClass='State' xmi:id='" + str(
             id(state) + 1) + "'><elementID xmi:idref='" + str(
-            id(state)) + "' /><geometry>" + str(140 + 45 * (i % int(len(ctrl) ** (1 / 2.0)))) + ", " + str(
-            100 + 45 * (int(i / int(len(ctrl) ** (
-                1 / 2.0))))) + ", 30, 20</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
+            id(state)) + "' /><geometry>" + str(140 + int(Dx*1.5) * (i % int(len(ctrl) ** (1 / 2.0)))) + ", " + str(
+            100 + int(Dy*1.5+20) * (int(i / int(len(ctrl) ** (
+                1 / 2.0))))) + ", " + str(Dx) + ", " + str(Dy)+ "</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
 
     # ------------------ Add the transitions  --------------------------
     # Add all the RTI transitions
@@ -171,7 +177,8 @@ def tulip_to_xmi(strat, ctrl_sys):
     ctrl = strat
     # ctrl = fts2SC(ctrl_sys, env_name='ctrl')
     outputs = {'ctrl'}
-    name_model = 'Alice'
+    name_model = name_strat
+
 
     diagram_id = str(hash((name_model, 'Diagram')))
     f.write("<packagedElement xmi:type='uml:StateMachine' xmi:id='" + str(hash(name_model)) + "' xmi:uuid='" + str(
@@ -184,9 +191,19 @@ def tulip_to_xmi(strat, ctrl_sys):
     (state_names, state_ids) = _state_labeling(ctrl)
     # use new function for computing incoming events
 
-    # ------------------ Find Events --------------------------
+    # ------------------ Find Events & Transitions --------------------------
     (events_input, list_in, labels) = _inputs2events(ctrl)
     (events_output) = _outputs2events(ctrl, outputs)
+
+    print("------------------\n State-chart\n------------------")
+    print("States = " +str(len(ctrl)) + ' + 1'+ "\n")
+    print("Events = " + str(len(events_input)) + ' + ' + str(len(events_output)) + ' = '
+          + str(len(events_input) + len(events_output)) )
+    print("Signal Events = " + str(len(events_input)) + ' + ' + str(len(events_output)) + ' = '
+          + str(len(events_input) + len(events_output)) )
+    print("Signals = " + str(len(events_input)) + ' + ' + str(len(events_output)) + ' = '
+          + str(len(events_input) + len(events_output)) + "\n")
+
 
     # ----------------- Add Events  RTI + Inputs & outputs --------------------------
     for event in events_input:
@@ -201,7 +218,7 @@ def tulip_to_xmi(strat, ctrl_sys):
 
     # ----------------- Add Signals for  RTI + Inputs & outputs --------------------------
     for event in events_input:  # add Inputs
-        f.write(_signals(event, create_env_event(ctrl.inputs.keys(), dict(event))))
+        f.write(_signals(event, create_env_event(ctrl.inputs.keys(), dict(event),short=True)))
     for event in events_output:  # add outputs
         if event[0] == 'sys_actions':
             f.write(_signals(event, str(event[1])))
@@ -220,7 +237,7 @@ def tulip_to_xmi(strat, ctrl_sys):
 
     # ------------------ Add the states  --------------------------
     Sinit_id = None
-    assert len(ctrl.states.initial) <= 1  # make sure there is no nondeterminism in the initialisation
+    assert len(ctrl.states.initial) <= 1  # make sure there is no non-determinism in the initialisation
 
     pseudostate_id = str(hash(name_model)) + '_0'
     Refs_text = _refs(pseudostate_id)
@@ -230,16 +247,16 @@ def tulip_to_xmi(strat, ctrl_sys):
 
     f.write("  <subvertex xmi:type='uml:Pseudostate' xmi:id='" + pseudostate_id + "' xmi:uuid='" + str(
         uuid.uuid1()) + "' visibility='public'/>\n")
-
-    for state in ctrl.states:
+    (Dx, Dy) = 110, 44
+    for i, state in enumerate(ctrl.states):
         if (state == "Sinit") | (state in ctrl.states.initial):
             Sinit_id = id(state)
         f.write(_states(state, state_names, entry='set_guard()'))  # add vertix for state
         Refs_text += _refs(state, type='id')
         mdOwnedViews2 += "<mdElement elementClass='State' xmi:id='" + str(id(state) + 1) + "'><elementID xmi:idref='" \
-                         + str(id(state)) + "' /><geometry>" + str(140 + 45 * (i % int(len(ctrl) ** (1 / 2.0)))) + ", " \
-                         + str(100 + 45 * (int(i / int(len(ctrl) ** (1 / 2.0))))) \
-                         + ", 30, 20</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
+                         + str(id(state)) + "' /><geometry>" + str(140 + int(Dx*1.5) * (i % int(len(ctrl) ** (1 / 2.0)))) + ", " \
+                         + str(100 + int(Dy*1.5) * (int(i / int(len(ctrl) ** (1 / 2.0))))) + ", " + str(Dx) \
+                         + ", " + str(Dy)+ "</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
 
     # ------------------ Add the transitions  --------------------------
 
@@ -248,8 +265,12 @@ def tulip_to_xmi(strat, ctrl_sys):
         uuid.uuid1()) + "' visibility='public' source='" + pseudostate_id + "' target='" + str(Sinit_id) + "'/>\n")
     Refs_text += _refs(pseudostate_id + "_1")
 
-    mdOwnedViews2 += "<mdElement elementClass='Transition' xmi:id='" + pseudostate_id + "_2" + "'><elementID xmi:idref='" + pseudostate_id + "_1" + "'/><linkSecondEndID xmi:idref='" + pseudostate_id + "1" + "'/><linkFirstEndID xmi:idref='" + str(
-        Sinit_id + 1) + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/><nameVisible xmi:value='true'/></mdElement>\n"
+    mdOwnedViews2 += "<mdElement elementClass='Transition' xmi:id='" + pseudostate_id + "_2" \
+                     + "'><elementID xmi:idref='" + pseudostate_id + "_1" \
+                     + "'/><linkSecondEndID xmi:idref='" + pseudostate_id + "1" + "'/><linkFirstEndID xmi:idref='" \
+                     + str(Sinit_id + 1) \
+                     + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/>"\
+                     + "<nameVisible xmi:value='true'/></mdElement>\n"
 
     for trans_fro, trans_to, label in ctrl.transitions(data=True):
         f.write(_transition(trans_fro, trans_to, label, state_ids, events_input, list_in, events_output,
@@ -259,8 +280,10 @@ def tulip_to_xmi(strat, ctrl_sys):
                                     guard=None)
 
     mdOwnedViews2 += """ <mdElement elementClass="DiagramFrame" xmi:id="_18_0_6_12a303c1_1500791404771_200057_12344">
-    			<elementID xmi:idref=""" + '"' + str(
-        diagram_id) + '">' + """</elementID><geometry>5, 5, 977, 441</geometry><compartment compartmentID="TAGGED_VALUES"></compartment><mdOwnedViews></mdOwnedViews></mdElement>"""
+    			<elementID xmi:idref=""" + '"' \
+                     + str(diagram_id) + '">' \
+                     + """</elementID><geometry>5, 5, 977, 441</geometry><compartment compartmentID="TAGGED_VALUES">"""\
+                     + """</compartment><mdOwnedViews></mdOwnedViews></mdElement>"""
     mdOwnedViews2 += "</mdOwnedViews></filePart></xmi:Extension>"
     f.write("</region>\n")
     # ------- Add Diagram info -------
@@ -327,8 +350,8 @@ def _mdelement(trans_fro, trans_to, label, state_ids, events_input, ctrl, list_i
     event_str = ''
     for event in events_input:
         if (set.intersection(set(label.items()), list_in) <= set(event)):
-            event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event))
-    mdOwnedViews += "<text>" + event_str + "</text></mdElement>"
+            event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event), short=True)
+    mdOwnedViews += "<text>" + event_str[2:] + "</text></mdElement>"
 
     mdOwnedViews += "</mdOwnedViews></mdElement>\n"
     return mdOwnedViews
@@ -354,11 +377,24 @@ def _transition(source, target, label, state_ids, events_inputs, list_in, events
             state_ids[target]) + "'>"
 
     # Add trigger
+    triggered = 0
     for event in events_inputs:
         if set.intersection(set(label.items()), list_in) <= set(event):
             text += "    <trigger xmi:type='uml:Trigger' xmi:id='" + str(hash((source, event))) + "_122" \
                     + "' xmi:uuid='" + str(uuid.uuid1()) + "' visibility='public' event='" \
                     + str(hash(event)) + "_1" + "'/>"
+            triggered = 1
+
+    if triggered == 0:
+        print(['ERROR: NO trigger for transition '+ str((source, target, label))])
+        print(set.intersection(set(label.items()), list_in))
+        for event in events_inputs:
+            print(set.intersection(set(label.items()), list_in) <= set(event))
+            print(set(event))
+            print(set.intersection(set.intersection(set(label.items()), list_in),event))
+
+        raise Exception
+
 
     # Add effect
     for event in events_output:
@@ -474,28 +510,22 @@ def _inputs2events(ctrl):
 
     events_list_minimal = []
     for event in events_list:
-        if {frozenset(event)} <= labels:
+        if any([lab <= set(event) for lab in list(labels)]):
             events_list_minimal += [event]
 
     return (events_list_minimal, list_in, labels)
 
 
-def mealy_to_xmi_uml(ctrl_sys, env_events=True, outputs={'loc'}, name="ThermostatCtrl", relabel=False, Type='default'):
+def mealy_to_xmi_uml(ctrl_sys, outputs={'loc'}, name="ThermostatCtrl", relabel=False, Type='default'):
     """
-    @param ctrl: MealyMachine, as in TuLiP
+    @param ctrl_sys: MealyMachine, as in TuLiP
 
-    @param env_events: if False (not default), every edge of the state
-        machine is used to create an event of the form MOV_i_j, where
-        the transition is from state i to state j.  If True, then
-        events are of the form ENV_e0_v0_e1_v1_..., where v0 is the
-        value taken by environment variable e0.  v0 must be a
-        nonnegative integer; e.g., for boolean variables it is 0 or 1.
-
-    @param inputs: If None (default ctrl is asserted to be a Mealy 
-    machine and inputs are recovered from there. Otherwise inputs are
-     selected based on the values of the labels.  
+    @param outputs: Default is {'loc'}, it is required that outputs <= set(ctrl.outputs.keys())
+    If false, then  outputs :=  set(ctrl.outputs.keys())  
 
     @param name : give name of the XML UML Statechart, default is name="ThermostatCtrl"
+    
+    @param relabel : Renumber states of Mealy machine
 
     @param  Type = 'default'  => Default translation the XMI. (mealy is expected)
             Type = 'control' => Translated as hybrid control modes (FTS is expected)
@@ -574,7 +604,7 @@ def mealy_to_xmi_uml(ctrl_sys, env_events=True, outputs={'loc'}, name="Thermosta
     f.write(preface(name))
 
     # ------------------ Add inputs as Events --------------------------
-    for event in events_list:
+    for event in events_list: # input events
         if {frozenset(event)} <= labels:
             f.write("<event xmi:idref='" + str(hash(event)) + "_1" + "'/>\n")
     # Add RTI event in case system is for control
@@ -652,7 +682,7 @@ def mealy_to_xmi_uml(ctrl_sys, env_events=True, outputs={'loc'}, name="Thermosta
                 id(trans_fro)) + "' target='" + str(id(trans_to)) + "'>")
         # here we need multiple triggers!!
         # TODO check whether this is how it should be written
-        for event in events_list:
+        for event in events_list: # these are the input events
             if {frozenset(event)} <= labels:
                 if (set.intersection(set(label.items()), list_in) <= set(event)):
                     f.write("    <trigger xmi:type='uml:Trigger' xmi:id='" + str(hash((trans_fro, event))) + "_122"
@@ -737,16 +767,8 @@ def mealy_to_xmi_uml(ctrl_sys, env_events=True, outputs={'loc'}, name="Thermosta
         f.write("<linkNameID xmi:idref='" + str(hash((trans_fro, str(d.items())))) + "_3" + "'/>")
         f.write("<mdOwnedViews><mdElement elementClass='TextBox' xmi:id='" + str(
             hash((trans_fro, str(d.items())))) + "_3" + "'>\n")
-        f.write("<geometry>" + str(100) + ", " + str(100) + ", 24, 13</geometry>")
-        if env_events:
-            event_str = ''
-            for event in events_list:
-                if {frozenset(event)} <= labels:
-                    if (set.intersection(set(d.items()), list_in) <= set(event)):
-                        event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event))
-            f.write("<text>" + event_str + "</text></mdElement>")
-        else:
-            f.write("<text>" + "MOV_" + str(trans_fro) + "_" + str(trans_to) + "</text></mdElement>")
+        f.write("<geometry>" + str(100) + ", " + str(100) + ", 24, 13</geometry>") # TODO FIX this
+        f.write("<text>" + "text"+ "</text></mdElement>")
         f.write("</mdOwnedViews></mdElement>\n")
 
     # -----------------------Finish --------------------------------------------------
