@@ -58,25 +58,23 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
      2. The finite state machine encoding the control modes and its allowed transitions. 
      
      @param strategy = the high level control strategy
-     @param ctrl_sys =  the abstracted system (given as an FTS).
+     @param ctrl_sys =  the abstracted system control modes.
      @param name_strategy= Name of the strategy for example 'Alice' for the speedrover example"""
 
     f = StringIO()
 
-    # Start of control modes statechart computation.
+    # Start of control modes state-chart computation.
 
     signal_event = ''
     name_model = 'Ctrl_modes' # name to be assigned to state-chart with control models
     diagram_id = str(hash((name_model, 'Diagram')))
 
-
     # -------- PIECE of XML ----------
     # PREFACE
     f.write(PREFACE_combi)  # start of model with name = DATA
     # ---end ----- PIECE of XML ----------
-    ctrl = fts2SC(ctrl_sys, env_name='ctrl')
+    ctrl = fts2SC(ctrl_sys, env_name='ctrl') #  Transform the finite state model to a model of the control modes.
     outputs = {'act'}
-
     if not outputs <= set(ctrl.outputs.keys()):
         outputs = set(ctrl.outputs.keys())
         print('WARNING: Wrong output set. Taking into account all outputs')
@@ -540,7 +538,7 @@ def _inputs2events(ctrl):
         if any([lab <= set(event) for lab in list(labels)]):
             events_list_minimal += [event]
 
-    return (events_list_minimal, list_in, labels)
+    return events_list_minimal, list_in, labels
 
 
 def mealy_to_xmi_uml(ctrl_sys, outputs={'loc'}, name="ThermostatCtrl", relabel=False, Type='default'):
