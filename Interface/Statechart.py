@@ -33,24 +33,43 @@ from Interface.Transform import *
 
 def create_env_event(env_vars, valuation, short=False):
     """
-
-    @type env_vars: list
+    Computation of the name of the input event. The input variables are as follows.
+    
+    @type env_vars: [lidon, freeway]
+    
+    @param valuation: dictionary with valuations for each of the keys in env_vara, e.g., {lidon:True, freeway:False} 
+    
+    @param short: (Default = False ) If True for each key "a" in env_vars this yields a if a:True and !a if a: false, if short = False
+     the name becomes a_True respectively a_False.
     """
+    # TODO (low priority) check whether Lambda function can go into the next line.
     if short:
         f = lambda v: '' if valuation[v] else '!'
         name_ev = "_".join([f(v) + str(v) for v in env_vars])
         return name_ev
 
-    else :
+    else:
         return "_".join([str(v) + "_" + str(valuation[v]) for v in env_vars])
 
 
-def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
+def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
+    """"This function generates the text for the xml file encoding the state-chart models. Two statecharts are generated
+     1. The strategy, which reacts to environment events and selects a control mode accordingly
+     2. The finite state machine encoding the control modes and its allowed transitions. 
+     
+     @param strategy = the high level control strategy
+     @param ctrl_sys =  the abstracted system (given as an FTS).
+     @param name_strategy= Name of the strategy for example 'Alice' for the speedrover example"""
+
     f = StringIO()
 
-    name_model = 'Ctrl_modes'
-    SignalEvent = ''
+    # Start of control modes statechart computation.
+
+    signal_event = ''
+    name_model = 'Ctrl_modes' # name to be assigned to state-chart with control models
     diagram_id = str(hash((name_model, 'Diagram')))
+
+
     # -------- PIECE of XML ----------
     # PREFACE
     f.write(PREFACE_combi)  # start of model with name = DATA
@@ -75,13 +94,13 @@ def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
 
     # ----------------- Add Events  RTI + Inputs & outputs --------------------------
     events_str = "          <event xmi:idref='" + str(hash('RTI')) + "_1" + "'/>\n"
-    SignalEvent += _signalevent('RTI')
+    signal_event += _signalevent('RTI')
     for event in events_input:
         events_str += " <event xmi:idref='" + str(hash(event)) + "_1" + "'/>\n"
-        SignalEvent += _signalevent(event)
+        signal_event += _signalevent(event)
     for event in events_output:
         events_str += "          <event xmi:idref='" + str(hash(event)) + "_1" + "'/>\n"
-        SignalEvent += _signalevent(event)
+        signal_event += _signalevent(event)
     f.write(extender(events_str))  # write model extension with all the events in it
 
     # ----------------- Add Signals for  RTI + Inputs & outputs --------------------------
@@ -174,10 +193,10 @@ def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
     #
 
     # Start uml:StateMachine --> the strategy
-    ctrl = strat
+    ctrl = strategy
     # ctrl = fts2SC(ctrl_sys, env_name='ctrl')
     outputs = {'ctrl'}
-    name_model = name_strat
+    name_model = name_strategy
 
 
     diagram_id = str(hash((name_model, 'Diagram')))
@@ -195,8 +214,16 @@ def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
     (events_input, list_in, labels) = _inputs2events(ctrl)
     (events_output) = _outputs2events(ctrl, outputs)
 
+    transitions = list(set([(x, y, lab['ctrl']) for (x, y, lab) in ctrl.transitions(data=True)]))
+    trans_trig = dict()
+    for (i, tr) in enumerate(transitions):
+        trans_trig[tr] = [(lab) for (x, y, lab) in ctrl.transitions.find({tr[0]}, {tr[1]})
+                          if {('ctrl', tr[2])} <= set(lab.items())]
+
     print("------------------\n State-chart\n------------------")
-    print("States = " +str(len(ctrl)) + ' + 1'+ "\n")
+    print("States = " +str(len(ctrl)) + ' + 1')
+    print("Transitions = " +str(len(transitions)) + "\n")
+
     print("Events = " + str(len(events_input)) + ' + ' + str(len(events_output)) + ' = '
           + str(len(events_input) + len(events_output)) )
     print("Signal Events = " + str(len(events_input)) + ' + ' + str(len(events_output)) + ' = '
@@ -208,11 +235,11 @@ def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
     # ----------------- Add Events  RTI + Inputs & outputs --------------------------
     for event in events_input:
         events_str += "          <event xmi:idref='" + str(hash(event)) + "_1" + "'/>\n"
-        SignalEvent += _signalevent(event)
+        signal_event += _signalevent(event)
 
     for event in events_output:
         events_str += "          <event xmi:idref='" + str(hash(event)) + "_1" + "'/>\n"
-        SignalEvent += _signalevent(event)
+        signal_event += _signalevent(event)
 
     f.write(extender(events_str))  # write model extension with all the events in it
 
@@ -295,7 +322,7 @@ def tulip_to_xmi(strat, ctrl_sys, name_strat='Alice'):
     f.write("</packagedElement>\n")
 
     # ADD signal event
-    f.write(SignalEvent)
+    f.write(signal_event)
     # Model
     f.write("</uml:Model>\n")
     f.write("<MagicDraw_Profile:DiagramInfo xmi:id='" + str(id(
@@ -386,7 +413,7 @@ def _transition(source, target, label, state_ids, events_inputs, list_in, events
             triggered = 1
 
     if triggered == 0:
-        print(['ERROR: NO trigger for transition '+ str((source, target, label))])
+        print(['ERROR: NO trigger for transition ' + str((source, target, label))])
         print(set.intersection(set(label.items()), list_in))
         for event in events_inputs:
             print(set.intersection(set(label.items()), list_in) <= set(event))
