@@ -37,8 +37,8 @@ def create_env_event(env_vars, valuation, short=False):
     """
     # TODO (low priority) check whether Lambda function can go into the next line.
     if short:
-        f = lambda v: '' if valuation[v] else '!'
-        name_ev = "_".join([f(v) + str(v) for v in env_vars])
+        f = lambda v: '1' if valuation[v] else '0'
+        name_ev = "_".join([ str(v) + f(v) for v in env_vars])
         return name_ev
 
     else:
@@ -269,7 +269,10 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
     for i, state in enumerate(ctrl.states):
         if (state == "Sinit") | (state in ctrl.states.initial):
             Sinit_id = id(state)
-        f.write(_states(state, state_names, entry='set_guard()'))  # add vertix for state
+            f.write(_states(state, state_names, entry='init()'))  # add vertix for state
+
+        else:
+            f.write(_states(state, state_names, entry='set_guard()'))  # add vertix for state
         Refs_text += _refs(state, type='id')
         mdOwnedViews2 += "<mdElement elementClass='State' xmi:id='" + str(id(state) + 1) + "'><elementID xmi:idref='" \
                          + str(id(state)) + "' /><geometry>" + str(140 + int(Dx*1.5) * (i % int(len(ctrl) ** (1 / 2.0)))) + ", " \

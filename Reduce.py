@@ -118,6 +118,10 @@ def reduce_guar_beh(ctrl,outputs={'loc'}):
         # Each element y must be in *exactly one* equivalence class.
         #
         # Each block is guaranteed to be non-empty
+        if y == 'Sinit':
+            blocks.append([y])
+            break
+
         for block in blocks:
             x = next(iter(block))
 
