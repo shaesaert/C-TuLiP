@@ -1,15 +1,8 @@
 """Among other routines, dump XMI UML Statecharts from MealyMachine of TuLiP.
-
-Assumptions
-===========
-
-- There is only one initial state in the finite-state machine, and it
-  is named "Sinit".
-
-- This one handles multiple triggers, and reduced definitions of outputs
-
-- This one is going to be able to send out events (instead of iniation control actions)
-SCL; 29 Jul 2014
+ - write the statecharts starting from mealy machines.
+ 
+ 
+ SCL; 29 Jul 2014
 """
 
 # DONE
