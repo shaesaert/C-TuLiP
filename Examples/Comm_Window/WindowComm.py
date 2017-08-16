@@ -166,7 +166,7 @@ gr_window = synth.env_to_spec(ts_window, False,'window')
 print(gr_window.pretty())
 
 
-print("---------------------\n Can manager be controlled? \n------------")
+print("---------------------\n Can the radios be controlled? \n------------")
 
 env_vars=list()
 env_init=list()
@@ -176,8 +176,7 @@ env_prog=list()
 # System variables and requirements
 sys_vars = list()
 sys_init = list()
-sys_safe = ['ELT_ON || SDST_ON']#, '(!ELT_ON & !(sys_actions="ELCTRA_RADIO_OFF")) || (ELT_ON & !(sys_actions="ELCTRA_RADIO_ON"))']
-#sys_safe += ['(!SDST_ON & !(sys_actions="SDST_RADIO_OFF")) || (SDST_ON & !(sys_actions="SDST_RADIO_ON"))']
+sys_safe = ['ELT_ON || SDST_ON']
 sys_safe += ['(transmit && (!SDST_ON && ELT_ON)) || !transmit']
 sys_safe += ['(idle && (SDST_ON && !ELT_ON)) || !idle']
 sys_prog = list()

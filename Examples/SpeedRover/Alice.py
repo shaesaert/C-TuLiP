@@ -28,7 +28,7 @@ verbose = 1  # 1 = print and save all intermediate automatons,
 
 Case = '1 Sensor' # in { '1 Sensor',  '2 Sensors', '3 Sensors'}
 Case = '2 Sensors'
-Case = '3 Sensors'
+#Case = '3 Sensors'
 
 
 print("----------------------------------\n System Constants \n----------------------------------")
