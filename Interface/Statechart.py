@@ -241,7 +241,7 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
         if outputs == {'sys_actions'}:
             f.write(_signals(event, str(event[0][1])))
         else:
-            name_ev = create_env_event(ctrl.inputs.keys(), dict(event))
+            name_ev = create_env_event(outputs, dict(event))
             f.write(_signals(event,name_ev))
 
     # ---- Open up region where we write the states & transitions---
@@ -430,7 +430,8 @@ def _transition(source, target, label, state_ids, events_inputs, list_in, events
                     hash((source, str(label.items())))) + "_13" + "' visibility='public' name='" + event[0][0] \
                         + '_' + str(event[0][1]) + "()" + "'/>"
             else:
-                name_ev = create_env_event(set([eventi[0] for eventi in event]), event )
+                ev_set = set([eventi[0] for eventi in event])
+                name_ev = create_env_event(ev_set, dict(event))
                 text += "  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
                     hash((source, str(label.items())))) + "_13" + "' visibility='public' name='" + name_ev + "'/>"
     text += "  </transition>\n"
