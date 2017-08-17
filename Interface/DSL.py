@@ -90,7 +90,7 @@ def globally(p='p', owner='env'):
                        env_safe, sys_safe, env_prog, sys_prog)
 
 
-def response(trig='trig', react='act', owner='env'):
+def response(trig='trig', react='act', owner='env', aux = 'aux'):
     """
     response implements the LTL formula :
         [](trig -> <> react) 
@@ -109,15 +109,15 @@ def response(trig='trig', react='act', owner='env'):
     env_safe, sys_safe, env_prog, sys_prog = set(), set(), set(), set()
 
     if owner == 'env':
-        env_vars = {'aux'}
-        env_init = {'aux'}
-        env_safe = {'(X aux) <-> ( (' + react + ') ||' + '( aux && ! (' + trig + ') )' + ') '}
-        env_prog = {'aux'}
+        env_vars = {aux}
+        env_init = {aux}
+        env_safe = {'(X ' + aux + ') <-> ( (' + react + ') ||' + '( ' + aux + ' && ! (' + trig + ') )' + ') '}
+        env_prog = {aux}
     elif owner == 'sys':
-        sys_vars = {'aux'}
-        sys_init = {'aux'}
-        sys_safe = {'(X aux) <-> ( (' + react + ') ||' + '( aux && !(' + trig + ') ) ' + ')  '}
-        sys_prog = {'aux'}
+        sys_vars = {aux}
+        sys_init = {aux}
+        sys_safe = {'(X '+ aux + ') <-> ( (' + react + ') ||' + '( ' + aux + ' && !(' + trig + ') ) ' + ')  '}
+        sys_prog = {aux}
 
     print('Added global Response :' + '[](' + trig + '-> <>' + react + ')')
     return spec.GRSpec(env_vars, sys_vars, env_init, sys_init,

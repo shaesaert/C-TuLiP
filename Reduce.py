@@ -71,7 +71,7 @@ def reduce_mealy(ctrl, outputs={'ctrl'}, relabel=False, prune_set=None,
         ctrl_s = quotient_mealy(ctrl_s, node_relation=node_rel, relabel=relabel, outputs=outputs)
 
         if full:
-            equiv_classes = reduce_guar_beh(ctrl_s, outputs={'ctrl'})
+            equiv_classes = reduce_guar_beh(ctrl_s, outputs=outputs)
             equiv_dict = dict(sum([list(it_product(block, {i})) for (i, block) in enumerate(equiv_classes)], []))
             node_rel = lambda u, v: equiv_dict[u] == equiv_dict[v]  # the initial relation => groups of nodes that can
             # have equal next nodes
@@ -118,15 +118,17 @@ def reduce_guar_beh(ctrl,outputs={'loc'}):
         # Each element y must be in *exactly one* equivalence class.
         #
         # Each block is guaranteed to be non-empty
-        if y == 'Sinit':
+        if y == 'Sinit': # the initial state gets its own block
             blocks.append([y])
-            break
+            continue
 
         for block in blocks:
             x = next(iter(block))
 
             if len(ctrl[x]) < len(ctrl[y]):
-                # print('unequal number')
+                print('unequal number')
+                continue
+            if x == 'Sinit':  # the initial state gets its own block
                 continue
 
             # compute set of labels:
