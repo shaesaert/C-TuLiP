@@ -18,6 +18,7 @@ from polytope import box2poly
 from Reduce import *
 import Interface.Statechart as dumpsmach
 from Interface.Transform import *
+import Interface.DSL as DSL
 
 # TODO  1. Low-level control actions are missing
 print("----------------------------------\n Script options \n----------------------------------")
@@ -28,7 +29,7 @@ verbose = 1  # 1 = print and save all intermediate automatons,
 
 Case = '1 Sensor' # in { '1 Sensor',  '2 Sensors', '3 Sensors'}
 Case = '2 Sensors'
-#Case = '3 Sensors'
+Case = '3 Sensors'
 
 
 print("----------------------------------\n System Constants \n----------------------------------")
@@ -62,9 +63,10 @@ if Case == '1 Sensor' :
 
     sys_vars = set()  # no new system variables
     sys_init = {'init'}
-    sys_safe = {' lidon->(X(moderate))', '(!lidon)->(X(!(moderate)))','!fast'}
+    sys_safe = {'lidon->(X(moderate))', '(!lidon)->(X(!(moderate)))','!fast'}
     sys_prog = set()
-
+    psi = spec.GRSpec(env_vars, sys_vars, env_init, sys_init,
+                env_safe, sys_safe, env_prog, sys_prog)
     Events_init = {('lidon', False)}
 
 elif Case == '2 Sensors':
@@ -76,29 +78,24 @@ elif Case == '2 Sensors':
     cprops["moderate"] = box2poly([[10.0, 15]])
     cprops["fast"] = box2poly([[15.0, 20]])
 
+    psi =DSL.Xtimes('fast', owner='sys') | DSL.Xtimes('init', owner='sys')  # introduce X1fast and X1init
 
     env_vars = {'lidon','steron'}
     env_init = {'!lidon && !steron'}
-    env_safe = {'(lidon -> X(lidon))||(steron -> X(steron))'}
-    env_safe |= {'(!lidon -> X(!lidon)) || (!steron -> X(!steron))'}
-    env_safe |={'lidon -> steron'}
+    env_safety = ['(lidon -> X(lidon))||(steron -> X(steron))']
+    env_safety += ['(!lidon -> X(!lidon)) || (!steron -> X(!steron))']
+    env_safety += ['lidon -> steron']
 
-    env_prog = set()
 
-    sys_vars = {'Xfast','Xslow','Xinit'} #{'A','B','C'}
     sys_init = {'init'}
-    sys_safe = {'((lidon & steron)& (X(lidon) & X(steron)) -> X (Xfast)) '}
-    sys_safe |= {'X(fast) <-> (Xfast)'}
-    #sys_safe |= {'X(slow) <-> (Xslow)'}
-    sys_safe |= {'X(init) <-> (Xinit)'}
-
-    sys_safe |= {'(!steron && X(!steron)) -> (X(Xinit))'}
-    sys_safe |= {'((!lidon & steron) -> X(!fast & !init))'}
-
-    sys_prog = set()
-
+    sys_safety = {'((lidon && steron)&& (X(lidon) & X(steron)) -> X (X1fast)) '}
+    sys_safety |= {'(!steron && X(!steron)) -> (X(X1init))'}
+    sys_safety |= {'((!lidon && steron) -> X(!fast && !init))'}
+    psi |= spec.GRSpec(env_vars=env_vars, env_init=env_init, env_safety=env_safety,
+                       sys_init=sys_init, sys_safety=sys_safety)
     Events_init = {('lidon', False),('steron',False)}
 
+    print(psi.pretty())
 elif Case == '3 Sensors':
     print("----------------------------------\n Describe Labeling and Specification \n----------------------------------")
     print("complex")
@@ -116,17 +113,22 @@ elif Case == '3 Sensors':
                 '(stereo->X(stereo))|| (lidon->X(lidon))'}
     env_prog = set()
 
-    sys_vars = {'Aux'} # new progress variables
-    sys_init = {'init','Aux'}
+    sys_vars ={}# {'Aux'} # new progress variables
+    sys_init = {'init'}#,'Aux'}
     sys_safe = set()
     sys_safe |= {'init->(((X init)||stereo))'}  # if you try a reboot
                     # you are staying there until the stereo turns on
     sys_safe |= {'(moderate || fast)->((X(moderate||fast))||(!((lidon || radon) & stereo)))'}
                     # Constant speed
-    sys_safe |= {'(X(Aux) <-> ((X(slow) & !freeway) || (freeway & X(init)))) || (Aux && !(stereo & !(lidon || radon)))'}
     sys_safe |= {'(init & freeway & (!((lidon || radon) & stereo)))->(X(init || !(freeway)))'}
     sys_safe |= {'(slow & (!((lidon || radon) & stereo)))->(X(slow || init))'}
-    sys_prog = {'(init || stereo)', '(!(slow & freeway))', '(moderate || fast || !((lidon||radon) & stereo))', 'Aux'}
+
+    # [] <> '(init || stereo)',[] <> '(!(slow & freeway))', [] <> '(moderate || fast || !((lidon||radon) & stereo))'
+    sys_prog = {'(init || stereo)', '(!(slow & freeway))', '(moderate || fast || !((lidon||radon) & stereo))'}
+    psi = spec.GRSpec(env_vars, sys_vars, env_init, sys_init,
+                      env_safe, sys_safe, env_prog, sys_prog)\
+          | DSL.response(trig='(stereo & !(lidon || radon))',
+                         react='((X(slow) & !freeway) || (freeway & X(init)))', owner='sys')
 
     Events_init = {('lidon', False),('stereo', False),('radon', False),('freeway', False)}
 
@@ -164,8 +166,7 @@ disc_dynamics.ts.states.initial |= states
 print("----------------------------------\n  Make GR(1) specification \n----------------------------------")
 (ctrl_modes, grspec) = transform2control(disc_dynamics.ts,  statevar='ctrl')
 
-phi = grspec | spec.GRSpec(env_vars, sys_vars, env_init,sys_init,
-                           env_safe, sys_safe, env_prog,sys_prog)
+phi = grspec | psi
 print(phi.pretty())
 phi.qinit = '\A \E'
 phi.moore = False
