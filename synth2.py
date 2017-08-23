@@ -31,15 +31,15 @@
 # SUCH DAMAGE.
 """Interface to library of synthesis tools, e.g., gr1c, omega."""
 from __future__ import absolute_import
-from builtins import next
+#from builtins import next
 import copy
 import logging
 import pprint
 import warnings
 
 from tulip.interfaces import gr1c
-from tulip.interfaces import gr1py
-from tulip.interfaces import omega as omega_int
+#from tulip.interfaces import gr1py
+#from tulip.interfaces import omega as omega_int
 import fnmatch
 try:
     from tulip.interfaces import slugs
