@@ -1,0 +1,11 @@
+2 clients    States_orig = 21 + 1   Transitions_orig = 55   States_reduc = 6 + 1   Transitions_reduc = 24   Transitions_SC = 18
+3 clients    States_orig = 81 + 1   Transitions_orig = 299   States_reduc = 12 + 1   Transitions_reduc = 94   Transitions_SC = 44
+4 clients    States_orig = 276 + 1   Transitions_orig = 1460   States_reduc = 29 + 1   Transitions_reduc = 379   Transitions_SC = 166
+5 clients    States_orig = 843 + 1   Transitions_orig = 6535   States_reduc = 57 + 1   Transitions_reduc = 1313   Transitions_SC = 545
+2 clients    States_orig = 21 + 1   Transitions_orig = 55   States_reduc = 6 + 1   Transitions_reduc = 24   Transitions_SC = 18
+3 clients    States_orig = 81 + 1   Transitions_orig = 299   States_reduc = 12 + 1   Transitions_reduc = 94   Transitions_SC = 44
+4 clients    States_orig = 276 + 1   Transitions_orig = 1460   States_reduc = 29 + 1   Transitions_reduc = 379   Transitions_SC = 166
+5 clients    States_orig = 843 + 1   Transitions_orig = 6535   States_reduc = 57 + 1   Transitions_reduc = 1313   Transitions_SC = 545
+2 clients    States_orig = 21 + 1   Transitions_orig = 55   States_reduc = 6 + 1   Transitions_reduc = 24   Transitions_SC = 18
+3 clients    States_orig = 81 + 1   Transitions_orig = 299   States_reduc = 12 + 1   Transitions_reduc = 94   Transitions_SC = 44
+4 clients    States_orig = 276 + 1   Transitions_orig = 1460   States_reduc = 29 + 1   Transitions_reduc = 379   Transitions_SC = 166
