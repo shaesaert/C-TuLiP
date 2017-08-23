@@ -31,7 +31,11 @@
 # SUCH DAMAGE.
 """Interface to library of synthesis tools, e.g., gr1c, omega."""
 from __future__ import absolute_import
-from builtins import next
+
+try:
+    from builtins import next
+except ImportError:
+    print('WARNING: from builtins import next [does not work]')
 import copy
 import logging
 import pprint
