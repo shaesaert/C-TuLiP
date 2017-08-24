@@ -6,16 +6,14 @@ CREDIT
 
 from __future__ import print_function
 
-from tulip import spec, hybrid
-import synth2 as synth
-import Interface.Statechart as dumpsmach
-from Reduce import *
-import Interface.DSL as DSL
 from itertools import combinations, cycle
 
+from tulip import spec
+
+from Interface.Reduce import *
 
 # the specification of the lift (sec 5.2)
-for n in cycle([7]):  # number of floors (minimum =2)
+for n in cycle(range(2,7)):  # number of floors (minimum =2)
 
     # define boolean variables for the buttons & the floors
     b = []
@@ -91,7 +89,6 @@ for n in cycle([7]):  # number of floors (minimum =2)
 
     print("---------------------\n  Lift controller \n------------")
     # ts_managere ctr
-    import networkx as nx
     outputs=set(f)
 
     transitions = list(set([ (x, y) + tuple([fi+'='+str(lab[fi]) for fi in list(lab.keys()) if fi in outputs]) for (x, y, lab) in ctrl_red.transitions(data=True)]))

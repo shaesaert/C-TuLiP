@@ -5,13 +5,11 @@ CREDIT
 """
 
 from __future__ import print_function
-from dd import cudd
-#from tulip import spec, hybrid
-import synth2 as synth
-import Interface.Statechart as dumpsmach
-from Reduce import *
-import Interface.DSL as DSL
-from itertools import combinations, cycle
+
+from itertools import combinations
+
+# from tulip import spec, hybrid
+from Interface.Reduce import *
 
 # the specification of the lift (sec 5.2)
 n=2

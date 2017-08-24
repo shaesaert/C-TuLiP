@@ -6,14 +6,15 @@ CREDIT
 
 from __future__ import print_function
 
-from tulip import spec, hybrid
-import synth2 as synth
-import Interface.Statechart as dumpsmach
-from Reduce import *
-import Interface.DSL as DSL
 from itertools import combinations, cycle
+
+from tulip import spec
+
+import Interface.Statechart as dumpsmach
+from Interface.Reduce import *
+
 # n input lines & n output lines
-for n in cycle([6]):
+for n in cycle([4]):
 
     # define boolean variables for the requests & the grants
     r = []

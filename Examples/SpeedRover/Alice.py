@@ -10,15 +10,17 @@ CONTENT
 
 from __future__ import print_function
 
-import numpy as np
 import sys
-from tulip import spec, hybrid
-from tulip.abstract import prop2part, discretize
+
+import numpy as np
 from polytope import box2poly
-from Reduce import *
-import Interface.Statechart as dumpsmach
-from Interface.Transform import *
+from tulip import hybrid
+from tulip.abstract import prop2part, discretize
+
 import Interface.DSL as DSL
+import Interface.Statechart as dumpsmach
+from Interface.Reduce import *
+from Interface.Transform import *
 
 # TODO  1. Low-level control actions are missing
 print("----------------------------------\n Script options \n----------------------------------")
@@ -172,7 +174,7 @@ phi.qinit = '\A \E'
 phi.moore = False
 phi.plus_one = False
 print("----------------------------------\n Make Controller \n----------------------------------")
-ctrl = synth.synthesize(phi, ignore_sys_init=True,solver='gr1c')
+ctrl = synth.synthesize(phi, ignore_sys_init=True,solver='omega')
 ctrl_red = reduce_mealy(ctrl, relabel=True, outputs={'ctrl'},
                        prune_set=Events_init, combine_trans=False)
 

@@ -9,16 +9,9 @@ CONTENT
 """
 from __future__ import print_function
 
-import numpy as np
-from tulip import spec, hybrid
-import synth2 as synth
-from tulip.transys import transys
-
-from itertools import *
-from Reduce import *
 import Interface.Statechart as dumpsmach
+from Interface.Reduce import *
 from Interface.Transform import *
-
 
 print("----------------------------------\n Script options \n----------------------------------")
 verbose = 1
@@ -245,7 +238,6 @@ if not ctrl.save("Window_simple.eps"):
 
 print("---------------------\n ts_manager controller \n------------")
 # ts_managere ctr
-import networkx as nx
 
 
 try:

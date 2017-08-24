@@ -13,16 +13,16 @@ CONTENT
 # Import modules
 from __future__ import print_function
 
-import numpy as np
 import sys
 
-from tulip import spec, hybrid
-from tulip.abstract import prop2part, discretize
+import numpy as np
 from polytope import box2poly
-from Reduce import *
-import Interface.Statechart as dumpsmach
-from Interface.Transform import *
+from tulip import hybrid
+from tulip.abstract import prop2part, discretize
 
+import Interface.Statechart as dumpsmach
+from Interface.Reduce import *
+from Interface.Transform import *
 
 print("----------------------------------\n Script options \n----------------------------------")
 verbose = 0 # Decrease printed output = 0, increase= 1

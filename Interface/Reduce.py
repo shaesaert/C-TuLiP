@@ -13,18 +13,13 @@ CONTENT
 from __future__ import absolute_import
 from __future__ import print_function
 
-import synth2 as synth
-
-from networkx.algorithms.minors import equivalence_classes
 import logging
 from itertools import product as it_product
-from itertools import permutations
-from tulip import spec
+
+from networkx.algorithms.minors import equivalence_classes
 from tulip import transys
-from tulip.transys.transys import FiniteTransitionSystem
-import networkx as nx
-from tulip.transys.labeled_graphs import LabeledDiGraph
-from itertools import product
+
+from Interface import synth2 as synth
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +121,7 @@ def reduce_guar_beh(ctrl,outputs={'loc'}):
             x = next(iter(block))
 
             if len(ctrl[x]) < len(ctrl[y]):
-                print('unequal number')
+                #print('unequal number')
                 continue
             if x == 'Sinit':  # the initial state gets its own block
                 continue
@@ -363,7 +358,6 @@ def quotient_mealy(mealy, node_relation=None, relabel=False, outputs={'loc'}):
     outputs :  Tells which outputs are critical and should be kept. Given as a set of strings.
 
     """
-    import sys
     if node_relation is None:
         node_relation = lambda u, v: mealy.states.post(u) == mealy.states.post(v)
 
