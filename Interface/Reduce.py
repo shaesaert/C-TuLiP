@@ -13,18 +13,13 @@ CONTENT
 from __future__ import absolute_import
 from __future__ import print_function
 
-import synth2 as synth
-
-from networkx.algorithms.minors import equivalence_classes
 import logging
 from itertools import product as it_product
-from itertools import permutations
-from tulip import spec
+
+from networkx.algorithms.minors import equivalence_classes
 from tulip import transys
-from tulip.transys.transys import FiniteTransitionSystem
-import networkx as nx
-from tulip.transys.labeled_graphs import LabeledDiGraph
-from itertools import product
+
+from Interface import synth2 as synth
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +66,7 @@ def reduce_mealy(ctrl, outputs={'ctrl'}, relabel=False, prune_set=None,
         ctrl_s = quotient_mealy(ctrl_s, node_relation=node_rel, relabel=relabel, outputs=outputs)
 
         if full:
-            equiv_classes = reduce_guar_beh(ctrl_s, outputs={'ctrl'})
+            equiv_classes = reduce_guar_beh(ctrl_s, outputs=outputs)
             equiv_dict = dict(sum([list(it_product(block, {i})) for (i, block) in enumerate(equiv_classes)], []))
             node_rel = lambda u, v: equiv_dict[u] == equiv_dict[v]  # the initial relation => groups of nodes that can
             # have equal next nodes
@@ -118,11 +113,17 @@ def reduce_guar_beh(ctrl,outputs={'loc'}):
         # Each element y must be in *exactly one* equivalence class.
         #
         # Each block is guaranteed to be non-empty
+        if y == 'Sinit': # the initial state gets its own block
+            blocks.append([y])
+            continue
+
         for block in blocks:
             x = next(iter(block))
 
             if len(ctrl[x]) < len(ctrl[y]):
-                # print('unequal number')
+                #print('unequal number')
+                continue
+            if x == 'Sinit':  # the initial state gets its own block
                 continue
 
             # compute set of labels:
@@ -357,7 +358,6 @@ def quotient_mealy(mealy, node_relation=None, relabel=False, outputs={'loc'}):
     outputs :  Tells which outputs are critical and should be kept. Given as a set of strings.
 
     """
-    import sys
     if node_relation is None:
         node_relation = lambda u, v: mealy.states.post(u) == mealy.states.post(v)
 

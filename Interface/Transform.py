@@ -11,18 +11,16 @@ CONTENT
 from __future__ import absolute_import
 from __future__ import print_function
 
-import synth2 as synth
-
-from networkx.algorithms.minors import equivalence_classes
 import logging
+from itertools import product
 from itertools import product as it_product
-from itertools import permutations
+
+import networkx as nx
 from tulip import spec
 from tulip import transys
 from tulip.transys.transys import FiniteTransitionSystem
-import networkx as nx
-from tulip.transys.labeled_graphs import LabeledDiGraph
-from itertools import product
+
+from Interface import synth2 as synth
 
 logger = logging.getLogger(__name__)
 

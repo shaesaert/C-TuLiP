@@ -9,16 +9,9 @@ CONTENT
 """
 from __future__ import print_function
 
-import numpy as np
-from tulip import spec, hybrid
-import synth2 as synth
-from tulip.transys import transys
-
-from itertools import *
-from Reduce import *
 import Interface.Statechart as dumpsmach
+from Interface.Reduce import *
 from Interface.Transform import *
-
 
 print("----------------------------------\n Script options \n----------------------------------")
 verbose = 1
@@ -166,7 +159,7 @@ gr_window = synth.env_to_spec(ts_window, False,'window')
 print(gr_window.pretty())
 
 
-print("---------------------\n Can manager be controlled? \n------------")
+print("---------------------\n Can the radios be controlled? \n------------")
 
 env_vars=list()
 env_init=list()
@@ -176,8 +169,7 @@ env_prog=list()
 # System variables and requirements
 sys_vars = list()
 sys_init = list()
-sys_safe = ['ELT_ON || SDST_ON']#, '(!ELT_ON & !(sys_actions="ELCTRA_RADIO_OFF")) || (ELT_ON & !(sys_actions="ELCTRA_RADIO_ON"))']
-#sys_safe += ['(!SDST_ON & !(sys_actions="SDST_RADIO_OFF")) || (SDST_ON & !(sys_actions="SDST_RADIO_ON"))']
+sys_safe = ['ELT_ON || SDST_ON']
 sys_safe += ['(transmit && (!SDST_ON && ELT_ON)) || !transmit']
 sys_safe += ['(idle && (SDST_ON && !ELT_ON)) || !idle']
 sys_prog = list()
@@ -246,7 +238,6 @@ if not ctrl.save("Window_simple.eps"):
 
 print("---------------------\n ts_manager controller \n------------")
 # ts_managere ctr
-import networkx as nx
 
 
 try:
@@ -259,6 +250,6 @@ filename = filename[0:-3] + "_gen"
 #print(filename)
 
 with open(filename+".xml", "w") as f:
-    f.write(dumpsmach.mealy_to_xmi_uml(ctrl_red, env_events=True, outputs={'sys_actions'}, name="CommWindow", relabel=False))
+    f.write(dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs={'sys_actions'}, name="CommWindow", relabel=False))
 
         # import cPickle
