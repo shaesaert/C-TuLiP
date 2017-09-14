@@ -782,7 +782,7 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
             Sinit_id + 1) + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/><nameVisible xmi:value='true'/></mdElement>\n")
     for trans_fro, trans_to, d in ctrl.transitions(data=True):
         f.write("<mdElement elementClass='Transition' xmi:id='" + str(
-            hash((trans_fro, trans_to)) + 1) + "'><elementID xmi:idref='" + str(
+            hash((trans_fro, str(d.items()))) + 1) + "'><elementID xmi:idref='" + str(
             hash((trans_fro, str(d.items())))) + "'/>")
         f.write("<linkFirstEndID xmi:idref='" + str(id(trans_fro) + 1) + "'/><linkSecondEndID xmi:idref='" + str(id(
             trans_to) + 1) + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/><nameVisible xmi:value='true'/>")

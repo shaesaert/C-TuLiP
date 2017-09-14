@@ -5,6 +5,7 @@ CREDIT
 """
 
 from __future__ import print_function
+import Interface.Statechart as dumpsmach
 
 from itertools import combinations, cycle
 
@@ -13,7 +14,7 @@ from tulip import spec
 from Interface.Reduce import *
 
 # the specification of the lift (sec 5.2)
-for n in cycle(range(2,7)):  # number of floors (minimum =2)
+for n in range(2,3):  # number of floors (minimum =2)
 
     # define boolean variables for the buttons & the floors
     b = []
@@ -41,15 +42,18 @@ for n in cycle(range(2,7)):  # number of floors (minimum =2)
         sys_vars |= {f[i]}
         f_down = ' || ' +  f[i-1] if i > 0 else ''
         f_up = ' || ' + f[i+1] if i < n-1 else ''
-        sys_safe |= {f[i] + ' -> ' + '(' + f[i] + f_down + f_up + ')'}
+        sys_safe |= {f[i] + ' -> ' + 'X (' + f[i] + f_down + f_up + ')'}
 
     # the lift should not move up unless some button is pressed
     # equivalent to, if u are moving up, then a button should be on
 
     sys_vars |= {'bon'} # some button is on (AUX)
     sys_vars |= {'fup'} # moving up         (AUX)
-
+    sys_init |= {'f1'}
     # \/i (f_i && f_i+1)
+    print(' || '.join([' ( ' + f[i] + ' ) ' for i in range(n)]))
+    sys_safe |= {' || '.join([' ( ' + f[i] + ' ) ' for i in range(n)]) }
+
     sys_safe |= {'fup' + ' <-> (' + ' || '.join([' ( ' + f[i] + ' && X ' + f[i+1]+' ) ' for i in range(n-1)]) + ' ) '}
     sys_safe |= {'bon' + ' <-> (' + ' || '.join([b[i] for i in range(n)]) + ' ) '}
 
@@ -74,15 +78,15 @@ for n in cycle(range(2,7)):  # number of floors (minimum =2)
     psi.moore = False
     psi.plus_one = False
 
-    ctrl=synth.synthesize(psi, ignore_sys_init=False, solver='gr1c')
+    ctrl=synth.synthesize(psi, ignore_sys_init=False, solver='omega')
     # found a controller
     print('controller found')
-    ctrl_s = synth.determinize_machine_init(ctrl)
+    #ctrl_s = synth.determinize_machine_init(ctrl)
 
+    Events_init = {('b1', False), ('b2', False)}
 
-
-    ctrl_red = reduce_mealy(ctrl_s, relabel=True, outputs=set(f),
-                           prune_set=None, combine_trans=False)
+    ctrl_red = reduce_mealy(ctrl, relabel=True, outputs=set(f),
+                           prune_set=Events_init, combine_trans=False)
 
     #save_png(ctrl_red,'lift_with_' + str(n) + 'floors' )
 
@@ -91,8 +95,10 @@ for n in cycle(range(2,7)):  # number of floors (minimum =2)
     # ts_managere ctr
     outputs=set(f)
 
-    transitions = list(set([ (x, y) + tuple([fi+'='+str(lab[fi]) for fi in list(lab.keys()) if fi in outputs]) for (x, y, lab) in ctrl_red.transitions(data=True)]))
-
+    transitions = list(set([ (x, y) + tuple([fi+'='+str(lab[fi]) for fi in list(lab.keys())
+                                             if fi in outputs]) for (x, y, lab)
+                             in ctrl_red.transitions(data=True)]))
+    print(transitions)
     print("States = " + str(len(ctrl)) + ' + 1')
     print("Transitions = " + str(len(ctrl.transitions)) + "\n")
 
@@ -107,8 +113,7 @@ for n in cycle(range(2,7)):  # number of floors (minimum =2)
         ww.write(str(len(ctrl_red.transitions))+ "          ")
         ww.write(str(len(transitions)) + "\n")
 
-
-            #string_long = dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs=set(f), name="Lift_controller", relabel=False)
-
-    #with open("Lift.xml", "w") as f:
-    #    f.write(string_long)
+    if n <=3 :
+        string_long = dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs=set(f), name="Lift_controller", relabel=False)
+        with open("Lift"+str(n)+".xml", "w") as f:
+            f.write(string_long)
