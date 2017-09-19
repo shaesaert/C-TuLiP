@@ -14,7 +14,7 @@ from tulip import spec
 from Interface.Reduce import *
 
 # the specification of the lift (sec 5.2)
-for n in range(2,3):  # number of floors (minimum =2)
+for n in cycle(range(2,6)):  # number of floors (minimum =2)
 
     # define boolean variables for the buttons & the floors
     b = []
@@ -88,15 +88,15 @@ for n in range(2,3):  # number of floors (minimum =2)
     ctrl_red = reduce_mealy(ctrl, relabel=True, outputs=set(f),
                            prune_set=Events_init, combine_trans=False)
 
-    #save_png(ctrl_red,'lift_with_' + str(n) + 'floors' )
+    save_png(ctrl_red,'lift_with_' + str(n) + 'floors' )
 
 
     print("---------------------\n  Lift controller \n------------")
     # ts_managere ctr
     outputs=set(f)
 
-    transitions = list(set([ (x, y) + tuple([fi+'='+str(lab[fi]) for fi in list(lab.keys())
-                                             if fi in outputs]) for (x, y, lab)
+    transitions = list(set([ (x, y) + tuple(set([str(fi)+'='+str(lab[fi]) for fi in outputs
+                                             if fi in outputs])) for (x, y, lab)
                              in ctrl_red.transitions(data=True)]))
     print(transitions)
     print("States = " + str(len(ctrl)) + ' + 1')
@@ -112,8 +112,8 @@ for n in range(2,3):  # number of floors (minimum =2)
         ww.write(str(len(ctrl_red)) + "          ")
         ww.write(str(len(ctrl_red.transitions))+ "          ")
         ww.write(str(len(transitions)) + "\n")
-
-    if n <=3 :
-        string_long = dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs=set(f), name="Lift_controller", relabel=False)
-        with open("Lift"+str(n)+".xml", "w") as f:
-            f.write(string_long)
+    #
+    # if n <=3 :
+    #     string_long = dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs=set(f), name="Lift_controller", relabel=False)
+    #     with open("Lift"+str(n)+".xml", "w") as f:
+    #         f.write(string_long)

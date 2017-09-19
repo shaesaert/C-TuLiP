@@ -362,7 +362,7 @@ def _diag_info(Refs_text, binary, diag_id, name):
 def _mdelement(trans_fro, trans_to, label, state_ids, events_input, ctrl, list_in, events_output, guard=None):
     mdOwnedViews = ' '
     mdOwnedViews += "<mdElement elementClass='Transition' xmi:id='" + str(
-        hash((trans_fro, trans_to)) + 1) + "'><elementID xmi:idref='" + str(
+        hash((trans_fro, str(label.items()))) + 1) + "'><elementID xmi:idref='" + str(
         hash((trans_fro, str(label.items())))) + "'/>"
     mdOwnedViews += "<linkFirstEndID xmi:idref='" + str(id(trans_fro) + 1) + "'/><linkSecondEndID xmi:idref='" + str(
         state_ids[
@@ -540,6 +540,20 @@ def _state_labeling(ctrl):
     return (state_names, state_ids)
 
 
+def checkbool(fi,lab,ctrl):
+    if not (ctrl.outputs[fi]=={0,1}):
+        return lab[fi]
+    elif lab[fi] == 1:
+        return 'True'
+    elif lab[fi] == 0:
+        return 'False'
+    else:
+        print('Warning probable Error')
+        Warning('Probable Error')
+
+
+
+
 def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=False, Type='default'):
     """
     @param ctrl_sys: MealyMachine, as in TuLiP
@@ -563,7 +577,6 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     # f = cStringIO.StringIO()
     # TODO check whether fix for above line works
     f = StringIO()
-
     pseudostate_id = "_1"
     print('Start Converting to State-chart')
     if Type == 'control':
@@ -684,49 +697,62 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     # ------------------ Introduce the transitions  --------------------------
     f.write("  <transition xmi:type='uml:Transition' xmi:id='" + pseudostate_id + "_1" + "' xmi:uuid='" + str(
         uuid.uuid1()) + "' visibility='public' source='" + pseudostate_id + "' target='" + str(Sinit_id) + "'/>\n")
-    for trans_fro, trans_to, label in ctrl.transitions(data=True):
+    transitions = list(set([ (x, y) + tuple([str(fi)+'='+str(checkbool(fi,lab,ctrl)) for fi in outputs]) for (x, y, lab) in ctrl.transitions(data=True)]))
+    print(len(ctrl.transitions(data=True)))
+    #for trans_fro, trans_to, label in ctrl.transitions(data=True):
+    for tr in transitions:
+        trans_fro = tr[0]
+        trans_to = tr[1]
         if Type == 'strat':
             f.write("  <transition xmi:type='uml:Transition' xmi:id='" + str(
-                hash((trans_fro, str(label.items())))) + "' xmi:uuid='" + str(
+                hash(tr)) + "' xmi:uuid='" + str(
                 uuid.uuid1()) + "' visibility='public' source='" + str(
                 id(trans_fro)) + "' guard='" + str(
-                hash('set_guard()' + str((trans_fro, str(label.items()))))) + "' target='" + str(id(trans_to)) + "'>")
+                hash('set_guard()' + str(tr))) + "' target='" + str(id(trans_to)) + "'>")
             f.write(" <ownedRule  xmi:type='uml:Constraint' xmi:id='" + str(
-                hash('set_guard()' + str((trans_fro, str(label.items()))))) + "' xmi:uuid='" + str(
+                hash('set_guard()' + str(tr))) + "' xmi:uuid='" + str(
                 uuid.uuid1()) + "'>\n")
             f.write("<specification  xmi:type='uml:OpaqueExpression' xmi:id='" + str(
-                hash('read_guard()' + str((trans_fro, str(label.items()))))) + "_12" + "' xmi:uuid='" + str(
+                hash('read_guard()' + str(tr))) + "_12" + "' xmi:uuid='" + str(
                 uuid.uuid1()) + "' >" + " <body>read_guard()</body > <language>English</language>" + "  </specification > </ownedRule >")
         else:
             f.write("  <transition xmi:type='uml:Transition' xmi:id='" + str(
-                hash((trans_fro, str(label.items())))) + "' xmi:uuid='" + str(
+                hash(tr)) + "' xmi:uuid='" + str(
                 uuid.uuid1()) + "' visibility='public' source='" + str(
                 id(trans_fro)) + "' target='" + str(id(trans_to)) + "'>")
         # here we need multiple triggers!!
         # TODO check whether this is how it should be written
-        for event in events_list:  # these are the input events
-            if {frozenset(event)} <= labels:
-                if (set.intersection(set(label.items()), list_in) <= set(event)):
-                    f.write("    <trigger xmi:type='uml:Trigger' xmi:id='" + str(hash((trans_fro, event))) + "_122"
-                            + "' xmi:uuid='" + str(uuid.uuid1()) + "' visibility='public' event='"
-                            + str(hash(event)) + "_1" + "'/>")
+        for (ttr,ttt,label) in ctrl.transitions.find({trans_fro},{trans_to}):
+
+            out = tuple([str(fi) + '=' + str(checkbool(fi,label,ctrl)) for fi in list(label.keys())
+                         if fi in outputs])
+
+            if set(out) == set(tr[2::]):
+                for event in events_list:  # these are the input events
+                    if {frozenset(event)} <= labels:
+                        if (set.intersection(set(label.items()), list_in) <= set(event)):
+                            f.write("    <trigger xmi:type='uml:Trigger' xmi:id='" + str(hash((trans_fro, event))) + "_122"
+                                    + "' xmi:uuid='" + str(uuid.uuid1()) + "' visibility='public' event='"
+                                    + str(hash(event)) + "_1" + "'/>")
 
         for event in events_output:
-            if set(event) <= set(label.items()):
+            out = tuple([str(fi[0]) + '=' + str(fi[1]) for fi in event])
+            if set(out)==set(tr[2::]):
                 if outputs == {'sys_actions'}:
                     f.write("  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
-                        hash((trans_fro, str(label.items())))) + "_13" + "' visibility='public' name='" + str(
+                        hash((tr))) + "_13" + "' visibility='public' name='" + str(
                         event[0][1]) + "'/>")
                 elif outputs == {'act'}:
                     f.write("  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
-                        hash((trans_fro, str(label.items())))) + "_13" + "' visibility='public' name='" + event[0][0]
+                        hash((tr))) + "_13" + "' visibility='public' name='" + event[0][0]
                             + '_' + str(event[0][1]) + "()" + "'/>")
                 else:
                     name_ev = create_env_event(outputs, dict(event))
                     f.write("  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
-                        hash((trans_fro, str(label.items())))) + "_13" + "' visibility='public' name='" + name_ev +  "'/>")
+                        hash((tr))) + "_13" + "' visibility='public' name='" + name_ev +  "'/>")
                     # TODO: the above should be changed to publish an Event
         f.write("  </transition>\n")
+
     # here we add the internal behaviours=> these are  kind of reentry transitions but they will skip the exit and entry actions
     if Type == 'control':
         for state in ctrl.states:
@@ -780,15 +806,18 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     f.write(
         "<mdElement elementClass='Transition' xmi:id='" + pseudostate_id + "_2" + "'><elementID xmi:idref='" + pseudostate_id + "_1" + "'/><linkSecondEndID xmi:idref='" + pseudostate_id + "1" + "'/><linkFirstEndID xmi:idref='" + str(
             Sinit_id + 1) + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/><nameVisible xmi:value='true'/></mdElement>\n")
-    for trans_fro, trans_to, d in ctrl.transitions(data=True):
+    #for trans_fro, trans_to, d in ctrl.transitions(data=True):
+    for tr in transitions:
+        trans_fro = tr[0]
+        trans_to = tr[1]
         f.write("<mdElement elementClass='Transition' xmi:id='" + str(
-            hash((trans_fro, str(d.items()))) + 1) + "'><elementID xmi:idref='" + str(
-            hash((trans_fro, str(d.items())))) + "'/>")
+            hash((tr)) + 1) + "'><elementID xmi:idref='" + str(
+            hash((tr))) + "'/>")
         f.write("<linkFirstEndID xmi:idref='" + str(id(trans_fro) + 1) + "'/><linkSecondEndID xmi:idref='" + str(id(
             trans_to) + 1) + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/><nameVisible xmi:value='true'/>")
-        f.write("<linkNameID xmi:idref='" + str(hash((trans_fro, str(d.items())))) + "_3" + "'/>")
+        f.write("<linkNameID xmi:idref='" + str(hash((tr))) + "_3" + "'/>")
         f.write("<mdOwnedViews><mdElement elementClass='TextBox' xmi:id='" + str(
-            hash((trans_fro, str(d.items())))) + "_3" + "'>\n")
+            hash((tr))) + "_3" + "'>\n")
         f.write("<geometry>" + str(100) + ", " + str(100) + ", 24, 13</geometry>")  # TODO FIX this
         f.write("<text>" + "text" + "</text></mdElement>")
         f.write("</mdOwnedViews></mdElement>\n")

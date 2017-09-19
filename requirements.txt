@@ -1,2 +1,7 @@
 # use with `pip install -r requirements.txt`
 dd==0.4.3 --install-option="--fetch" --install-option="--cudd"
+
+# required for use with Statechart autocoder
+Cheetah-2.4.4
+sys
+
