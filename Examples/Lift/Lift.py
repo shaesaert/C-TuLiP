@@ -14,7 +14,7 @@ from tulip import spec
 from Interface.Reduce import *
 
 # the specification of the lift (sec 5.2)
-for n in cycle(range(2,6)):  # number of floors (minimum =2)
+for n in range(2,4):  # number of floors (minimum =2)
 
     # define boolean variables for the buttons & the floors
     b = []
@@ -112,8 +112,8 @@ for n in cycle(range(2,6)):  # number of floors (minimum =2)
         ww.write(str(len(ctrl_red)) + "          ")
         ww.write(str(len(ctrl_red.transitions))+ "          ")
         ww.write(str(len(transitions)) + "\n")
-    #
-    # if n <=3 :
-    #     string_long = dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs=set(f), name="Lift_controller", relabel=False)
-    #     with open("Lift"+str(n)+".xml", "w") as f:
-    #         f.write(string_long)
+
+    if n <=3 :
+       string_long = dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs=set(f), name="Lift_controller", relabel=False)
+       with open("Lift"+str(n)+".xml", "w") as f:
+           f.write(string_long)

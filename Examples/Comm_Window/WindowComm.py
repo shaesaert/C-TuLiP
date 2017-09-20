@@ -93,9 +93,10 @@ new_ts.save('combine_radios.png')
 ts_env_complete=trans_complete(new_ts)
 ts_env_complete.save('ts_env_complete.png')
 
+gr_env00= synth.env_to_spec(ts_elt, False,'env')#,'ap_list':ts_window.ap})
 
 gr_env= synth.env_to_spec(ts_env_complete, False,'env', aps={'ap_ELT':ts_elt.ap,'ap_SDST':ts_sdst.ap})#,'ap_list':ts_window.ap})
-#print(gr_env.pretty())
+print(gr_env00.pretty())
 
 
 print("----------------------------------\n Finite State Transition System: list\n----------------------------------")
@@ -155,7 +156,6 @@ ts_window.save('comm_ex_window.png')
 
 
 gr_window = synth.env_to_spec(ts_window, False,'window')
-
 print(gr_window.pretty())
 
 
