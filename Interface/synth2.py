@@ -31,10 +31,18 @@
 # SUCH DAMAGE.
 """Interface to library of synthesis tools, e.g., gr1c, omega."""
 from __future__ import absolute_import
+<<<<<<< HEAD:synth2.py
+
+try:
+    from builtins import next
+except ImportError:
+    print('WARNING: from builtins import next [does not work]')
+=======
 try:
     from builtins import next
 except ImportError:
     print("Couldn't import builtins next")
+>>>>>>> S1Aug:Interface/synth2.py
 import copy
 import logging
 import pprint

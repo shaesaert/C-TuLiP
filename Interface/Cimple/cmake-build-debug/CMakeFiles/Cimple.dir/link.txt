@@ -1,0 +1,1 @@
+/usr/bin/cc  -std=c99 -Wall -Werror -O0 -g -g   CMakeFiles/Cimple.dir/main.c.o CMakeFiles/Cimple.dir/find_controller.c.o CMakeFiles/Cimple.dir/system.c.o  -o Cimple -lgsl -lgslcblas -lm /usr/lib/x86_64-linux-gnu/libpython2.7.so 
