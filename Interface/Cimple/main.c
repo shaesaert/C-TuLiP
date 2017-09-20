@@ -403,7 +403,6 @@ int main(){
     free(original_hulls_left_side);
     free(original_hulls_right_side);
 
-    ACT_0(now,d_dyn, s_dyn,f_cost);
     system_dynamics_free(s_dyn);
     discrete_dynamics_free(d_dyn, number_of_regions, number_of_original_regions);
     cost_function_free(f_cost);
