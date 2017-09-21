@@ -88,18 +88,14 @@ The software runs stable with on the current version of Python 2.7.13 or 3.6.
 
 II Install C-TuLiP
 -----------------------------
-Do a `pip . install` in the  C-Tulip folder. 
+Do a `pip . install` in the  C-Tulip folder.
 
 
 III Running the (tutorial) Examples
 -----------------------------
-
-The code for generating XMI and a partial Python implementation are in the
-Python module dumpsmach.py.
-Two examples can easily be checked
- * Thermostat design
-    * `ThermoStat.py` = script  to generate state-chart using TuLiP
-    * `runner_ThermoStat.py` = script for demonstrating with generated code
+In the `Example folder`
+ * Communication Window example
+    * 
  * Alice, a simplified rover speed control`
     * `AliceSimp.py` = script  to generate state-chart using TuLiP
     * `runner_Alice.py`= script for demonstrating with generated code

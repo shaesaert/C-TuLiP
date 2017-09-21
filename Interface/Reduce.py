@@ -23,7 +23,33 @@ from Interface import synth2 as synth
 
 logger = logging.getLogger(__name__)
 
+def remove_aux_inputs(ctrl, inputs):
 
+    #1. check whether you are allowed to remove the aux inputs. <= not done
+    #2. remove aux. inputs.
+
+    ctrl_new = transys.MealyMachine()
+    ctrl_new.add_outputs(ctrl.outputs)
+
+    # this needs to be changed to be a limited set
+    inputs_dict = dict()
+    for i in inputs:
+        inputs_dict[i] = ctrl.inputs[i]
+    ctrl_new.add_inputs(inputs_dict)
+
+    # add nodes from original mealy
+    ctrl_new.add_nodes_from(ctrl.nodes())
+    block_pairs = it_product(ctrl, ctrl)
+    for (b, c) in block_pairs:
+        labels = {frozenset([(key, label[key]) for key in ctrl_new.inputs.keys()]
+                            + [(output, label[output]) for output in ctrl_new.outputs.keys()])
+                  for (x, y, label) in ctrl.transitions.find(b, c)}
+        for q in labels:
+            ctrl_new.transitions.add(b, c, **dict(q))
+
+    ctrl_new.states.initial.add_from(ctrl.states.initial)
+
+    return ctrl_new
 
 def reduce_mealy(ctrl, outputs={'ctrl'}, relabel=False, prune_set=None,
                  full=True, combine_trans=True, verbose=True):

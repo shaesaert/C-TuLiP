@@ -141,19 +141,9 @@ for i in range(st):
 # its initial states
 ts_window.states.initial |= {0}
 
-
-
-#
 print(" \n 2. system actions as additions and removals of the list")
 
-## layout of graph
-ts_window.transitions.graph._transition_dot_label_format['env_actions']='env'
-ts_window.transitions.graph._transition_dot_label_format['separator']=r"\n"
-
 ts_window.save('comm_ex_window.png')
-
-
-
 
 gr_window = synth.env_to_spec(ts_window, False,'window')
 print(gr_window.pretty())
@@ -161,10 +151,10 @@ print(gr_window.pretty())
 
 print("---------------------\n Can the radios be controlled? \n------------")
 
-env_vars=list()
-env_init=list()
-env_safe=list()
-env_prog=list()
+env_vars = list()
+env_init = list()
+env_safe = list()
+env_prog = list()
 
 # System variables and requirements
 sys_vars = list()
@@ -186,70 +176,34 @@ specs.moore = False
 specs.plus_one = False
 
 ctrl=synth.synthesize(specs, ignore_sys_init=False, solver='gr1c')
-#ctrl_s = synth.determinize_machine_init(ctrl)
 
-ctrl.transitions.graph._transition_dot_label_format['separator']=r"\n"
+print("----------------------------------\n Remove auxiliary inputs \n----------------------------------")
+inputs = {'idle', 'cfg','transmit','cln'}
+ctrl_rem = remove_aux_inputs(ctrl, inputs)
 
-print("----------------------------------\n CLEAN initial state \n----------------------------------")
-# TODO: This definition and pruning of initial states should come automatically
-# TODO - this could be included into the function that reduces the Mealy machine?if
+print("----------------------------------\n Reduce states \n----------------------------------")
 
-if not ctrl:
-    print('NO CONTROLLER COULD BE FOUND !!!!!')
-    quit()
-inputsb = {'ELT_ON':ctrl.inputs['ELT_ON'],'SDST_ON':ctrl.inputs['SDST_ON'],'idle':ctrl.inputs['idle']}
-print(inputsb)
+Events_init = {('idle', 1),('cfg', 0), ('transmit', 0), ('cln', 0)}
 
-list_in = set.union(*[set(it_product({key}, values)) for (key, values) in inputsb.items()
-                      if not values == {0, 1}] + [
-                         set(it_product({key}, {True, False})) for (key, values) in inputsb.items()
-                         if values == {0, 1}])
-print(list_in)
-init_event = {('ELT_ON', False), ('SDST_ON',  True),('idle',True)}
-
-if not init_event <= list_in:
-    raise Exception
-ctrl_s = ctrl.copy()
-for s, to, label in ctrl_s.transitions.find({'Sinit'}):
-    if not (set.intersection(set(label.items()), list_in)) <= init_event:
-        ctrl_s.transitions.remove(s, to, attr_dict=label)
-        #print('removed')
-        #print((set.intersection(set(label.items()), list_in)))
-
-        #print((s,to,label))
-    else :
-        print('kept')
-        print((s,to,label))
+ctrl_red = reduce_mealy(ctrl_rem, outputs={'sys_actions'},
+                        relabel=True, prune_set=Events_init, full=False)
 
 
-ctrl_s.save('ctrl_S.png')
-len(ctrl_s)
-ctrl_red = reduce_mealy(ctrl_s, outputs={'sys_actions'}, relabel=True, prune_set=None,
-                 full=False, combine_trans=True, verbose=True)
-len(ctrl_red)
-
-ctrl_red.transitions.graph._transition_dot_label_format['separator']=r"\n"
-ctrl_red.save('ctrl_red.png')
-
-if not ctrl.save("Window_simple.eps"):
-    print(ctrl)
-
-
-
-print("---------------------\n ts_manager controller \n------------")
-# ts_managere ctr
-
+print("---------------------\n Communication window controller \n------------")
 
 try:
     filename = str(__file__)
 except NameError:
     filename = "test"
 
-
 filename = filename[0:-3] + "_gen"
-#print(filename)
 
 with open(filename+".xml", "w") as f:
     f.write(dumpsmach.mealy_to_xmi_uml(ctrl_red, outputs={'sys_actions'}, name="CommWindow", relabel=False))
 
-        # import cPickle
+
+print("---------------\n Pictures \n-------------")
+ctrl_red.save('ctrl_red.png')
+
+if not ctrl.save("Window_simple.eps"):
+    print(ctrl)

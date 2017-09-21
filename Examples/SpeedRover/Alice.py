@@ -145,9 +145,6 @@ for Case in Cases:
     print("----------------------------------\n System partition State Space \n----------------------------------")
 
 
-    print("------  System Definition")
-
-
     print("------ System Label State Space & partition")
     sys_dyn = hybrid.LtiSysDyn(A, B, E, None, U, W, X)
 
