@@ -45,7 +45,7 @@ def create_env_event(env_vars, valuation, short=False):
         return "_".join([str(v) + "_" + str(valuation[v]) for v in env_vars])
 
 
-def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
+def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Strategy'):
     """"This function generates the text for the xml file encoding the state-chart models. Two statecharts are generated
      1. The strategy, which reacts to environment events and selects a control mode accordingly
      2. The finite state machine encoding the control modes and its allowed transitions. 
@@ -110,7 +110,7 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
     f.write("<region xmi:type='uml:Region' xmi:id='" + str(hash(name_model)) + "_1' xmi:uuid='" + str(uuid.uuid1())
             + "' visibility='public'>")
 
-    # -------------Start positioning -------------------------------
+    # -------------Start positioning ctrl_modes -------------------------------
     binary1 = "BINARY-4a3fc940-2bdc-4a6f-8a1e-687138c112b5"
     mdOwnedViews1 = """			<xmi:Extension extender='MagicDraw UML 18.0'>
     		<filePart name='""" + str(binary1) + """' type='XML' header='&lt;?xml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;?&gt;'><mdOwnedViews>
@@ -119,7 +119,7 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
        			<elementID xmi:idref=""" + '"' + str(
         diagram_id) + '">' + """</elementID><geometry>5, 5, 977, 441</geometry><compartment compartmentID="TAGGED_VALUES"></compartment><mdOwnedViews></mdOwnedViews></mdElement>"""
 
-    # ------------------ Add the states  --------------------------
+    # ------------------ Add the states (ctrl_modes) --------------------------
     Sinit_id = None
     assert len(ctrl.states.initial) <= 1  # make sure there is no nondeterminism in the initialisation
 
@@ -145,7 +145,7 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
                 1 / 2.0))))) + ", " + str(Dx) + ", " + str(
             Dy) + "</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
 
-    # ------------------ Add the transitions  --------------------------
+    # ------------------ Add the transitions (ctrl_modes) --------------------------
     # Add all the RTI transitions
     for state in ctrl.states:
         f.write(_rti(state, rti='at_RTI()'))
@@ -161,14 +161,17 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
     for trans_fro, trans_to, label in ctrl.transitions(data=True):
         f.write(_transition(trans_fro, trans_to, label, state_ids, events_input, list_in, events_output))
         Refs_text += _refs(str(hash((trans_fro, str(label.items())))))
-        mdOwnedViews1 += _mdelement(trans_fro, trans_to, label, state_ids, events_input, ctrl, list_in, events_output,
-                                    guard=None)
+        event_str = ''
+        for event in events_input:
+            if (set.intersection(set(label.items()), list_in) <= set(event)):
+                event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event), short=True)
+        mdOwnedViews1 += _mdelement(trans_fro, trans_to, (trans_fro, str(label.items())), event_str[2:], state_ids)
 
     mdOwnedViews1 += "</mdOwnedViews></filePart></xmi:Extension>"
 
     f.write("</region>")
 
-    # ------- Add Diagram info -------
+    # ------- Add Diagram info (ctrl_modes) -------
     Refs_text += _refs(diagram_id)
 
     f.write(_diag_info(Refs_text, binary1, diagram_id, name_model))
@@ -202,15 +205,15 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
     (state_names, state_ids) = _state_labeling(ctrl)
     # use new function for computing incoming events
 
-    # ------------------ Find Events & Transitions --------------------------
+    # ------------------ Find Events & Transitions (strategy) --------------------------
     (events_input, list_in, labels) = _inputs2events(ctrl)
     (events_output) = _outputs2events(ctrl, outputs)
+    events_list = list(it_product(*[set(it_product({key}, values)) for (key, values) in ctrl.inputs.items()
+                                    if not values == {0, 1}] + [
+                                       set(it_product({key}, {True, False})) for (key, values) in ctrl.inputs.items()
+                                       if values == {0, 1}]))
+    transitions = list(set([ (x, y) + tuple([str(fi)+'='+str(checkbool(fi,lab,ctrl)) for fi in outputs]) for (x, y, lab) in ctrl.transitions(data=True)]))
 
-    transitions = list(set([(x, y, lab['ctrl']) for (x, y, lab) in ctrl.transitions(data=True)]))
-    trans_trig = dict()
-    for (i, tr) in enumerate(transitions):
-        trans_trig[tr] = [(lab) for (x, y, lab) in ctrl.transitions.find({tr[0]}, {tr[1]})
-                          if {('ctrl', tr[2])} <= set(lab.items())]
 
     print("------------------\n State-chart\n------------------")
     print("States = " + str(len(ctrl)) + ' + 1')
@@ -254,7 +257,7 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
     		<filePart name='""" + str(binary2) + """' type='XML' header='&lt;?xml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;?&gt;'><mdOwnedViews>
     """
 
-    # ------------------ Add the states  --------------------------
+    # ------------------ Add the states (strategy)  --------------------------
     Sinit_id = None
     assert len(ctrl.states.initial) <= 1  # make sure there is no non-determinism in the initialisation
 
@@ -282,9 +285,9 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
                          + ", " + str(
             Dy) + "</geometry><compartment compartmentID='TAGGED_VALUES'/><mdOwnedViews/></mdElement>\n"
 
-    # ------------------ Add the transitions  --------------------------
+    # ------------------ Add the transitions (strategy)  --------------------------
 
-    # Add the transitions from the pseudos state
+    # Add the transitions from the pseudo state
     f.write("  <transition xmi:type='uml:Transition' xmi:id='" + pseudostate_id + "_1" + "' xmi:uuid='" + str(
         uuid.uuid1()) + "' visibility='public' source='" + pseudostate_id + "' target='" + str(Sinit_id) + "'/>\n")
     Refs_text += _refs(pseudostate_id + "_1")
@@ -296,12 +299,67 @@ def tulip_to_xmi(strategy, ctrl_sys, name_strategy='Alice'):
                      + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/>" \
                      + "<nameVisible xmi:value='true'/></mdElement>\n"
 
-    for trans_fro, trans_to, label in ctrl.transitions(data=True):
-        f.write(_transition(trans_fro, trans_to, label, state_ids, events_input, list_in, events_output,
-                            guard='read_guard()'))
-        Refs_text += _refs(str(hash((trans_fro, str(label.items())))))
-        mdOwnedViews2 += _mdelement(trans_fro, trans_to, label, state_ids, events_input, ctrl, list_in, events_output,
-                                    guard=None)
+
+    #for trans_fro, trans_to, label in ctrl.transitions(data=True):
+    for tr in transitions:
+        trans_fro = tr[0]
+        trans_to = tr[1]
+
+        #----------------------------
+        guard = 'read_guard()'
+
+        text = "  <transition xmi:type='uml:Transition' xmi:id='" + str(
+            hash(tr)) + "' xmi:uuid='" + str(
+            uuid.uuid1()) + "' visibility='public' source='" + str(id(trans_fro)) + "' guard='" + str(
+            hash(guard + str(tr))) + "' target='" + str(state_ids[trans_to]) + "'>"
+        text += "<ownedRule  xmi:type='uml:Constraint' xmi:id='" + str(
+            hash(guard + str(tr))) + "' xmi:uuid='" + str(
+            uuid.uuid1()) + "'>\n"
+        text += "<specification  xmi:type='uml:OpaqueExpression' xmi:id='" + str(
+            hash(guard + str(tr))) + "_12" + "' xmi:uuid='" + str(
+            uuid.uuid1()) + "' >" + " <body>" + guard + "</body > <language>English</language>" + "  </specification > </ownedRule >"
+
+        event_str = ''
+        # Add trigger
+        for (ttr,ttt,label) in ctrl.transitions.find({trans_fro},{trans_to}):
+
+            out = tuple([str(fi) + '=' + str(checkbool(fi,label,ctrl)) for fi in list(label.keys())
+                         if fi in outputs])
+            if set(out) == set(tr[2::]):
+                for event in events_list:  # these are the input events
+                    if {frozenset(event)} <= labels:
+                        if (set.intersection(set(label.items()), list_in) <= set(event)):
+                            text += "  <trigger xmi:type='uml:Trigger' xmi:id='" + str(hash((trans_fro, event))) + "_122" \
+                                    + "' xmi:uuid='" + str(uuid.uuid1()) + "' visibility='public' event='" \
+                                    + str(hash(event)) + "_1" + "'/>"
+                            event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event), short=True)
+
+        # Add effect
+        for event in events_output:
+            out = tuple([str(fi[0]) + '=' + str(fi[1]) for fi in event])
+            if set(out) == set(tr[2::]):
+                if (event[0][0] == 'sys_actions') and (len(event) == 1):
+                    text += "  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
+                        hash(tr)) + "_13" + "' visibility='public' name='" + str(
+                        event[0][1]) + "'/>"
+                elif (event[0][0] == 'act') and (len(event) == 1):
+                    text += "  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
+                        hash(tr)) + "_13" + "' visibility='public' name='" + event[0][0] \
+                            + '_' + str(event[0][1]) + "()" + "'/>"
+                else:
+                    ev_set = set([eventi[0] for eventi in event])
+                    name_ev = create_env_event(ev_set, dict(event))
+                    text += "  <effect xmi:type='uml:FunctionBehavior' xmi:id='" + str(
+                        hash(tr)) + "_13" + "' visibility='public' name='" + name_ev + "'/>"
+        text += "  </transition>\n"
+        f.write(text)
+        #---------------------------
+        Refs_text += _refs(str(hash(tr)))
+        #  for event in events_input:
+        #     if (set.intersection(set(label.items()), list_in) <= set(event)):
+        #         event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event), short=True)
+        # event_str= event_str[2:]
+        mdOwnedViews2 += _mdelement(trans_fro, trans_to, tr, event_str[2:], state_ids)
 
     mdOwnedViews2 += """ <mdElement elementClass="DiagramFrame" xmi:id="_18_0_6_12a303c1_1500791404771_200057_12344">
     			<elementID xmi:idref=""" + '"' \
@@ -359,23 +417,22 @@ def _diag_info(Refs_text, binary, diag_id, name):
     return text
 
 
-def _mdelement(trans_fro, trans_to, label, state_ids, events_input, ctrl, list_in, events_output, guard=None):
+def _mdelement(trans_fro, trans_to, hashlab, event_str,state_ids):
+    #label, state_ids, events_input, ctrl, list_in, events_output, guard=None):
+    # hashlab:= (trans_fro, str(label.items())) or tr
     mdOwnedViews = ' '
     mdOwnedViews += "<mdElement elementClass='Transition' xmi:id='" + str(
-        hash((trans_fro, str(label.items()))) + 1) + "'><elementID xmi:idref='" + str(
-        hash((trans_fro, str(label.items())))) + "'/>"
+        hash(hashlab) + 1) + "'><elementID xmi:idref='" + str(
+        hash(hashlab)) + "'/>"
     mdOwnedViews += "<linkFirstEndID xmi:idref='" + str(id(trans_fro) + 1) + "'/><linkSecondEndID xmi:idref='" + str(
         state_ids[
             trans_to] + 1) + "'/><geometry>65, 104; 65, 64; </geometry><compartment compartmentID='TAGGED_VALUES'/><nameVisible xmi:value='true'/>"
-    mdOwnedViews += "<linkNameID xmi:idref='" + str(hash((trans_fro, str(label.items())))) + "_3" + "'/>"
+    mdOwnedViews += "<linkNameID xmi:idref='" + str(hash(hashlab)) + "_3" + "'/>"
     mdOwnedViews += "<mdOwnedViews><mdElement elementClass='TextBox' xmi:id='" + str(
-        hash((trans_fro, str(label.items())))) + "_3" + "'>\n"
+        hash(hashlab)) + "_3" + "'>\n"
     mdOwnedViews += "<geometry>" + str(100) + ", " + str(100) + ", 24, 13</geometry>"
-    event_str = ''
-    for event in events_input:
-        if (set.intersection(set(label.items()), list_in) <= set(event)):
-            event_str += ', ' + create_env_event(ctrl.inputs.keys(), dict(event), short=True)
-    mdOwnedViews += "<text>" + event_str[2:] + "</text></mdElement>"
+
+    mdOwnedViews += "<text>" + event_str + "</text></mdElement>"
 
     mdOwnedViews += "</mdOwnedViews></mdElement>\n"
     return mdOwnedViews
@@ -383,6 +440,7 @@ def _mdelement(trans_fro, trans_to, label, state_ids, events_input, ctrl, list_i
 
 def _transition(source, target, label, state_ids, events_inputs, list_in, events_output, guard=None):
     # define transition
+
     if guard is not None:
         text = "  <transition xmi:type='uml:Transition' xmi:id='" + str(
             hash((source, str(label.items())))) + "' xmi:uuid='" + str(
@@ -574,8 +632,6 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     """
     # states are named to complicated (due to gr1c) fix that first!
 
-    # f = cStringIO.StringIO()
-    # TODO check whether fix for above line works
     f = StringIO()
     pseudostate_id = "_1"
     print('Start Converting to State-chart')
@@ -618,7 +674,7 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     # Equal to incoming signals
     # Equal to signal events
     # the potential combinations of outside signals
-    # TODO not all combinatorially generated events are possible. Better to first prune them
+    # TODO not all combinatorally generated events are possible. Better to first prune them
     events_list = list(it_product(*[set(it_product({key}, values)) for (key, values) in ctrl.inputs.items()
                                     if not values == {0, 1}] + [
                                        set(it_product({key}, {True, False})) for (key, values) in ctrl.inputs.items()
@@ -698,7 +754,9 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     f.write("  <transition xmi:type='uml:Transition' xmi:id='" + pseudostate_id + "_1" + "' xmi:uuid='" + str(
         uuid.uuid1()) + "' visibility='public' source='" + pseudostate_id + "' target='" + str(Sinit_id) + "'/>\n")
     transitions = list(set([ (x, y) + tuple([str(fi)+'='+str(checkbool(fi,lab,ctrl)) for fi in outputs]) for (x, y, lab) in ctrl.transitions(data=True)]))
-    print(len(ctrl.transitions(data=True)))
+    print("Transitions orig = " + len(ctrl.transitions(data=True)))
+    print("Transitions SC = " + len(transitions))
+
     #for trans_fro, trans_to, label in ctrl.transitions(data=True):
     for tr in transitions:
         trans_fro = tr[0]

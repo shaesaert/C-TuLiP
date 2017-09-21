@@ -25,7 +25,7 @@ from Interface.Reduce import *
 from Interface.Transform import *
 
 print("----------------------------------\n Script options \n----------------------------------")
-verbose = 0 # Decrease printed output = 0, increase= 1
+verbose = 1 # Decrease printed output = 0, increase= 1
 
 print("""----------------------------------\n System Definition \n----------------------------------
          -- System Constants 
@@ -66,16 +66,13 @@ cprops["h"] = box2poly([[80., 85]])
 
 cpartition = prop2part(X, cprops)
 if verbose == 1:
-    print("part before refinement")
+    print("partition before refinement")
     print(cpartition)
 #  ----------------------------------\n System partition State Space \n----------------------------------
 
 disc_dynamics = discretize(cpartition, sys_dyn,
                            closed_loop=True, conservative=True,
                            N=5, min_cell_volume=0.1)
-
-states=[state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'init'}})]
-disc_dynamics.ts.states.initial|=states
 
 # part, ssys, N=10, min_cell_volume=0.1,
 #   closed_loop=True, conservative=False,
@@ -85,58 +82,59 @@ disc_dynamics.ts.states.initial|=states
 #   plotit=False, save_img=False, cont_props=None,
 #   plot_every=1
 
-states = [state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'init'}})]
-disc_dynamics.ts.states.initial |= states
 
+states=[state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'init'}})]
+disc_dynamics.ts.states.initial|=states
 
 
 print("----------------------------------\n Define specification \n----------------------------------")
 
 # Specifications
 # Environment variables and assumptions
-env_vars=["bump"]
-env_init=["!bump"]
-env_safe=['bump -> (X !bump)']
-env_prog=list()
+env_vars = ["bump"]
+env_init = ["!bump"]
+env_safe = ['bump -> (X !bump)']
+env_prog = list()
 
 # System variables and requirements
-sys_vars=list()
-sys_init=list()
-sys_safe=['!l', '!h', '(( (bump) ) -> X!g )']
-sys_prog=['g']
+sys_vars = list()
+sys_init = list()
+sys_safe = ['!l', '!h', '(( (bump) ) -> X!g )']
+sys_prog = ['g']
 
 (ctrl_modes, grspec) = transform2control(disc_dynamics.ts,  statevar='ctrl')
 
 phi = grspec | spec.GRSpec(env_vars, sys_vars, env_init,sys_init,
                            env_safe, sys_safe, env_prog,sys_prog)
 
-print("----------  ------------------------\n Combine sys and spec \n----------------------------------")
+print("----------------------------------\n Combine sys and spec \n----------------------------------")
 
 
 phi.qinit = '\A \E'
 phi.moore = False
-phi.plus_one=False
+phi.plus_one = False
 
 ctrl = synth.synthesize(phi,ignore_sys_init=True)
 
+print("----------------------------------\n Reduce states \n----------------------------------")
+
+Events_init = {('bump', False)}
 
 
-print("----------------------------------\n Reduce sys  \n----------------------------------")
-ctrl_s = prune_init(ctrl, init_event={('bump', False)})
-ctrl_red=reduce_mealy(ctrl,relabel=False,outputs={'ctrl'})
-ctrl_red2 = ctrl_red.copy()
-ctrl_red2 = combine_transitions(ctrl_red2)
+ctrl_red=reduce_mealy(ctrl,relabel=False,outputs={'ctrl'}, prune_set=Events_init, combine_trans=False)
+# ctrl_red2 = ctrl_red.copy()
+# ctrl_red2 = combine_transitions(ctrl_red2)
 
 print("----------------------------------\n Output results  \n----------------------------------")
 
 if verbose == 1:
     print(" (Verbose) ")
     try:
-        disc_dynamics.ts.save("Images/Thermo_orig.png")
-        ctrl_modes.save("Images/Thermo_modes.png")
-        ctrl_red2.save('Images/Thermo_ctrl_tr.png')
-        ctrl_red.save('Images/Thermo_ctrl_red.png')
-        ctrl.save("Images/Thermo_ctrl_orig.png")
+        disc_dynamics.ts.save("Thermo_orig.png")
+        ctrl_modes.save("Thermo_modes.png")
+        #ctrl_red2.save('Images/Thermo_ctrl_tr.png')
+        ctrl_red.save('Thermo_ctrl_red.png')
+        ctrl.save("Thermo_ctrl_orig.png")
 
         print(" (Verbose): saved all Finite State Transition Systems ")
 
@@ -154,8 +152,8 @@ if verbose == 1:
     print('\n')
 
     print('nodes in ctrl_red2:')
-    print(len(ctrl_red2.nodes()))
-    print(len(ctrl_red2.transitions()))
+    #print(len(ctrl_red2.nodes()))
+    #print(len(ctrl_red2.transitions()))
     print('\n')
 
 
@@ -172,4 +170,4 @@ except NameError:
 
 # write strategy plus control modes at the same time to a statechart
 with open(filename+".xml", "w") as f:
-   f.write(dumpsmach.tulip_to_xmi(ctrl_red2,ctrl_modes))
+   f.write(dumpsmach.tulip_to_xmi(ctrl_red,ctrl_modes))
