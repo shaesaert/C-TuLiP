@@ -48,10 +48,10 @@ void gsl_matrix_from_array(gsl_matrix *matrix, double *array, char* name){
     fflush(stdout);
 };
 
-void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side){
+void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side, char*name){
 
-    gsl_matrix_from_array(polytope->H, left_side);
-    gsl_vector_from_array(polytope->G, right_side);
+    gsl_matrix_from_array(polytope->H, left_side, name);
+    gsl_vector_from_array(polytope->G, right_side, name);
 };
 int state_in_polytope(polytope *polytope, gsl_vector *x){
     gsl_vector * result = gsl_vector_alloc(x->size);
@@ -643,6 +643,10 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 
         /*CVXOPT solve quadratic problem*/
 
+        gsl_matrix_print(P, "P");
+        gsl_vector_print(q, "q");
+        gsl_matrix_print(&L_u.matrix, "L_u");
+        gsl_vector_print(&M_view.vector, "M_view");
         Py_Initialize();
 
         //Check if CVXOPT is installed
@@ -718,9 +722,10 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         //Get value from Python Dictionary
         PyObject *primal_objective = PyDict_GetItemString(solution, "primal objective");
         double cost = PyFloat_AS_DOUBLE(primal_objective);
-
+        printf("Cost: %.3f", cost);
         //ONLY interested if cost is lower than current optimal path!
         if(cost < *low_cost){
+            printf(">> Better solution x: found");
             PyObject *x_cvx = PyDict_GetItemString(solution, "x");
             // Transform x_cvx to GSL compatible matrix: x_cvx => low_u
             for(size_t i = 0; i<n; i++){
@@ -728,6 +733,7 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
                     gsl_matrix_set(low_u,i, j,MAT_BUFD(x_cvx)[j+(i*N)]);
                 }
             }
+            gsl_matrix_print(low_u, "u");
             *low_cost = cost;
             //Clean up!
             Py_DECREF(x_cvx);

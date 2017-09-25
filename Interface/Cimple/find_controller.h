@@ -78,7 +78,7 @@ void gsl_vector_print(gsl_vector *vector, char *name);
 void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord, int closed_loop, size_t time_horizon, cost_function * f_cost,
                         double* low_cost);
 
-void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side);
+void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side, char*name);
 int state_in_polytope(polytope *polytope, gsl_vector *x);
 void project_polytope(polytope *polytope, size_t new_dimension);
 void reduce_polytope(polytope *polytope);

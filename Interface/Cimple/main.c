@@ -11,6 +11,9 @@ void ACT_1(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -24,6 +27,9 @@ void ACT_2(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -37,6 +43,9 @@ void ACT_3(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -50,6 +59,9 @@ void ACT_8(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -63,6 +75,9 @@ void ACT_4(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -76,6 +91,9 @@ void ACT_5(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -89,6 +107,9 @@ void ACT_6(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -102,6 +123,9 @@ void ACT_7(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -115,6 +139,9 @@ void ACT_0(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_d
     printf("Applying it...");
     fflush(stdout);
     apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
     // Clean up!
     gsl_matrix_free(u);
 }
@@ -141,10 +168,10 @@ int main(){
     double distance_weight =3;
 
     double *initial_state = malloc(n* sizeof (double));
-    memcpy(initial_state, (double []){0.0},n* sizeof(double));
+
     // Initialize state:
     current_state *now = state_alloc(n,initial_cell);
-    gsl_vector_from_array(now->x, initial_state);
+    gsl_vector_from_array(now->x, initial_state, "now->x");
 
     //Clean up!
     free(initial_state);
@@ -153,110 +180,110 @@ int main(){
     system_dynamics *s_dyn = system_dynamics_alloc(n, m, p, w_set_size, u_set_size, time_horizon, d_ext_i, d_ext_j, d_one_i, d_one_j);
     double *sys_A = malloc(n* n* sizeof (double));
     memcpy(sys_A, (double []){1.0},1* sizeof(double));
-    gsl_matrix_from_array(s_dyn->A, sys_A);
+    gsl_matrix_from_array(s_dyn->A, sys_A, "s_dyn->A");
     free(sys_A);
     double *sys_B = malloc(n* m* sizeof (double));
     memcpy(sys_B, (double []){1.0},1* sizeof(double));
-    gsl_matrix_from_array(s_dyn->B, sys_B);
+    gsl_matrix_from_array(s_dyn->B, sys_B,"s_dyn->B");
     free(sys_B);
     double *sys_E = malloc(n* p* sizeof (double));
     memcpy(sys_E, (double []){1.0},1* sizeof(double));
-    gsl_matrix_from_array(s_dyn->E, sys_E);
+    gsl_matrix_from_array(s_dyn->E, sys_E, "s_dyn->E");
     free(sys_E);
     double *sys_K = malloc(n* sizeof (double));
     memcpy(sys_K, (double []){0.0},1* sizeof(double));
-    gsl_vector_from_array(s_dyn->K, sys_K);
+    gsl_vector_from_array(s_dyn->K, sys_K, "s_dyn->K");
     free(sys_K);
     double *sys_USetH = malloc(u_set_size* n* sizeof (double));
     memcpy(sys_USetH, (double []){1.0,-1.0},2* sizeof(double));
-    gsl_matrix_from_array(s_dyn->U_set->H, sys_USetH);
+    gsl_matrix_from_array(s_dyn->U_set->H, sys_USetH, "s_dyn->U_set->H");
     free(sys_USetH);
     double *sys_WSetH = malloc(w_set_size* n* sizeof (double));
     memcpy(sys_WSetH, (double []){1.0,-1.0},2* sizeof(double));
-    gsl_matrix_from_array(s_dyn->W_set->H, sys_WSetH);
+    gsl_matrix_from_array(s_dyn->W_set->H, sys_WSetH,"s_dyn->W_set->H");
     free(sys_WSetH);
     double *sys_USetG = malloc(u_set_size* sizeof (double));
     memcpy(sys_USetG, (double []){1.0,1.0},2* sizeof(double));
-    gsl_vector_from_array(s_dyn->U_set->G, sys_USetG);
+    gsl_vector_from_array(s_dyn->U_set->G, sys_USetG, "s_dyn->U_set->G");
     free(sys_USetG);
     double *sys_WSetG = malloc(w_set_size* sizeof (double));
     memcpy(sys_WSetG, (double []){0.1,0.1},2* sizeof(double));
-    gsl_vector_from_array(s_dyn->W_set->G, sys_WSetG);
+    gsl_vector_from_array(s_dyn->W_set->G, sys_WSetG, "s_dyn->W_set->G");
     free(sys_WSetG);
     double *sys_help_A_k = malloc(n* n*time_horizon* sizeof (double));
     memcpy(sys_help_A_k, (double []){1.0,1.0,1.0,1.0,1.0},5* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->A_K, sys_help_A_k);
+    gsl_matrix_from_array(s_dyn->helper_functions->A_K, sys_help_A_k, "s_dyn->helper_functions->A_K");
     free(sys_help_A_k);
     double *sys_help_A_n = malloc(n* n* sizeof (double));
     memcpy(sys_help_A_n, (double []){1.0},1* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_n);
+    gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_n, "s_dyn->helper_functions->A_N");
     free(sys_help_A_n);
     double *sys_help_A_K_2 = malloc(n* time_horizon * n * time_horizon* sizeof (double));
     memcpy(sys_help_A_K_2, (double []){1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0},25* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->A_K_2, sys_help_A_K_2);
+    gsl_matrix_from_array(s_dyn->helper_functions->A_K_2, sys_help_A_K_2, "s_dyn->helper_functions->A_K_2");
     free(sys_help_A_K_2);
-    double *sys_help_A_N_2 = malloc(n* n* time_horizon * sizeof (double));
+    double *sys_help_A_N_2 = malloc(n* time_horizon * n * sizeof (double));
     memcpy(sys_help_A_N_2, (double []){1.0,1.0,1.0,1.0,1.0},5* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->A_N_2, sys_help_A_N_2);
+    gsl_matrix_from_array(s_dyn->helper_functions->A_N_2, sys_help_A_N_2, "s_dyn->helper_functions->A_N_2");
     free(sys_help_A_N_2);
     double *sys_help_E_diag = malloc(n*time_horizon* p*time_horizon* sizeof (double));
     memcpy(sys_help_E_diag, (double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0},25* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->E_diag, sys_help_E_diag);
+    gsl_matrix_from_array(s_dyn->helper_functions->E_diag, sys_help_E_diag, "s_dyn->helper_functions->E_diag");
     free(sys_help_E_diag);
     double *sys_help_B_diag = malloc(n*time_horizon* m*time_horizon* sizeof (double));
     memcpy(sys_help_B_diag, (double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0},25* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->B_diag, sys_help_B_diag);
+    gsl_matrix_from_array(s_dyn->helper_functions->B_diag, sys_help_B_diag, "s_dyn->helper_functions->B_diag");
     free(sys_help_B_diag);
     double *sys_help_K_hat = malloc(n* time_horizon* sizeof (double));
     memcpy(sys_help_K_hat, (double []){0.0,0.0,0.0,0.0,0.0},5* sizeof(double));
-    gsl_vector_from_array(s_dyn->helper_functions->K_hat, sys_help_K_hat);
+    gsl_vector_from_array(s_dyn->helper_functions->K_hat, sys_help_K_hat, "s_dyn->helper_functions->K_hat");
     free(sys_help_K_hat);
     double *sys_help_D_vertices = malloc(d_ext_i* d_ext_j* sizeof(double));
     memcpy(sys_help_D_vertices, (double []){0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1},160* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->D_vertices, sys_help_D_vertices);
+    gsl_matrix_from_array(s_dyn->helper_functions->D_vertices, sys_help_D_vertices, "s_dyn->helper_functions->D_vertices");
     free(sys_help_D_vertices);
     double *sys_help_D_one_step = malloc(d_one_i* d_one_j* sizeof(double));
     memcpy(sys_help_D_one_step, (double []){0.1,-0.1},2* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->D_one_step, sys_help_D_one_step);
+    gsl_matrix_from_array(s_dyn->helper_functions->D_one_step, sys_help_D_one_step,"s_dyn->helper_functions->D_one_step");
     free(sys_help_D_one_step);
     double *sys_help_L_default = malloc(n*time_horizon * (n+m*(time_horizon))* sizeof (double));
     memcpy(sys_help_L_default, (double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,0.0},30* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->L_default, sys_help_L_default);
+    gsl_matrix_from_array(s_dyn->helper_functions->L_default, sys_help_L_default, "s_dyn->helper_functions->L_default");
     free(sys_help_L_default);
     double *sys_help_E_default = malloc(n* time_horizon* p* time_horizon* sizeof (double));
     memcpy(sys_help_E_default, (double []){0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0},25* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->E_default, sys_help_E_default);
+    gsl_matrix_from_array(s_dyn->helper_functions->E_default, sys_help_E_default, "s_dyn->helper_functions->E_default");
     free(sys_help_E_default);
     double *sys_help_Ct = malloc(n*time_horizon*m*time_horizon*sizeof(double));
     memcpy(sys_help_Ct, (double []){1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0},25* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->Ct, sys_help_Ct);
+    gsl_matrix_from_array(s_dyn->helper_functions->Ct, sys_help_Ct, "s_dyn->helper_functions->Ct");
     free(sys_help_Ct);
     double *sys_help_MU = malloc(u_set_size*time_horizon * sizeof(double));
     memcpy(sys_help_MU, (double []){1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},10* sizeof(double));
-    gsl_vector_from_array(s_dyn->helper_functions->MU, sys_help_MU);
+    gsl_vector_from_array(s_dyn->helper_functions->MU, sys_help_MU, "s_dyn->helper_functions->MU");
     free(sys_help_MU);
     double *sys_help_GU = malloc(u_set_size*time_horizon* p*time_horizon* sizeof(double));
     memcpy(sys_help_GU, (double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0},50* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->GU, sys_help_GU);
+    gsl_matrix_from_array(s_dyn->helper_functions->GU, sys_help_GU,"s_dyn->helper_functions->GU");
     free(sys_help_GU);
     double *sys_help_LU = malloc(u_set_size*time_horizon * (n+m*(time_horizon))* sizeof (double));
     memcpy(sys_help_LU, (double []){0.0,1.0,0.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,-1.0},60* sizeof(double));
-    gsl_matrix_from_array(s_dyn->helper_functions->LU, sys_help_LU);
+    gsl_matrix_from_array(s_dyn->helper_functions->LU, sys_help_LU, "s_dyn->helper_functions->LU");
     free(sys_help_LU);
 
     // Set cost function
     cost_function *f_cost = cost_function_alloc(n, m, time_horizon, distance_weight);
     double *cf_R = malloc(n* time_horizon* n* time_horizon* sizeof (double));
     memcpy(cf_R, (double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0},25* sizeof(double));
-    gsl_matrix_from_array(f_cost->R, cf_R);
+    gsl_matrix_from_array(f_cost->R, cf_R, "f_cost->R");
     free(cf_R);
     double *cf_Q = malloc(m* time_horizon* m* time_horizon* sizeof (double));
     memcpy(cf_Q, (double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0},25* sizeof(double));
-    gsl_matrix_from_array(f_cost->Q, cf_Q);
+    gsl_matrix_from_array(f_cost->Q, cf_Q, "f_cost->Q");
     free(cf_Q);
     double *cf_r = malloc(n* time_horizon* sizeof (double));
     memcpy(cf_r, (double []){0.0,0.0,0.0,0.0,0.0},5* sizeof(double));
-    gsl_vector_from_array(f_cost->r, cf_r);
+    gsl_vector_from_array(f_cost->r, cf_r, "f_cost->r");
     free(cf_r);
 
     size_t total_number_polytopes = 10;
@@ -364,8 +391,8 @@ int main(){
     memcpy(original_right_side[5], (double []){-74.0,76.0},2* sizeof(double));
     memcpy(original_left_side[6], (double []){-1.0,1.0},2* sizeof(double));
     memcpy(original_right_side[6], (double []){-65.0,72.0},2* sizeof(double));
-    memcpy(original_hulls_left_side[4], (double []){-1.0,1.0},2* sizeof(double));
-    memcpy(original_hulls_right_side[4], (double []){-65.0,80.0},2* sizeof(double));
+    memcpy(original_hulls_left_side[4], (double []){1.0,-1.0},2* sizeof(double));
+    memcpy(original_hulls_right_side[4], (double []){80.0,-65.0},2* sizeof(double));
 
     discrete_dynamics *d_dyn = discrete_dynamics_alloc(polytopes_in_region, polytope_sizes,  hull_sizes, orig_polytopes_in_region, original_polytope_sizes, original_hull_sizes, n, number_of_regions, number_of_original_regions, closed_loop, conservative, ord, time_horizon);
 
@@ -373,19 +400,19 @@ int main(){
     int polytope_count = 0;
     for(int i = 0; i< number_of_regions; i++){
         for(int j = 0; j< d_dyn->regions[i]->number_of_polytopes; j++){
-            polytope_from_arrays(d_dyn->regions[i]->polytopes[j],polytope_sizes[j+polytope_count] ,n,left_side[j+polytope_count],right_side[j+polytope_count]);
+            polytope_from_arrays(d_dyn->regions[i]->polytopes[j],polytope_sizes[j+polytope_count] ,n,left_side[j+polytope_count],right_side[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
         }
         polytope_count +=d_dyn->regions[i]->number_of_polytopes;
-        polytope_from_arrays(d_dyn->regions[i]->hull_of_region,hull_sizes[i],n,hulls_left_side[i],hulls_right_side[i] );
+        polytope_from_arrays(d_dyn->regions[i]->hull_of_region,hull_sizes[i],n,hulls_left_side[i],hulls_right_side[i],"d_dyn->regions[i]->hull_of_region" );
     }
 
 
     int original_polytope_count = 0;
     for(int i = 0; i< number_of_original_regions; i++){
         for(int j = 0; j< d_dyn->original_regions[i]->number_of_polytopes; j++){
-            polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j],original_polytope_sizes[j+original_polytope_count] ,n,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count]);
+            polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j],original_polytope_sizes[j+original_polytope_count] ,n,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
         }
-        polytope_from_arrays(d_dyn->original_regions[i]->hull_of_region,original_hull_sizes[i],n,original_hulls_left_side[i],original_hulls_right_side[i] );
+        polytope_from_arrays(d_dyn->original_regions[i]->hull_of_region,original_hull_sizes[i],n,original_hulls_left_side[i],original_hulls_right_side[i], "d_dyn->original_regions[i]->hull_of_region" );
     }
     //Clean up!
     for (int i = 0; i < total_number_polytopes; i++) {
@@ -417,7 +444,7 @@ int main(){
     free(original_hulls_left_side);
     free(original_hulls_right_side);
 
-    ACT_0(now,d_dyn,s_dyn,f_cost);
+    ACT_0(now, d_dyn, s_dyn, f_cost);
     system_dynamics_free(s_dyn);
     discrete_dynamics_free(d_dyn, number_of_regions, number_of_original_regions);
     cost_function_free(f_cost);
