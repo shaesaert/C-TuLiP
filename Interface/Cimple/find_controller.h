@@ -49,7 +49,7 @@ void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_s
 int state_in_polytope(polytope *polytope, gsl_vector *x);
 void project_polytope(polytope *polytope, size_t new_dimension);
 void reduce_polytope(polytope *polytope);
-polytope *solve_feasible_closed_loop(polytope *P1, polytope *P2, system_dynamics *s_dyn);
+void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytope *P2, system_dynamics *s_dyn);
 void set_path_constraints(gsl_matrix* L_full, gsl_vector *M_full, system_dynamics * s_dyn, polytope *list_polytopes[], size_t N);
 
 #endif //CIMPLE_FIND_CONTROLLER_H
