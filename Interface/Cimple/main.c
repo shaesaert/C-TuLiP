@@ -141,7 +141,7 @@ int main(){
     double distance_weight =3;
 
     double *initial_state = malloc(n* sizeof (double));
-
+    memcpy(initial_state, (double []){0.0},n* sizeof(double));
     // Initialize state:
     current_state *now = state_alloc(n,initial_cell);
     gsl_vector_from_array(now->x, initial_state);

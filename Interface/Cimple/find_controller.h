@@ -18,6 +18,51 @@
 // @param gsl_matrix *B
 ////////////////////////////////////////////////////////////////////////////////
 void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B);
+
+////////////////////////////////////////////////////////////////////////////////
+// @fn gsl_input()
+// @brief Calculates optimal next N inputs
+// @param current_state * now
+// @param discrete_dynamics *d_dyn
+// @param system_dynamics *s_dyn
+// @param int target_cell
+// @param cost_function * f_cost
+////////////////////////////////////////////////////////////////////////////////
+void get_input (gsl_matrix *u, current_state * now, discrete_dynamics *d_dyn, system_dynamics *s_dyn, int target_cell, cost_function * f_cost);
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// @fn gsl_matrix_from_array()
+// @brief Converts an array to a gsl matrix
+// @param gsl_matrix *matrix
+// @param double *array
+////////////////////////////////////////////////////////////////////////////////
+void gsl_matrix_from_array(gsl_matrix *matrix,double *array, char* name);
+
+////////////////////////////////////////////////////////////////////////////////
+// @fn gsl_vector_from_array()
+// @brief Converts an array to a gsl vector
+// @param gsl_matrix *matrix
+// @param double *array
+////////////////////////////////////////////////////////////////////////////////
+void gsl_vector_from_array(gsl_vector *vector, double *array, char* name);
+
+////////////////////////////////////////////////////////////////////////////////
+// @fn gsl_matrix_print()
+// @brief Prints a gsl matrix readable to the output
+// @param gsl_matrix *matrix
+// @param char *name
+////////////////////////////////////////////////////////////////////////////////
+void gsl_matrix_print(gsl_matrix *matrix, char *name);
+
+////////////////////////////////////////////////////////////////////////////////
+// @fn gsl_vector_print()
+// @brief Prints a gsl vector readable to the output
+// @param gsl_matrix *matrix
+// @param char *name
+////////////////////////////////////////////////////////////////////////////////
+void gsl_vector_print(gsl_vector *vector, char *name);
+
 ////////////////////////////////////////////////////////////////////////////////
 // @fn search_better_path()
 // @brief Calculates possible path and its cost, for further evaluation (in get_input)
@@ -32,19 +77,7 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B);
 ////////////////////////////////////////////////////////////////////////////////
 void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord, int closed_loop, size_t time_horizon, cost_function * f_cost,
                         double* low_cost);
-////////////////////////////////////////////////////////////////////////////////
-// @fn gsl_input()
-// @brief Calculates optimal next N inputs
-// @param current_state * now
-// @param discrete_dynamics *d_dyn
-// @param system_dynamics *s_dyn
-// @param int target_cell
-// @param cost_function * f_cost
-////////////////////////////////////////////////////////////////////////////////
-void get_input (gsl_matrix *u, current_state * now, discrete_dynamics *d_dyn, system_dynamics *s_dyn, int target_cell, cost_function * f_cost);
-////////////////////////////////////////////////////////////////////////////////
-void gsl_vector_from_array(gsl_vector *vector, double *array);
-void gsl_matrix_from_array(gsl_matrix *matrix,double *array);
+
 void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side);
 int state_in_polytope(polytope *polytope, gsl_vector *x);
 void project_polytope(polytope *polytope, size_t new_dimension);

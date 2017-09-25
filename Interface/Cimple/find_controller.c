@@ -12,18 +12,40 @@
 //void projection_exthull(polytope poly, int new_dim);
 //void projection_iterhull(polytope poly, int new_dim);
 
-void gsl_vector_from_array(gsl_vector *vector, double *array){
+void gsl_matrix_print(gsl_matrix *matrix, char *name){
+    printf("\n%s =\n", name);
+    for(size_t i = 0; i < matrix->size1; i++){
+        for(size_t j = 0; j<matrix->size2; j++){
+            double k = gsl_matrix_get(matrix, i, j);
+            printf(" %.3f,", k);
+        }
+        printf("\n");
+    }
+}
+void gsl_vector_print(gsl_vector *vector, char *name){
+    printf("\n%s =\n", name);
+    for(size_t i = 0; i < vector->size; i++){
+        double k = gsl_vector_get(vector, i);
+        printf(" %.3f,", k);
+        printf("\n");
+    }
+}
+void gsl_vector_from_array(gsl_vector *vector, double *array, char* name){
     for(size_t j = 0; j<vector->size; j++){
         gsl_vector_set(vector, j, array[j]);
     }
+    gsl_vector_print(vector, name);
+    fflush(stdout);
 };
 
-void gsl_matrix_from_array(gsl_matrix *matrix, double *array){
+void gsl_matrix_from_array(gsl_matrix *matrix, double *array, char* name){
     for(size_t i = 0; i < matrix->size1; i++){
         for(size_t j = 0; j<matrix->size2; j++){
             gsl_matrix_set(matrix, i, j, array[j+matrix->size2*i]);
         }
     }
+    gsl_matrix_print(matrix, name);
+    fflush(stdout);
 };
 
 void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side){
@@ -42,11 +64,18 @@ int state_in_polytope(polytope *polytope, gsl_vector *x){
     return 1;
 };
 void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
-    //TODO:printf("apply_control: begin at x[0] = %f\n", *x);
-    //fflush(stdout);
+    printf("apply_control: begin at");
+    gsl_vector_print(x, "x[0]");
+    fflush(stdout);
+
     //Apply input to state of next N time steps
     // x[k+1] = A.x[k] + B.u[k+1]
+    int time = 0;
     for (size_t k = 0; k < (u->size2); k++){
+        printf("apply_control: u[%d] = ", time);
+        gsl_vector_view u_view = gsl_matrix_column(u, k);
+        gsl_vector_print(&u_view.vector,"u[]");
+        fflush(stdout);
         gsl_vector *Btu = gsl_vector_alloc(x->size);
         gsl_vector_view u_col = gsl_matrix_column(u,k);
 
@@ -56,9 +85,10 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
         gsl_blas_dgemv(CblasNoTrans, 1, B, &u_col.vector, 0 , Btu);
         //update x[k-1] => x[k]
         gsl_vector_add(x, Btu);
+        printf("new state: x[%d] = ", time+1);
+        gsl_vector_print(x,"x[]");
+        fflush(stdout);
         gsl_vector_free(Btu);
-        //TODO:printf("apply_control: u[%d] = %d; x[%d] = %f", k, u[k], k++, *x);
-        //fflush(stdout);
     }
 };
 void project_polytope(polytope *polytope, size_t new_dimension){
@@ -127,7 +157,6 @@ void project_polytope(polytope *polytope, size_t new_dimension){
 //        return;
 //    }
 };
-//TODO
 void reduce_polytope(polytope *polytope){
 //////////////////////////////////////////////////////////////////////
 //    Removes redundant inequalities in the hyperplane representation
@@ -823,9 +852,6 @@ void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_d
 //    for k = 0, 1 ... N-1
 //    @rtype: (N x m) numpy 2darray
 ////////////////////////////////////////////////////////////////////////////////
-
-    //TODO Initialize all matrices in python
-    //TODO: program solve_feasible
 
     /*Initialize*/
 
