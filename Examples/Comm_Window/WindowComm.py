@@ -4,7 +4,7 @@ Written by S.Haesaert
 CREDIT 
     Leonard J. Reder  & Richard M. Murray 
 CONTENT    
-    This file contains the communcation indow mnagaer example for Tulip 1.4
+    This file contains the communication window manager example for Tulip 1.4
  DATE    5th of June
 """
 from __future__ import print_function
@@ -171,6 +171,8 @@ specs = spec.GRSpec(env_vars, sys_vars, env_init,sys_init,
 specs |= gr_env
 specs |= gr_window
 
+print("----------------------------------\n Synthesize control \n----------------------------------")
+
 specs.qinit = '\A \E'
 specs.moore = False
 specs.plus_one = False
@@ -186,7 +188,7 @@ print("----------------------------------\n Reduce states \n--------------------
 Events_init = {('idle', 1),('cfg', 0), ('transmit', 0), ('cln', 0)}
 
 ctrl_red = reduce_mealy(ctrl_rem, outputs={'sys_actions'},
-                        relabel=True, prune_set=Events_init, full=False)
+                        relabel=True, prune_set=Events_init, full=False, combine_trans=False)
 
 
 print("---------------------\n Communication window controller \n------------")
@@ -203,7 +205,8 @@ with open(filename+".xml", "w") as f:
 
 
 print("---------------\n Pictures \n-------------")
-ctrl_red.save('ctrl_red.png')
+save_png(ctrl_red, name='ctrl_red')
+save_png(ctrl_rem, name='ctrl_rem')
 
 if not ctrl.save("Window_simple.eps"):
     print(ctrl)

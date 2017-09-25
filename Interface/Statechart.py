@@ -754,8 +754,8 @@ def mealy_to_xmi_uml(ctrl_sys, outputs={'ctrl'}, name="ThermostatCtrl", relabel=
     f.write("  <transition xmi:type='uml:Transition' xmi:id='" + pseudostate_id + "_1" + "' xmi:uuid='" + str(
         uuid.uuid1()) + "' visibility='public' source='" + pseudostate_id + "' target='" + str(Sinit_id) + "'/>\n")
     transitions = list(set([ (x, y) + tuple([str(fi)+'='+str(checkbool(fi,lab,ctrl)) for fi in outputs]) for (x, y, lab) in ctrl.transitions(data=True)]))
-    print("Transitions orig = " + len(ctrl.transitions(data=True)))
-    print("Transitions SC = " + len(transitions))
+    print("Transitions orig = " + str(len(ctrl.transitions(data=True))))
+    print("Transitions SC = " + str(len(transitions)))
 
     #for trans_fro, trans_to, label in ctrl.transitions(data=True):
     for tr in transitions:
