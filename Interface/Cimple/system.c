@@ -64,7 +64,7 @@ void region_of_polytopes_free(region_of_polytopes * region_of_polytopes){
     free(region_of_polytopes);
 
 }
-struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j){
+struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j){
 
     struct system_dynamics_helper_functions *return_helper_functions = malloc (sizeof (struct system_dynamics_helper_functions));
 
@@ -86,7 +86,7 @@ struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t
 //        return NULL;
 //    }
 
-    return_helper_functions->L_default = gsl_matrix_alloc(n*N, (n+m*(N-1)));
+    return_helper_functions->L_default = gsl_matrix_alloc(n*N, (n+m*N));
     if (return_helper_functions->L_default == NULL) {
         free (return_helper_functions);
         return NULL;
@@ -98,12 +98,17 @@ struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t
         return NULL;
     }
 
-    return_helper_functions->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
+     return_helper_functions->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
     if (return_helper_functions->D_vertices == NULL) {
         free (return_helper_functions);
         return NULL;
     }
 
+    return_helper_functions->D_one_step = gsl_matrix_alloc(d_one_i, d_one_j);
+    if (return_helper_functions->D_one_step == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
     //LUn = np.shape(PU.A)[0]
 
     //LU = np.zeros([LUn*N, n+N*m])
@@ -169,10 +174,23 @@ struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t
         return NULL;
     }
 
+    //A_n = np.eye(n)
+    return_helper_functions->A_N_2 = gsl_matrix_alloc(n*N, n);
+    if (return_helper_functions->A_N_2 == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
+
+    return_helper_functions->A_K_2 = gsl_matrix_alloc(n*N, n*N);
+    if (return_helper_functions->A_K_2 == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
     return return_helper_functions;
 }
 void helper_functions_free(system_dynamics_helper_functions *helper_functions){
     gsl_matrix_free(helper_functions->D_vertices);
+    gsl_matrix_free(helper_functions->D_one_step);
     gsl_matrix_free(helper_functions->L_default);
     gsl_matrix_free(helper_functions->E_default);
     gsl_vector_free(helper_functions->MU);
@@ -184,9 +202,11 @@ void helper_functions_free(system_dynamics_helper_functions *helper_functions){
     gsl_matrix_free(helper_functions->E_diag);
     gsl_matrix_free(helper_functions->A_N);
     gsl_matrix_free(helper_functions->A_K);
+    gsl_matrix_free(helper_functions->A_N_2);
+    gsl_matrix_free(helper_functions->A_K_2);
     free(helper_functions);
 }
-struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j) {
+struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j) {
     // Try to allocate structure.
 
     struct system_dynamics *return_dynamics = malloc (sizeof (struct system_dynamics));
@@ -227,7 +247,7 @@ struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, siz
         free (return_dynamics);
         return NULL;
     }
-    return_dynamics->helper_functions = helper_functions_alloc(n, p, m, u_set_size, N, d_ext_i, d_ext_j);
+    return_dynamics->helper_functions = helper_functions_alloc(n, p, m, u_set_size, N, d_ext_i, d_ext_j, d_one_i, d_one_j);
     if (return_dynamics->helper_functions == NULL) {
         free(return_dynamics);
         return NULL;

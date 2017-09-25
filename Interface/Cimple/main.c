@@ -134,6 +134,8 @@ int main(){
     size_t p =1;
     size_t d_ext_i = 5;
     size_t d_ext_j = 32;
+    size_t d_one_i = 1;
+    size_t d_one_j = 2;
     size_t u_set_size =2;
     size_t w_set_size =2;
     double distance_weight =3;
@@ -148,7 +150,7 @@ int main(){
     free(initial_state);
 
     // Transform system dynamics from python to C
-    system_dynamics *s_dyn = system_dynamics_alloc(n, m, p, w_set_size, u_set_size, time_horizon, d_ext_i, d_ext_j);
+    system_dynamics *s_dyn = system_dynamics_alloc(n, m, p, w_set_size, u_set_size, time_horizon, d_ext_i, d_ext_j, d_one_i, d_one_j);
     double *sys_A = malloc(n* n* sizeof (double));
     memcpy(sys_A, (double []){1.0},1* sizeof(double));
     gsl_matrix_from_array(s_dyn->A, sys_A);
@@ -189,6 +191,14 @@ int main(){
     memcpy(sys_help_A_n, (double []){1.0},1* sizeof(double));
     gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_n);
     free(sys_help_A_n);
+    double *sys_help_A_K_2 = malloc(n* time_horizon * n * time_horizon* sizeof (double));
+    memcpy(sys_help_A_K_2, (double []){1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0},25* sizeof(double));
+    gsl_matrix_from_array(s_dyn->helper_functions->A_K_2, sys_help_A_K_2);
+    free(sys_help_A_K_2);
+    double *sys_help_A_N_2 = malloc(n* n* time_horizon * sizeof (double));
+    memcpy(sys_help_A_N_2, (double []){1.0,1.0,1.0,1.0,1.0},5* sizeof(double));
+    gsl_matrix_from_array(s_dyn->helper_functions->A_N_2, sys_help_A_N_2);
+    free(sys_help_A_N_2);
     double *sys_help_E_diag = malloc(n*time_horizon* p*time_horizon* sizeof (double));
     memcpy(sys_help_E_diag, (double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0},25* sizeof(double));
     gsl_matrix_from_array(s_dyn->helper_functions->E_diag, sys_help_E_diag);
@@ -205,6 +215,10 @@ int main(){
     memcpy(sys_help_D_vertices, (double []){0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1},160* sizeof(double));
     gsl_matrix_from_array(s_dyn->helper_functions->D_vertices, sys_help_D_vertices);
     free(sys_help_D_vertices);
+    double *sys_help_D_one_step = malloc(d_one_i* d_one_j* sizeof(double));
+    memcpy(sys_help_D_one_step, (double []){0.1,-0.1},2* sizeof(double));
+    gsl_matrix_from_array(s_dyn->helper_functions->D_one_step, sys_help_D_one_step);
+    free(sys_help_D_one_step);
     double *sys_help_L_default = malloc(n*time_horizon * (n+m*(time_horizon))* sizeof (double));
     memcpy(sys_help_L_default, (double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,0.0},30* sizeof(double));
     gsl_matrix_from_array(s_dyn->helper_functions->L_default, sys_help_L_default);
@@ -214,7 +228,7 @@ int main(){
     gsl_matrix_from_array(s_dyn->helper_functions->E_default, sys_help_E_default);
     free(sys_help_E_default);
     double *sys_help_Ct = malloc(n*time_horizon*m*time_horizon*sizeof(double));
-    memcpy(sys_help_Ct, (double []){1.0,1.0,1.0,1.0,1.0},5* sizeof(double));
+    memcpy(sys_help_Ct, (double []){1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0},25* sizeof(double));
     gsl_matrix_from_array(s_dyn->helper_functions->Ct, sys_help_Ct);
     free(sys_help_Ct);
     double *sys_help_MU = malloc(u_set_size*time_horizon * sizeof(double));
@@ -231,7 +245,7 @@ int main(){
     free(sys_help_LU);
 
     // Set cost function
-    cost_function *f_cost = cost_function_alloc(n,m,time_horizon, distance_weight);
+    cost_function *f_cost = cost_function_alloc(n, m, time_horizon, distance_weight);
     double *cf_R = malloc(n* time_horizon* n* time_horizon* sizeof (double));
     memcpy(cf_R, (double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0},25* sizeof(double));
     gsl_matrix_from_array(f_cost->R, cf_R);
@@ -403,6 +417,7 @@ int main(){
     free(original_hulls_left_side);
     free(original_hulls_right_side);
 
+    ACT_0(now,d_dyn,s_dyn,f_cost);
     system_dynamics_free(s_dyn);
     discrete_dynamics_free(d_dyn, number_of_regions, number_of_original_regions);
     cost_function_free(f_cost);

@@ -6,11 +6,12 @@
 #define CIMPLE_SYSTEM_H
 
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_cblas.h>
 typedef struct system_dynamics_helper_functions{
 
     //gsl_vector * K_hat;
-    //gsl_matrix * A_K;
-    //gsl_matrix * A_N;
+    gsl_matrix * A_K_2;
+    gsl_matrix * A_N_2;
     gsl_matrix * Ct;
 
 
@@ -19,6 +20,7 @@ typedef struct system_dynamics_helper_functions{
     gsl_matrix * L_default;
     gsl_matrix * E_default;
     gsl_matrix * D_vertices;
+    gsl_matrix * D_one_step;
 
 
     //LUn = np.shape(PU.A)[0]
@@ -116,9 +118,9 @@ struct polytope *polytope_alloc(size_t k, size_t n);
 void polytope_free(polytope *polytope);
 struct region_of_polytopes *region_of_polytopes_alloc(size_t k[],size_t k_hull, size_t n, int number_of_polytopes);
 void region_of_polytopes_free(region_of_polytopes * region_of_polytopes);
-struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j);
+struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j);
 void helper_functions_free(system_dynamics_helper_functions *helper_functions);
-struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j);
+struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j);
 void system_dynamics_free(system_dynamics * system_dynamics);
 struct current_state *state_alloc(size_t n, int cell);
 void state_free(current_state *state);
