@@ -1,0 +1,291 @@
+Quantum Test
+QEP 4.2.00
+QF  4.2.00, QF/Linux port 4.1.05
+(on obj 0xd3344) read_guard set to True
+strategy:Strategy Sinit ENTRY
+control_modes:Ctrl_modes Minit ENTRY
+strategy:Strategy Sinit freeway0_lidon0_stereo0_radon0
+strategy:Strategy Sinit EXIT
+strategy:Strategy s6 ENTRY
+control_modes:Ctrl_modes Minit ctrl_m3
+control_modes:Ctrl_modes Minit EXIT
+control_modes:Ctrl_modes m3 ENTRY
+control_modes:Ctrl_modes m3 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  2.000000
+Measure environment
+
+strategy:Strategy s6 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s6 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m3 ctrl_m2
+control_modes:Ctrl_modes m3 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  4.000000
+compute control & apply control
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  6.000000
+Measure environment
+
+strategy:Strategy s2 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s2 EXIT
+strategy:Strategy s8 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s8 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s8 EXIT
+strategy:Strategy s18 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s18 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s18 EXIT
+strategy:Strategy s14 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s14 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s14 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s2 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s2 EXIT
+strategy:Strategy s8 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s8 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s8 EXIT
+strategy:Strategy s18 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s18 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s18 EXIT
+strategy:Strategy s14 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s14 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s14 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s2 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s2 EXIT
+strategy:Strategy s8 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s8 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s8 EXIT
+strategy:Strategy s18 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s18 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s18 EXIT
+strategy:Strategy s14 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s14 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s14 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s2 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s2 EXIT
+strategy:Strategy s8 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s8 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s8 EXIT
+strategy:Strategy s18 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s18 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s18 EXIT
+strategy:Strategy s14 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s14 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s14 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s2 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s2 EXIT
+strategy:Strategy s8 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s8 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s8 EXIT
+strategy:Strategy s18 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s18 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s18 EXIT
+strategy:Strategy s14 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s14 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s14 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s2 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s2 EXIT
+strategy:Strategy s8 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s8 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s8 EXIT
+strategy:Strategy s18 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s18 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s18 EXIT
+strategy:Strategy s14 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
+control_modes:Ctrl_modes m2 RTI
+Ctrl_modes.at_RTI() measure x 
+x =  7.500000
+Measure environment
+
+strategy:Strategy s14 freeway0_lidon0_stereo1_radon0
+strategy:Strategy s14 EXIT
+strategy:Strategy s2 ENTRY
+control_modes:Ctrl_modes m2 ctrl_m2
+control_modes:Ctrl_modes m2 EXIT
+control_modes:Ctrl_modes m2 ENTRY
