@@ -52,7 +52,7 @@ def remove_aux_inputs(ctrl, inputs):
     return ctrl_new
 
 def reduce_mealy(ctrl, outputs={'ctrl'}, relabel=False, prune_set=None,
-                 full=True, combine_trans=True, verbose=True):
+                 full=True, combine_trans=False, verbose=True):
     """ reduce mealy machines by computing the quotient system of the maximal equivalence class
     Parameters
     ----------
@@ -297,31 +297,34 @@ def iterate_equiv(q_blocks, ctrl, outputs={'loc'}):
         #  Each element y must be in *exactly one* equivalence class.
         #
         # Each block is guaranteed to be non-empty
-        for block in blocks:
-            x = next(iter(block))
-
-            if len(ctrl[x]) != len(ctrl[y]):
-                #  print('unequal number')
-                continue
-
-            # compute set of labels:
-            labels_x = {frozenset([(key, label[key]) for key in ctrl.inputs.keys()] +
-                                  [(output, label[output]) for output in outputs] +
-                                  [('Relx', dict__r[_x])]+[('Rely', dict__r[_y])])
-                        for (_x, _y, label) in ctrl.transitions.find({x})}
-            labels_y = {frozenset([(key, label[key]) for key in ctrl.inputs.keys()] +
-                                  [(output, label[output]) for output in outputs] +
-                                  [('Relx', dict__r[_x])]+[('Rely', dict__r[_y])])
-                        for (_x, _y, label) in ctrl.transitions.find({y})}
-
-            if labels_x == labels_y:
-                block.append(y)
-                break
+        if y in ctrl.states.initial:
+            blocks.append([y]) # We don't want to group in the initial state. Because that will give issues witht he autocoding.
         else:
-            # If the element y is not part of any known equivalence class, it
-            # must be in its own, so we create a new singleton equivalence
-            # class for it.
-            blocks.append([y])
+            for block in blocks:
+                x = next(iter(block))
+
+                if len(ctrl[x]) != len(ctrl[y]):
+                    #  print('unequal number')
+                    continue
+
+                # compute set of labels:
+                labels_x = {frozenset([(key, label[key]) for key in ctrl.inputs.keys()] +
+                                      [(output, label[output]) for output in outputs] +
+                                      [('Relx', dict__r[_x])]+[('Rely', dict__r[_y])])
+                            for (_x, _y, label) in ctrl.transitions.find({x})}
+                labels_y = {frozenset([(key, label[key]) for key in ctrl.inputs.keys()] +
+                                      [(output, label[output]) for output in outputs] +
+                                      [('Relx', dict__r[_x])]+[('Rely', dict__r[_y])])
+                            for (_x, _y, label) in ctrl.transitions.find({y})}
+
+                if labels_x == labels_y:
+                    block.append(y)
+                    break
+            else:
+                # If the element y is not part of any known equivalence class, it
+                # must be in its own, so we create a new singleton equivalence
+                # class for it.
+                blocks.append([y])
     return {frozenset(block) for block in blocks}
 
 

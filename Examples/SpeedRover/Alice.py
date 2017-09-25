@@ -174,7 +174,7 @@ for Case in Cases:
     phi.moore = False
     phi.plus_one = False
     print("----------------------------------\n Make Controller \n----------------------------------")
-    ctrl = synth.synthesize(phi, ignore_sys_init=True,solver='omega')
+    ctrl = synth.synthesize(phi, ignore_sys_init=True,solver='gr1c')
     ctrl_red = reduce_mealy(ctrl, relabel=True, outputs={'ctrl'},
                            prune_set=Events_init, combine_trans=False)
 
