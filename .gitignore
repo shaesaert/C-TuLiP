@@ -15,3 +15,10 @@ Examples/SpeedRover/.DS_Store
 Examples/Arbiter/results_gr1c.txt
 build/*
 
+Examples/Lift/excel.txt
+.DS_Store
+testcase.ipynb
+*.bak
+Examples/Lift/manager.p
+*.mdzip
+*.txt
