@@ -9169,3 +9169,643 @@ END_combi = """	<xmi:Extension extender='MagicDraw UML 18.0'>
 		<filePart name='Records.properties' type='BINARY'>H4sIAAAAAAAAAL1VS0/cMBC+51dEItdE8SsPpByA9lAOLaJcOEWOZ9J1lcSR4227/76GzQJalpaIhcvIHn8z4/lmPD65MP0onW50p90mxMHZTXDyfT2El+supCwk/FSQUybCq083IU1JHoxoJzPILlamTwbTyx9aJfcSrPydKGMxGa35icolZnTaDFOys5n1s7o6nqvg/MvXs+vbmEvWqpKnMW1A+V3WxoUkGGdFTlihCKGNqBZgg6vrb5efL25iAj55JjOqsEDCOWVUNUhSISjmrHodLHiap9JJj072BrDbZVn9D7Dvwav/bJJpkOO0Mi4BnJTVozP2yXLa9/oqo2CL6oySXV3P+UWrIs+FKLCklLeEcBApoCQtKyXxjJW1xcmsrcLax4xgDhqB0hE8JBPBnE0Eu0tUHxrtsYfP9SCtxumOE690fln96/AZ/x6rJ4eDwu3lZ3JHq39Jh4AjDuBPN51HPavDEuPj1uPhkUWw7rt6PTM1raRFeNy+S3WWxQ4WzAYP7c2wN2TeaB8capFDnXGYo7LhQBuScYIZTVnJOJQC8wZQtJgWR34v7xTthRrcVW87ne7lC0zvoY7L01H6+ENi734oVvqHQhsVq5blMVcC46KhXkADeSGzFAuoFmCDvzjXxCnDBwAA</filePart>
 	</xmi:Extension>
 </xmi:XMI>"""
+
+import numpy as np
+
+
+def write_np_matrix_c_array(f, tab_number, c_array, py_matrix):
+    tab = "    "
+    matrix_array = np.array(py_matrix)
+    f.write(tab * tab_number + "memcpy(" + c_array + ", (double []){")
+    for i in range(matrix_array.size):
+        f.write(str(matrix_array.item(i)))
+        if i < (matrix_array.size - 1):
+            f.write(",")
+    f.write("}," + str(matrix_array.size) + "* sizeof(double));\n")
+
+
+def write_cimpl_file(ctrl, sys_dyn, disc_dynamics, N=5, ordinance=2, mid_weight=0.0, name="cimpl"):
+    """Create C implementation file
+
+    Functions are only defined by the target cell. (Contrary to the python implementation
+    that were defined based on start and end region.)
+    Initialization happens in the main function:
+    C matrices and other variables (e.g. system dynamics, polytopes, time horizon...)
+    are created from arrays based on the python files.
+    Initial state is put into a struct which is continuously modified
+    to move into the respective polytope.
+    """
+    from scipy import linalg as lg
+    import polytope as pc
+    f = StringIO()
+    tab = "    "
+    f.write("""
+    #include <stdio.h>
+    #include "find_controller.h"
+    """)
+    x0 = np.zeros(sys_dyn.A.shape[1])
+    disturbance_ind = range(1, N)
+    written_actions = []
+    for trans_fro, trans_to, d in ctrl.transitions(data=True):
+
+        if trans_to in written_actions:
+            continue
+
+        # Write action functions
+        f.write(tab + "void ACT_" + str(
+            trans_to) + "(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){\n")
+        f.write(tab * 2 + "int target_cell =" + str(trans_to) + ";\n")
+        f.write(tab * 2 + """printf("Computing control sequence to go from cell %d to cell """ + str(
+            trans_to) + """...", (*now).current_cell);\n""")
+        f.write(tab * 2 + "fflush(stdout);\n\n")
+        f.write(tab * 2 + "gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);\n")
+        f.write(tab * 2 + "get_input(u, now, d_dyn, s_dyn, target_cell, f_cost);\n")
+        f.write(tab * 2 + """printf("Applying it...");\n""")
+        f.write(tab * 2 + "fflush(stdout);\n")
+        f.write(tab * 2 + "apply_control(now->x, u, s_dyn->A, s_dyn->B);\n")
+
+        f.write(tab * 2 + """printf("New state:");\n""")
+        f.write(tab * 2 + """gsl_vector_print(now->x, "now->");\n""")
+
+        # // int current_cell = find_discrete_state(now->x, now->d_dyn.ppp);
+        # // TODO:printf("That is in discrete cell %d", now->current_cell);
+        f.write(tab * 2 + "fflush(stdout);\n")
+        f.write(tab * 2 + "// Clean up!\n")
+        f.write(tab * 2 + "gsl_matrix_free(u);\n")
+        f.write(tab + "}")
+        f.write("\n")
+        written_actions.append(trans_to)
+
+    ######int main#########
+    # R, Q, r
+
+    R = None
+    Q = None
+    r = None
+    if (
+            R is None and
+            Q is None and
+            r is None and
+            mid_weight == 0):
+        # Default behavior
+        Q = np.eye(N * sys_dyn.B.shape[1])
+        R = np.zeros([N * x0.size, N * x0.size])
+        r = np.zeros([N * x0.size, 1])
+        mid_weight = 3
+    if R is None:
+        R = np.zeros([N * x0.size, N * x0.size])
+    if Q is None:
+        Q = np.eye(N * sys_dyn.B.shape[1])
+    if r is None:
+        r = np.zeros([N * x0.size, 1])
+
+    if (R.shape[0] != R.shape[1]) or (R.shape[0] != N * x0.size):
+        raise Exception("get_input: "
+                        "R must be square and have side N * dim(state space)")
+
+    if (Q.shape[0] != Q.shape[1]) or (Q.shape[0] != N * sys_dyn.B.shape[1]):
+        raise Exception("get_input: "
+                        "Q must be square and have side N * dim(input space)")
+
+    # LU, MU, GU, An, Ak, Uset, E_default, L_default, K_hat
+
+    A = sys_dyn.A
+    B = sys_dyn.B
+    E = sys_dyn.E
+    K = sys_dyn.K
+
+    D = sys_dyn.Wset
+    PU = sys_dyn.Uset
+
+    n = A.shape[1]  # State space dimension
+    m = B.shape[1]  # Input space dimension
+    p = E.shape[1]  # Disturbance space dimension
+
+    LUn = np.shape(PU.A)[0]
+    L_default = np.zeros([n * N, n + (m * N)])
+    E_default = np.zeros([n * N, p * N])
+    LU = np.zeros([LUn * N, n + N * m])
+
+    MU = np.tile(PU.b.reshape(PU.b.size, 1), (N, 1))
+
+    GU = np.zeros([LUn * N, p * N])
+
+    K_hat = np.tile(K, (N, 1))
+
+    B_diag = sys_dyn.B
+    E_diag = sys_dyn.E
+    for i in range(N - 1):
+        B_diag = lg.block_diag(B_diag, B)
+    for i in range(N - 1):
+        E_diag = lg.block_diag(E_diag, E)
+
+    A_it = sys_dyn.A.copy()
+    A_row = np.zeros([n, n * N])
+    A_K = np.zeros([n * N, n * N])
+    A_N = np.zeros([n * N, n])
+
+    for i in range(N):
+        A_row = sys_dyn.A.dot(A_row)
+        A_row[np.ix_(
+            range(n),
+            range(i * n, (i + 1) * n)
+        )] = np.eye(n)
+
+        A_N[np.ix_(
+            range(i * n, (i + 1) * n),
+            range(n)
+        )] = A_it
+
+        A_K[np.ix_(
+            range(i * n, (i + 1) * n),
+            range(A_K.shape[1])
+        )] = A_row
+
+        A_it = sys_dyn.A.dot(A_it)
+    Ct = A_K.dot(B_diag)
+
+    A_n = np.eye(n)
+    A_k = np.zeros([n, n * N])
+
+    for i in range(N + 1):
+
+        ######### FOR G #########
+        if i in disturbance_ind:
+
+            idx = np.ix_(
+                range(n * i, n * (i + 1)),
+                range(E_default.shape[1])
+            )
+            E_default[idx] = A_k.dot(E_diag)
+
+            if (PU.A.shape[1] == m + n) and (i < N):
+                A_k_E_diag = A_k.dot(E_diag)
+                d_mult = np.vstack([np.zeros([m, p * N]), A_k_E_diag])
+
+                idx = np.ix_(range(LUn * i, LUn * (i + 1)), range(p * N))
+                GU[idx] = PU.A.dot(d_mult)
+
+        ######### FOR L #########
+        AB_line = np.hstack([A_n, A_k.dot(B_diag)])
+
+        if i >= N:
+            continue
+
+        idx = np.ix_(
+            range(n * i, n * (i + 1)),
+            range(L_default.shape[1])
+        )
+        L_default[idx] = AB_line
+        if PU.A.shape[1] == m:
+            idx = np.ix_(
+                range(i * LUn, (i + 1) * LUn),
+                range(n + m * i, n + m * (i + 1))
+            )
+            LU[idx] = PU.A
+        elif PU.A.shape[1] == m + n:
+            uk_line = np.zeros([m, n + m * N])
+
+            idx = np.ix_(range(m), range(n + m * i, n + m * (i + 1)))
+            uk_line[idx] = np.eye(m)
+
+            A_mult = np.vstack([uk_line, AB_line])
+
+            b_mult = np.zeros([m + n, 1])
+            b_mult[range(m, m + n), :] = A_k.dot(K_hat)
+
+            idx = np.ix_(
+                range(i * LUn, (i + 1) * LUn),
+                range(n + m * N)
+            )
+            LU[idx] = PU.A.dot(A_mult)
+
+            MU[range(i * LUn, (i + 1) * LUn), :] -= PU.A.dot(b_mult)
+
+        ####### Iterate #########
+        A_n = A.dot(A_n)
+        A_k = A.dot(A_k)
+
+        idx = np.ix_(range(n), range(i * n, (i + 1) * n))
+        A_k[idx] = np.eye(n)
+
+    D_extreme = pc.extreme(D)
+    nv = D_extreme.shape[0]
+    dim = D_extreme.shape[1]
+    D_vertices = np.zeros([dim * N, nv ** N])
+
+    #D_vertices for one time step. When calculating precedent polytope
+    D_one_step = np.zeros([dim, nv])
+
+    for i in range(nv):
+        # Last N digits are indices we want!
+        ind = np.base_repr(i, base=nv, padding=1)
+        D_one_step[range(0, dim), i] = D_extreme[int(ind[0 - 1]), :]
+
+    for i in range(nv ** N):
+        # Last N digits are indices we want!
+        ind = np.base_repr(i, base=nv, padding=N)
+        for j in range(N):
+            D_vertices[range(j * dim, (j + 1) * dim), i] = D_extreme[int(ind[-j - 1]), :]
+
+    # Write main function
+    f.write("\n")
+    f.write(tab + "int main(){\n\n")
+    f.write(tab * 2 + "//Set help variables\n")
+    f.write(tab * 2 + "size_t time_horizon = " + str(disc_dynamics.disc_params['N']) + ";\n")
+    f.write(tab * 2 + "int initial_cell = " + str(1) + ";\n")
+    if len(disc_dynamics.ppp) == 1:
+        f.write(tab * 2 + "int number_of_regions= 1;\n")
+    else:
+        f.write(tab * 2 + "int number_of_regions= " + str(len(disc_dynamics.ppp)) + ";\n")
+
+    if len(disc_dynamics.orig_ppp) == 1:
+        f.write(tab * 2 + "int number_of_original_regions= 1;\n")
+    else:
+        f.write(tab * 2 + "int number_of_original_regions= " + str(len(disc_dynamics.orig_ppp)) + ";\n")
+    if disc_dynamics.disc_params['closed_loop'] == True:
+        f.write(tab * 2 + "int closed_loop = 1;\n")
+    else:
+        f.write(tab * 2 + "int closed_loop = 0;\n")
+    if disc_dynamics.disc_params['conservative'] == True:
+        f.write(tab * 2 + "int conservative = 1;\n")
+    else:
+        f.write(tab * 2 + "int conservative = 0;\n")
+    f.write(tab * 2 + "int ord =" + str(ordinance) + ";\n")
+    f.write(tab * 2 + "size_t n =" + str(sys_dyn.A.shape[1]) + ";\n")
+    f.write(tab * 2 + "size_t m =" + str(sys_dyn.B.shape[1]) + ";\n")
+    f.write(tab * 2 + "size_t p =" + str(sys_dyn.E.shape[1]) + ";\n")
+    f.write(tab * 2 + "size_t d_ext_i = " + str(D_vertices.shape[0]) + ";\n")
+    f.write(tab * 2 + "size_t d_ext_j = " + str(D_vertices.shape[1]) + ";\n")
+    f.write(tab * 2 + "size_t d_one_i = " + str(D_one_step.shape[0]) + ";\n")
+    f.write(tab * 2 + "size_t d_one_j = " + str(D_one_step.shape[1]) + ";\n")
+    f.write(tab * 2 + "size_t u_set_size =" + str(sys_dyn.Uset.A.shape[0]) + ";\n")
+    f.write(tab * 2 + "size_t w_set_size =" + str(sys_dyn.Wset.A.shape[0]) + ";\n")
+    f.write(tab * 2 + "double distance_weight =" + str(mid_weight) + ";\n\n")
+
+    f.write(tab * 2 + "double *initial_state = malloc(n* sizeof (double));\n")
+    # TODO write_matrix_c_array(f, 2, initial_state, )
+    f.write("""    
+        // Initialize state:
+        current_state *now = state_alloc(n,initial_cell);
+        gsl_vector_from_array(now->x, initial_state, "now->x");
+
+        //Clean up!
+        free(initial_state);
+        """)
+    f.write("""        
+        // Transform system dynamics from python to C
+        system_dynamics *s_dyn = system_dynamics_alloc(n, m, p, w_set_size, u_set_size, time_horizon, d_ext_i, d_ext_j, d_one_i, d_one_j);\n""")
+    f.write("double *sys_A = malloc(n* n* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_A", sys_dyn.A)
+    f.write("""gsl_matrix_from_array(s_dyn->A, sys_A, "s_dyn->A");\nfree(sys_A);\n""")
+
+    f.write("double *sys_B = malloc(n* m* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_B", sys_dyn.B)
+    f.write("""gsl_matrix_from_array(s_dyn->B, sys_B,"s_dyn->B");\nfree(sys_B);\n""")
+
+    f.write("double *sys_E = malloc(n* p* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_E", sys_dyn.E)
+    f.write("""gsl_matrix_from_array(s_dyn->E, sys_E, "s_dyn->E");\nfree(sys_E);\n""")
+
+    f.write("double *sys_K = malloc(n* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_K", sys_dyn.K)
+    f.write("""gsl_vector_from_array(s_dyn->K, sys_K, "s_dyn->K");\nfree(sys_K);\n""")
+
+    f.write("double *sys_USetH = malloc(u_set_size* n* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_USetH", sys_dyn.Uset.A)
+    f.write("""gsl_matrix_from_array(s_dyn->U_set->H, sys_USetH, "s_dyn->U_set->H");\nfree(sys_USetH);\n""")
+
+    f.write("double *sys_WSetH = malloc(w_set_size* n* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_WSetH", sys_dyn.Wset.A)
+    f.write("""gsl_matrix_from_array(s_dyn->W_set->H, sys_WSetH,"s_dyn->W_set->H");\nfree(sys_WSetH);\n""")
+
+    f.write("double *sys_USetG = malloc(u_set_size* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_USetG", sys_dyn.Uset.b)
+    f.write("""gsl_vector_from_array(s_dyn->U_set->G, sys_USetG, "s_dyn->U_set->G");\nfree(sys_USetG);\n""")
+
+    f.write("double *sys_WSetG = malloc(w_set_size* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_WSetG", sys_dyn.Wset.b)
+    f.write("""gsl_vector_from_array(s_dyn->W_set->G, sys_WSetG, "s_dyn->W_set->G");\nfree(sys_WSetG);\n""")
+
+    f.write("double *sys_help_A_k = malloc(n* n*time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_A_k", A_k)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->A_K, sys_help_A_k, "s_dyn->helper_functions->A_K");\nfree(sys_help_A_k);\n""")
+
+    f.write("double *sys_help_A_n = malloc(n* n* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_A_n", A_n)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_n, "s_dyn->helper_functions->A_N");\nfree(sys_help_A_n);\n""")
+
+    f.write("double *sys_help_A_K_2 = malloc(n* time_horizon * n * time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_A_K_2", A_K)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->A_K_2, sys_help_A_K_2, "s_dyn->helper_functions->A_K_2");\nfree(sys_help_A_K_2);\n""")
+
+    f.write("double *sys_help_A_N_2 = malloc(n* time_horizon * n * sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_A_N_2", A_N)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->A_N_2, sys_help_A_N_2, "s_dyn->helper_functions->A_N_2");\nfree(sys_help_A_N_2);\n""")
+
+    f.write("double *sys_help_E_diag = malloc(n*time_horizon* p*time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_E_diag", E_diag)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->E_diag, sys_help_E_diag, "s_dyn->helper_functions->E_diag");\nfree(sys_help_E_diag);\n""")
+
+    f.write("double *sys_help_B_diag = malloc(n*time_horizon* m*time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_B_diag", B_diag)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->B_diag, sys_help_B_diag, "s_dyn->helper_functions->B_diag");\nfree(sys_help_B_diag);\n""")
+
+    f.write("double *sys_help_K_hat = malloc(n* time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_K_hat", K_hat)
+    f.write("""gsl_vector_from_array(s_dyn->helper_functions->K_hat, sys_help_K_hat, "s_dyn->helper_functions->K_hat");\nfree(sys_help_K_hat);\n""")
+
+    f.write("double *sys_help_D_vertices = malloc(d_ext_i* d_ext_j* sizeof(double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_D_vertices", D_vertices)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->D_vertices, sys_help_D_vertices, "s_dyn->helper_functions->D_vertices");\nfree(sys_help_D_vertices);\n""")
+
+    f.write("double *sys_help_D_one_step = malloc(d_one_i* d_one_j* sizeof(double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_D_one_step", D_one_step)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->D_one_step, sys_help_D_one_step,"s_dyn->helper_functions->D_one_step");\nfree(sys_help_D_one_step);\n""")
+
+    f.write("double *sys_help_L_default = malloc(n*time_horizon * (n+m*(time_horizon))* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_L_default", L_default)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->L_default, sys_help_L_default, "s_dyn->helper_functions->L_default");\nfree(sys_help_L_default);\n""")
+
+    f.write("double *sys_help_E_default = malloc(n* time_horizon* p* time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_E_default", E_default)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->E_default, sys_help_E_default, "s_dyn->helper_functions->E_default");\nfree(sys_help_E_default);\n""")
+
+    f.write("double *sys_help_Ct = malloc(n*time_horizon*m*time_horizon*sizeof(double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_Ct", Ct)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->Ct, sys_help_Ct, "s_dyn->helper_functions->Ct");\nfree(sys_help_Ct);\n""")
+
+    f.write("double *sys_help_MU = malloc(u_set_size*time_horizon * sizeof(double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_MU", MU)
+    f.write("""gsl_vector_from_array(s_dyn->helper_functions->MU, sys_help_MU, "s_dyn->helper_functions->MU");\nfree(sys_help_MU);\n""")
+
+    f.write("double *sys_help_GU = malloc(u_set_size*time_horizon* p*time_horizon* sizeof(double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_GU", GU)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->GU, sys_help_GU,"s_dyn->helper_functions->GU");\nfree(sys_help_GU);\n""")
+
+    f.write("double *sys_help_LU = malloc(u_set_size*time_horizon * (n+m*(time_horizon))* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "sys_help_LU", LU)
+    f.write("""gsl_matrix_from_array(s_dyn->helper_functions->LU, sys_help_LU, "s_dyn->helper_functions->LU");\nfree(sys_help_LU);\n""")
+
+    f.write("""
+        // Set cost function
+        cost_function *f_cost = cost_function_alloc(n, m, time_horizon, distance_weight);
+        """)
+    f.write("double *cf_R = malloc(n* time_horizon* n* time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "cf_R", R)
+    f.write("""gsl_matrix_from_array(f_cost->R, cf_R, "f_cost->R");\nfree(cf_R);\n""")
+
+    f.write("double *cf_Q = malloc(m* time_horizon* m* time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "cf_Q", Q)
+    f.write("""gsl_matrix_from_array(f_cost->Q, cf_Q, "f_cost->Q");\nfree(cf_Q);\n""")
+
+    f.write("double *cf_r = malloc(n* time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 2, "cf_r", r)
+    f.write("""gsl_vector_from_array(f_cost->r, cf_r, "f_cost->r");\nfree(cf_r);\n\n""")
+
+    region_count = 0
+    polytopes_in_region = []
+    polytope_sizes = []
+    hull_sizes = []
+    for region in disc_dynamics.ppp.regions:
+        region_count += 1
+        current_region_polytope = 0
+        for polytope in region:
+            current_region_polytope += 1
+            polytope_sizes.append(polytope.A.shape[0])
+        polytopes_in_region.append(current_region_polytope)
+        if len(region) > 1:
+            # Take convex hull
+            vert = pc.extreme(region[0])
+            for k in range(1, len(region)):
+                vert = np.vstack([
+                    vert,
+                    pc.extreme(region[k])
+                ])
+            hull_of_region = pc.qhull(vert)
+        else:
+            hull_of_region = region[0]
+        hull_sizes.append(hull_of_region.A.shape[0])
+    pre_polytope_count = sum(polytopes_in_region)
+    f.write(tab * 2 + "size_t total_number_polytopes = " + str(pre_polytope_count) + ";\n")
+    f.write(tab * 2 + "int polytopes_in_region[" + str(region_count) + "] = {")
+    loop_count = 1
+    for polytope_count in polytopes_in_region:
+        f.write(str(polytope_count))
+        if loop_count != len(polytopes_in_region):
+            f.write(",")
+        loop_count += 1
+    f.write("};\n")
+
+
+    orig_region_count = 0
+    orig_polytopes_in_region = []
+    orig_polytope_sizes = []
+    orig_hull_sizes = []
+    for region in disc_dynamics.orig_ppp.regions:
+        orig_region_count += 1
+        orig_current_region_polytope = 0
+        for polytope in region:
+            orig_current_region_polytope += 1
+            orig_polytope_sizes.append(polytope.A.shape[0])
+        orig_polytopes_in_region.append(orig_current_region_polytope)
+        if len(region) > 1:
+            # Take convex hull
+            vert = pc.extreme(region[0])
+            for k in range(1, len(region)):
+                vert = np.vstack([
+                    vert,
+                    pc.extreme(region[k])
+                ])
+            hull_of_region = pc.qhull(vert)
+        else:
+            hull_of_region = region[0]
+        orig_hull_sizes.append(hull_of_region.A.shape[0])
+    orig_pre_polytope_count = sum(orig_polytopes_in_region)
+    f.write(tab * 2 + "size_t original_total_number_polytopes = " + str(orig_pre_polytope_count) + ";\n")
+    f.write(tab * 2 + "int orig_polytopes_in_region[" + str(orig_region_count) + "] = {")
+    orig_loop_count = 1
+    for polytope_count in orig_polytopes_in_region:
+        f.write(str(polytope_count))
+        if orig_loop_count != len(orig_polytopes_in_region):
+            f.write(",")
+        orig_loop_count += 1
+    f.write("};\n")
+
+    f.write("""
+        size_t *polytope_sizes= malloc(total_number_polytopes * sizeof(size_t));
+        size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
+        size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
+        size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));\n""")
+    f.write(tab * 2 + "memcpy(polytope_sizes, (size_t []){")
+    for i in range(len(polytope_sizes)):
+        f.write(str(polytope_sizes[i]))
+        if i < (len(polytope_sizes) - 1):
+            f.write(",")
+    f.write("}," + str(len(polytope_sizes)) + "* sizeof(polytope_sizes[0]));\n")
+
+    f.write(tab * 2 + "memcpy(hull_sizes, (size_t []){")
+    for i in range(len(hull_sizes)):
+        f.write(str(hull_sizes[i]))
+        if i < (len(hull_sizes) - 1):
+            f.write(",")
+    f.write("}," + str(len(hull_sizes)) + "* sizeof(hull_sizes[0]));\n")
+
+    f.write(tab * 2 + "memcpy(original_polytope_sizes, (size_t []){")
+    for i in range(len(orig_polytope_sizes)):
+        f.write(str(orig_polytope_sizes[i]))
+        if i < (len(orig_polytope_sizes) - 1):
+            f.write(",")
+    f.write("}," + str(len(orig_polytope_sizes)) + "* sizeof(original_polytope_sizes[0]));\n")
+
+    f.write(tab * 2 + "memcpy(original_hull_sizes, (size_t []){")
+    for i in range(len(orig_hull_sizes)):
+        f.write(str(orig_hull_sizes[i]))
+        if i < (len(orig_hull_sizes) - 1):
+            f.write(",")
+    f.write("}," + str(len(orig_hull_sizes)) + "* sizeof(original_hull_sizes[0]));\n")
+
+    f.write("""
+        double **left_side = malloc(total_number_polytopes* sizeof(double*));
+        double **right_side = malloc(total_number_polytopes* sizeof(double*));
+        double **hulls_left_side = malloc(number_of_regions*sizeof(double*));
+        double **hulls_right_side = malloc(number_of_regions*sizeof(double*));
+        for (int i = 0; i < total_number_polytopes; i++) {
+            left_side[i] = malloc(polytope_sizes[i]* n * sizeof(double));            
+            right_side[i] = malloc(polytope_sizes[i] * sizeof(double));
+
+        }
+        for (int i = 0; i < number_of_regions; i++) {
+            hulls_left_side[i] = malloc(hull_sizes[i]* n * sizeof(double));            
+            hulls_right_side[i] = malloc(hull_sizes[i] * sizeof(double));
+
+        }\n""")
+    polytope_count_py = 0
+    i = 0
+    for region in disc_dynamics.ppp.regions:
+        j = 0
+        for polytope in region:
+            write_np_matrix_c_array(f, 2, "left_side[" + str(polytope_count_py + j) + "]", polytope.A)
+            write_np_matrix_c_array(f, 2, "right_side[" + str(polytope_count_py + j) + "]", polytope.b)
+            j += 1
+        polytope_count_py += len(region)
+        # Take convex hull
+        if len(region) > 1:
+            # Take convex hull
+            vert = pc.extreme(region[0])
+            for k in range(1, len(region)):
+                vert = np.vstack([
+                    vert,
+                    pc.extreme(region[k])
+                ])
+            hull_of_region = pc.qhull(vert)
+        else:
+            hull_of_region = region[0]
+
+        write_np_matrix_c_array(f, 2, "hulls_left_side[" + str(i) + "]", hull_of_region.A)
+        write_np_matrix_c_array(f, 2, "hulls_right_side[" + str(i) + "]", hull_of_region.b)
+        i += 1
+
+    f.write("""
+        double **original_left_side = malloc(original_total_number_polytopes* sizeof(double));
+        double **original_right_side = malloc(original_total_number_polytopes* sizeof(double));
+        double **original_hulls_left_side = malloc(number_of_original_regions*sizeof(double));
+        double **original_hulls_right_side = malloc(number_of_original_regions*sizeof(double));
+        for (int i = 0; i < original_total_number_polytopes; i++) {
+            original_left_side[i] = malloc(original_polytope_sizes[i]* n * sizeof(double));            
+            original_right_side[i] = malloc(original_polytope_sizes[i] * sizeof(double));
+
+        }
+        for (int i = 0; i < number_of_original_regions; i++) {
+            original_hulls_left_side[i] = malloc(original_hull_sizes[i]* n * sizeof(double));            
+            original_hulls_right_side[i] = malloc(original_hull_sizes[i] * sizeof(double));
+
+        }\n""")
+    orig_polytope_count_py = 0
+    i = 0
+    for region in disc_dynamics.orig_ppp.regions:
+        j = 0
+        for polytope in region:
+            write_np_matrix_c_array(f, 2, "original_left_side[" + str(orig_polytope_count_py + j) + "]", polytope.A)
+            write_np_matrix_c_array(f, 2, "original_right_side[" + str(orig_polytope_count_py + j) + "]", polytope.b)
+            j += 1
+        orig_polytope_count_py += len(region)
+        # Take convex hull
+        if len(region) > 1:
+            # Take convex hull
+            vert = pc.extreme(region[0])
+            for k in range(1, len(region)):
+                vert = np.vstack([
+                    vert,
+                    pc.extreme(region[k])
+                ])
+            hull_of_region = pc.qhull(vert)
+        else:
+            hull_of_region = region[0]
+
+        write_np_matrix_c_array(f, 2, "original_hulls_left_side[" + str(i) + "]", hull_of_region.A)
+        write_np_matrix_c_array(f, 2, "original_hulls_right_side[" + str(i) + "]", hull_of_region.b)
+        i += 1
+
+    f.write("""
+        discrete_dynamics *d_dyn = discrete_dynamics_alloc(polytopes_in_region, polytope_sizes,  hull_sizes, orig_polytopes_in_region, original_polytope_sizes, original_hull_sizes, n, number_of_regions, number_of_original_regions, closed_loop, conservative, ord, time_horizon);\n\n""")
+
+    f.write("""
+        int polytope_count = 0;
+        for(int i = 0; i< number_of_regions; i++){
+        for(int j = 0; j< d_dyn->regions[i]->number_of_polytopes; j++){
+            polytope_from_arrays(d_dyn->regions[i]->polytopes[j],polytope_sizes[j+polytope_count] ,n,left_side[j+polytope_count],right_side[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
+        }
+        polytope_count +=d_dyn->regions[i]->number_of_polytopes;
+        polytope_from_arrays(d_dyn->regions[i]->hull_of_region,hull_sizes[i],n,hulls_left_side[i],hulls_right_side[i],"d_dyn->regions[i]->hull_of_region" );
+        }\n\n""")
+
+    f.write("""
+        int original_polytope_count = 0;
+        for(int i = 0; i< number_of_original_regions; i++){
+        for(int j = 0; j< d_dyn->original_regions[i]->number_of_polytopes; j++){
+            polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j],original_polytope_sizes[j+original_polytope_count] ,n,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
+        }
+        polytope_from_arrays(d_dyn->original_regions[i]->hull_of_region,original_hull_sizes[i],n,original_hulls_left_side[i],original_hulls_right_side[i], "d_dyn->original_regions[i]->hull_of_region" );
+        }""")
+
+    f.write("""    
+        //Clean up!
+        for (int i = 0; i < total_number_polytopes; i++) {
+            free(left_side[i]);
+            free(right_side[i]);
+        }
+        for (int i = 0; i < number_of_regions; i++) {
+            free(hulls_left_side[i]);
+            free(hulls_right_side[i]);
+        }        
+        for (int i = 0; i < original_total_number_polytopes; i++) {
+            free(original_left_side[i]);
+            free(original_right_side[i]);
+        }        
+        for (int i = 0; i < number_of_original_regions; i++) {
+            free(original_hulls_left_side[i]);
+            free(original_hulls_right_side[i]);
+        }
+        free(polytope_sizes);
+        free(hull_sizes);
+        free(left_side);
+        free(right_side);
+        free(hulls_left_side);
+        free(hulls_right_side);
+        free(original_polytope_sizes);
+        free(original_hull_sizes);
+        free(original_left_side);
+        free(original_right_side);
+        free(original_hulls_left_side);
+        free(original_hulls_right_side);
+        """)
+    f.write("""    
+        system_dynamics_free(s_dyn);
+        discrete_dynamics_free(d_dyn, number_of_regions, number_of_original_regions);
+        cost_function_free(f_cost);
+        state_free(now);
+        """)
+    f.write("\n" + tab + "}\n")
+
+    return f.getvalue()
