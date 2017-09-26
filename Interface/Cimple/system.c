@@ -341,6 +341,8 @@ struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size
         free (return_discrete_dynamics);
         return NULL;
     }
+    return_discrete_dynamics->number_of_regions = number_of_regions;
+    return_discrete_dynamics->number_of_original_regions = number_of_original_regions;
     return_discrete_dynamics->closed_loop = closed_loop;
     return_discrete_dynamics->conservative = conservative;
     return_discrete_dynamics->ord = ord;
@@ -349,12 +351,12 @@ struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size
     return return_discrete_dynamics;
 }
 
-void discrete_dynamics_free(discrete_dynamics *d_dyn, int number_of_regions, int number_of_orig_regions){
+void discrete_dynamics_free(discrete_dynamics *d_dyn){
 
-    for(int i = 0; i<number_of_regions; i++){
+    for(int i = 0; i<d_dyn->number_of_regions; i++){
         region_of_polytopes_free(d_dyn->regions[i]);
     }
-    for(int j = 0; j<number_of_orig_regions; j++){
+    for(int j = 0; j<d_dyn->number_of_original_regions; j++){
         region_of_polytopes_free(d_dyn->original_regions[j]);
     }
     free(d_dyn->regions);

@@ -88,6 +88,8 @@ typedef struct region_of_polytopes{
 
 typedef struct discrete_dynamics{
 
+    int number_of_regions;
+    int number_of_original_regions;
     region_of_polytopes **regions;
     region_of_polytopes **original_regions;
     int closed_loop;
@@ -127,6 +129,6 @@ void state_free(current_state *state);
 struct cost_function *cost_function_alloc(size_t n,size_t m, size_t N, double distance_error_weight);
 void cost_function_free(cost_function *cost_function);
 struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size_t *polytope_sizes, size_t *hull_sizes, int *orig_polytopes_in_region, size_t *orig_polytope_sizes, size_t *orig_hull_sizes, size_t n, int number_of_regions, int number_of_original_regions, int closed_loop, int conservative, int ord, size_t time_horizon);
-void discrete_dynamics_free(discrete_dynamics *d_dyn, int number_of_regions, int number_of_orig_regions);
+void discrete_dynamics_free(discrete_dynamics *d_dyn);
 
 #endif //CIMPLE_SYSTEM_H
