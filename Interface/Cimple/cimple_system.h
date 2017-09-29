@@ -5,62 +5,81 @@
 #ifndef CIMPLE_SYSTEM_H
 #define CIMPLE_SYSTEM_H
 
-#include <gsl/gsl_blas.h>
 #include <gsl/gsl_cblas.h>
+#include <gsl/gsl_blas.h>
+#include "cimple_polytope_library.h"
+
+// EXAMPLE ALLOCATION FOR STRUCT
+// Try to allocate structure.
+// struct struct_name *return_**** = malloc(sizeof(struct));
+// Try to allocate data, free structure if fail.
+// return_****->**** = malloc(***);
+// Free structure if fail, return NULL
+// if (return_****->**** == NULL){
+//    return NULL;
+//}
+
+
 typedef struct system_dynamics_helper_functions{
 
-    //gsl_vector * K_hat;
-    gsl_matrix * A_K_2;
-    gsl_matrix * A_N_2;
+    gsl_matrix * A_K;
+    gsl_matrix * A_N;
     gsl_matrix * Ct;
 
+    /*
+    B_diag = B
+    E_diag = E
+    for i in range(N-1):
+    B_diag = _block_diag2(B_diag, B)
+    E_diag = _block_diag2(E_diag, E)
+     */
+    gsl_matrix * B_diag;
+    gsl_matrix * E_diag;
 
-    //gsl_matrix * L;
-    //gsl_vector * M;
     gsl_matrix * L_default;
     gsl_matrix * E_default;
     gsl_matrix * D_vertices;
     gsl_matrix * D_one_step;
 
 
-    //LUn = np.shape(PU.A)[0]
-
-    //LU = np.zeros([LUn*N, n+N*m])
+    //LU = ([Uset->size1*N, n+N*m])
 
     gsl_matrix * LU;
 
-    //MU = np.tile(PU.b.reshape(PU.b.size, 1), (N, 1))
+    //MU = tile(Uset->G, N)
 
     gsl_vector * MU;
 
-    //GU = np.zeros([LUn*N, p*N])
+    //GU = ([Uset->size1*N, p*N])
 
     gsl_matrix * GU;
 
-    //K_hat = np.tile(K, (N, 1))
+    //K_hat = tile(K, N)
 
     gsl_vector * K_hat;
-
-    /*B_diag = B
-    E_diag = E
-    for i in range(N-1):
-    B_diag = _block_diag2(B_diag, B)
-    E_diag = _block_diag2(E_diag, E)
-
-     */
-
-    gsl_matrix * B_diag;
-    gsl_matrix * E_diag;
-
-    //A_n = np.eye(n)
-    gsl_matrix * A_N;
-
-    //A_k = np.zeros([n, n*N])
-    gsl_matrix * A_K;
 
 
 }system_dynamics_helper_functions;
 
+/**
+@param R: state cost matrix for::
+x = [x(1)' x(2)' .. x(N)']'
+If empty, zero matrix is used.
+@type R: size (N*xdim x N*xdim)
+
+@param r: cost vector for state trajectory:
+x = [x(1)' x(2)' .. x(N)']'
+@type r: size (N*xdim x 1)
+
+@param Q: input cost matrix for control input::
+        u = [u(0)' u(1)' .. u(N-1)']'
+If empty, identity matrix is used.
+@type Q: size (N*udim x N*udim)
+
+@param distance_error_weight: cost weight for |x(N)-xc|_{ord}
+
+@param ord: norm used for cost function: ord in {1, 2, INFINITY}
+*/
 typedef struct cost_function{
 
     gsl_matrix *R;
@@ -69,22 +88,6 @@ typedef struct cost_function{
     double distance_error_weight;
 
 }cost_function;
-typedef struct polytope{
-
-    gsl_matrix * H;
-    gsl_vector * G;
-    double *chebyshev_center;
-
-}polytope;
-
-typedef struct region_of_polytopes{
-
-    int number_of_polytopes;
-    polytope **polytopes;
-    // convex hull of polytopes in that region: hull.A = NULL if only one polytope exists in that region
-    polytope *hull_of_region;
-
-}region_of_polytopes;
 
 typedef struct discrete_dynamics{
 
@@ -116,10 +119,6 @@ typedef struct current_state{
     gsl_vector *x;
 
 } current_state;
-struct polytope *polytope_alloc(size_t k, size_t n);
-void polytope_free(polytope *polytope);
-struct region_of_polytopes *region_of_polytopes_alloc(size_t k[],size_t k_hull, size_t n, int number_of_polytopes);
-void region_of_polytopes_free(region_of_polytopes * region_of_polytopes);
 struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j);
 void helper_functions_free(system_dynamics_helper_functions *helper_functions);
 struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j);

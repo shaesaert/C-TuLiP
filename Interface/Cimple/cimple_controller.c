@@ -2,67 +2,12 @@
 // Created by L.Jonathan Feldstein
 //
 
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector_double.h>
-#include <gsl/gsl_cblas.h>
-#include <gsl/gsl_blas.h>
-#include "find_controller.h"
+#include "cimple_controller.h"
 
-//void projection_fm(polytope poly, int new_dim, int del_dim);
-//void projection_exthull(polytope poly, int new_dim);
-//void projection_iterhull(polytope poly, int new_dim);
 
-void gsl_matrix_print(gsl_matrix *matrix, char *name){
-    printf("\n%s =\n", name);
-    for(size_t i = 0; i < matrix->size1; i++){
-        for(size_t j = 0; j<matrix->size2; j++){
-            double k = gsl_matrix_get(matrix, i, j);
-            printf(" %.3f,", k);
-        }
-        printf("\n");
-    }
-}
-void gsl_vector_print(gsl_vector *vector, char *name){
-    printf("\n%s =\n", name);
-    for(size_t i = 0; i < vector->size; i++){
-        double k = gsl_vector_get(vector, i);
-        printf(" %.3f,", k);
-        printf("\n");
-    }
-}
-void gsl_vector_from_array(gsl_vector *vector, double *array, char* name){
-    for(size_t j = 0; j<vector->size; j++){
-        gsl_vector_set(vector, j, array[j]);
-    }
-    gsl_vector_print(vector, name);
-    fflush(stdout);
-};
-
-void gsl_matrix_from_array(gsl_matrix *matrix, double *array, char* name){
-    for(size_t i = 0; i < matrix->size1; i++){
-        for(size_t j = 0; j<matrix->size2; j++){
-            gsl_matrix_set(matrix, i, j, array[j+matrix->size2*i]);
-        }
-    }
-    gsl_matrix_print(matrix, name);
-    fflush(stdout);
-};
-
-void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side, char*name){
-
-    gsl_matrix_from_array(polytope->H, left_side, name);
-    gsl_vector_from_array(polytope->G, right_side, name);
-};
-int state_in_polytope(polytope *polytope, gsl_vector *x){
-    gsl_vector * result = gsl_vector_alloc(x->size);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
-    for(size_t i = 1; i<= x->size; i++){
-        if(gsl_vector_get(result, i) <= gsl_vector_get(polytope->G, i)){
-            return 0;
-        }
-    }
-    return 1;
-};
+/**
+ * Apply the calculated control to the current state using system dynamics
+ */
 void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
     printf("apply_control: begin at");
     gsl_vector_print(x, "x[0]");
@@ -91,173 +36,10 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
         gsl_vector_free(Btu);
     }
 };
-void project_polytope(polytope *polytope, size_t new_dimension){
-//    /*Projects a polytope onto lower dimensions.
-//
-//    Available solvers are:
-//
-//    - "esp": Equality Set Projection;
-//    - "exthull": vertex projection;
-//    - "fm": Fourier-Motzkin projection;
-//    - "iterhull": iterative hull method.
-//
-//            Example:
-//    To project the polytope `P` onto the first three dimensions, use
-//                                                                         >>> P_proj = projection(P, [1,2,3])
-//
-//    @param poly1: Polytope to project
-//    @param dim: Dimensions on which to project
-//    @param solver: A solver can be specified, if left blank an attempt
-//    is made to choose the most suitable solver.
-//    @param verbose: if positive, print solver used in case of
-//        guessing; default is 0 (be silent).
-//
-//    @rtype: L{Polytope}
-//    @return: Projected polytope in lower dimension
-//     */
-//    // already flat?
-//    if (polytope->H->size1 <= new_dimension){
-//        return ;
-//    }
-//    // `poly1` isn't flat
-//    poly_dim = poly1.dim;
-//    org_dim = xrange(poly_dim);
-//    new_dim = dim.flatten() - 1;
-//    del_dim = np.setdiff1d(org_dim, new_dim); // Index of dimensions to remove
-//    // enlarge A, b with zeros
-//    A = poly1.A.copy();
-//    poly1.A = np.zeros((poly_dim, poly_dim));
-//    poly1.A[0:mA, 0:nA] = A;
-//    // stack
-//    poly1.b = np.hstack([poly1.b, np.zeros(poly_dim - mA)]);
-//    // Compute cheby ball in lower dim to see if projection exists
-//    norm = np.sum(poly1.A*poly1.A, axis=1).flatten();
-//    norm[del_dim] = 0;
-//    c = np.zeros(len(org_dim)+1, dtype=float);
-//    c[len(org_dim)] = -1;
-//    G = np.hstack([poly1.A, norm.reshape(norm.size, 1)]);
-//    h = poly1.b;
-//    sol = lpsolve(c, G, h)
-//    if (sol['status'] != 0){
-//    // Projection not fulldim
-//        return ;
-//        }
-//    if (sol['x'][-1] < abs_tol){
-//        return ;
-//        }
-//    // select solver method based on dimension criteria
-//    if (len(del_dim) <= 2){
-//        projection_fm(poly1, new_dim, del_dim);
-//        return;
-//    }else if(len(org_dim) <= 4){
-//        projection_exthull(poly1, new_dim);
-//        return;
-//    }else{
-//        projection_iterhull(poly1, new_dim);
-//        return;
-//    }
-};
-void reduce_polytope(polytope *polytope){
-//////////////////////////////////////////////////////////////////////
-//    Removes redundant inequalities in the hyperplane representation
-//    of the polytope with the algorithm described at
-//    http://www.ifor.math.ethz.ch/~fukuda/polyfaq/node24.html
-//    by solving one LP for each facet
-//
-//    Warning:
-//    - nonEmptyBounded == 0 case is not tested much.
-//
-//    @type poly: L{Polytope} or L{Region}
-//
-//    @return: Reduced L{Polytope} or L{Region} object
-//////////////////////////////////////////////////////////////////////
 
-// poly, nonEmptyBounded=1, abs_tol=ABS_TOL
-
-// Does not check if it is a region
-//    if isinstance(poly, Region):
-//    lst = []
-//    for poly2 in poly.list_poly:
-//    red = reduce(poly2)
-//    if is_fulldim(red):
-//    lst.append(red)
-//    if len(lst) > 0:
-//    return Region(lst, poly.props)
-//    else:
-//    return Polytope()
-
-// is `poly` already in minimal representation ?
-//    if poly.minrep:
-//    return poly
-//    if not is_fulldim(poly):
-//        return Polytope()
-
-// `poly` isn't flat
-//    A_arr = poly.A
-//    b_arr = poly.b
-// Remove rows with b = inf
-//
-//    // create list h, g
-//    int num_eq = 0;
-//    for(int i = 0; i < polytope->G->size; i++){
-//        if(gsl_vector_get(polytope->G, i) != INFINITY){
-//            // add gsl_matrix_row(polytope->H, i); to list h
-//            // add gsl_vector_get(polytope->G, i); to list g
-//            num_eq++;
-//        }
-//    }
-//// first eliminate the linearly dependent rows corresponding to the same hyperplane
-//    M1 = np.hstack([A_arr, np.array([b_arr]).T]).T
-//            M1row = 1/sqrt(np.sum(M1**2, 0))
-//    M1n = np.dot(M1, np.diag(M1row))
-//    M1n = M1n.T
-//    keep_row = []
-//    for i in xrange(neq):
-//    keep_i = 1
-//    for j in xrange(i+1, neq):
-//    if np.dot(M1n[i].T, M1n[j]) > 1-abs_tol:
-//    keep_i = 0
-//    if keep_i:
-//        keep_row.append(i)
-//    A_arr = A_arr[keep_row]
-//    b_arr = b_arr[keep_row]
-//    neq, nx = A_arr.shape
-//    if nonEmptyBounded:
-//        if neq <= nx+1:
-//    return Polytope(A_arr, b_arr)
-//// Now eliminate hyperplanes outside the bounding box
-//    if neq > 3*nx:
-//    lb, ub = Polytope(A_arr, b_arr).bounding_box
-////cand = -(np.dot((A_arr>0)*A_arr,ub-lb)
-////-(b_arr-np.dot(A_arr,lb).T).T<-1e-4)
-//    cand = ~ (np.dot((A_arr > 0)*A_arr, ub-lb) -
-//              (np.array([b_arr]).T-np.dot(A_arr, lb)) < -1e-4)
-//    A_arr = A_arr[cand.squeeze()]
-//    b_arr = b_arr[cand.squeeze()]
-//    neq, nx = A_arr.shape
-//    if nonEmptyBounded:
-//        if neq <= nx+1:
-//    return Polytope(A_arr, b_arr)
-//    del keep_row[:]
-//    for k in xrange(A_arr.shape[0]):
-//    f = -A_arr[k, :]
-//    G = A_arr
-//    h = b_arr
-//    h[k] += 0.1
-//    sol = lpsolve(f, G, h)
-//    h[k] -= 0.1
-//    if sol['status'] == 0:
-//    obj = -sol['fun'] - h[k]
-//    if obj > abs_tol:
-//    keep_row.append(k)
-//    elif sol['status'] == 3:
-//    keep_row.append(k)
-//    polyOut = Polytope(A_arr[keep_row], b_arr[keep_row])
-//    polyOut.minrep = True
-//    return polyOut
-
-};
-
+/**
+ * Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step
+ */
 void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytope *P2, system_dynamics *s_dyn){
     /*Under-approximate N-step attractor of polytope P2, with N > 0.
      *
@@ -359,12 +141,12 @@ void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytop
     //Clean up!
     gsl_vector_free(D_hat);
 
-    reduce_polytope(precedent_polytope);
+    polytope_reduce(precedent_polytope);
 
     // Project precedent polytope onto lower dim
-    project_polytope(precedent_polytope, n);
+    polytope_project(precedent_polytope, n);
 
-    reduce_polytope(precedent_polytope);
+    polytope_reduce(precedent_polytope);
 
     gsl_matrix_view precedent_view = gsl_matrix_submatrix(precedent_polytope->H,0,0,precedent_polytope->H->size1, n);
 
@@ -373,43 +155,12 @@ void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytop
     polytope_free(precedent_polytope);
 };
 
+/**
+ * Compute a polytope that constraints the system over the next N time steps to fullfill the GR(1) specifications
+ */
 void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics * s_dyn, polytope *list_polytopes[], size_t N){
-////////////////////////////////////////////////////////////////////////////////
-//    Compute the components of the polytope::
-//
-//    L [x(0)' u(0)' ... u(N-1)']' <= M
-//
-//    which stacks the following constraints:
-//
-//    - x(t+1) = A x(t) + B u(t) + E d(t)
-//    - [u(k); x(k)] \in ssys.Uset for all k
-//
-//    If list_P is a C{Polytope}:
-//
-//    - x(0) \in list_P if list_P
-//    - x(k) \in Pk for k= 1,2, .. N-1
-//    - x(N) \in PN
-//
-//    If list_P is a list of polytopes:
-//
-//    - x(k) \in list_P[k] for k= 0, 1 ... N
-//
-//    The returned polytope describes the intersection of the polytopes
-//    for all possible
-//
-//    @param ssys: system dynamics
-//    @type ssys: L{LtiSysDyn}
-//
-//    @param N: horizon length
-//
-//    @type list_P: list of Polytopes or C{Polytope}
-//    @type Pk: C{Polytope}
-//    @type PN: C{Polytope}
-//
-////////////////////////////////////////////////////////////////////////////////
-
     //Disturbance assumed at every step
-    //Also ... NO DEFAULT IF E NOT FULL DIMENSION OF s_dyn.Wset >> Will lead to problems when multiplying Gk.D
+    //Also ... TODO: NO DEFAULT IF E NOT FULL DIMENSION OF s_dyn.Wset >> Will lead to problems when multiplying Gk.D
 
     // Help variables
     size_t n = s_dyn->A->size2;  // State space dimension
@@ -512,20 +263,12 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
 
 };
 
+/**
+ * Calculates (optimal) input to reach desired state (P3) from current state (now) through convex optimization
+ */
 void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord , int closed_loop, size_t time_horizon, cost_function * f_cost, double *low_cost){
-////////////////////////////////////////////////////////////////////////////////
-//    Calculate the sequence u_seq such that:
-//
-//    - x(t+1) = A x(t) + B u(t) + K
-//    - x(k) \in P1 for k = 0,...N
-//    - x(N) \in P3
-//    - [u(k); x(k)] \in PU
-//
-//    and minimize:
-//    |Rx|_{ord} + |Qu|_{ord} + r'x + mid_weight * |xc - x(N)|_{ord}
-////////////////////////////////////////////////////////////////////////////////
 
-    //Helper variables
+    //Auxiliary variables
     size_t N = time_horizon;
     size_t n = s_dyn->A->size2;
     size_t m = s_dyn->B->size2;
@@ -617,10 +360,10 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_vector_set_zero(q);
         gsl_vector * A_N_dot_x = gsl_vector_alloc(N*n);
         gsl_vector_set_zero(A_N_dot_x);
-        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->helper_functions->A_N_2, now->x, 0.0, A_N_dot_x);
+        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->helper_functions->A_N, now->x, 0.0, A_N_dot_x);
         gsl_vector * A_K_dot_K_hat = gsl_vector_alloc(N*n);
         gsl_vector_set_zero(A_K_dot_K_hat);
-        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->helper_functions->A_K_2, s_dyn->helper_functions->K_hat, 0.0, A_K_dot_K_hat);
+        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->helper_functions->A_K, s_dyn->helper_functions->K_hat, 0.0, A_K_dot_K_hat);
 
         //[x^T.A_N^T + (A_K.K_hat)^T]^T
         gsl_vector_add(A_N_dot_x, A_K_dot_K_hat);
@@ -774,92 +517,10 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
      * */
 };
 
+/**
+ * Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
+ */
 void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, int target_cell, cost_function * f_cost) {
-////////////////////////////////////////////////////////////////////////////////
-//    Compute continuous control input for discrete transition.
-//
-//    Computes a continuous control input sequence which takes the plant:
-//
-//    - from state C{start}
-//    - to state C{end}
-//
-//    These are states of the partition C{abstraction}.
-//    The computed control input is such that::
-//
-//    f(x, u) = |Rx|_{ord} + |Qu|_{ord} + r'x + distance_error_weight * |xc - x(N)|_{ord}
-//
-//    be minimal.
-//
-//    C{xc} is the chebyshev center of the final cell.
-//    If no cost parameters are given, then the defaults are:
-//
-//          - Q = I
-//          - distance_error_weight = 3
-//
-//==================================================================================
-//    Notes
-//    =====
-//    1. The same horizon length as in reachability analysis
-//    should be used in order to guarantee feasibility.
-//
-//    2. If the closed loop algorithm has been used
-//    to compute reachability the input needs to be
-//    recalculated for each time step
-//    (with decreasing horizon length).
-//
-//    In this case only u(0) should be used as
-//    a control signal and u(1) ... u(N-1) discarded.
-//
-//    3. The "conservative" calculation makes sure that
-//    the plant remains inside the convex hull of the
-//    starting region during execution, i.e.::
-//
-//    x(1), x(2) ...  x(N-1) are \in conv_hull(starting region).
-//
-//    If the original proposition preserving partition
-//    is not convex, then safety cannot be guaranteed.
-//
-//    @param x0: initial continuous state
-//    @type x0: numpy 1darray
-//
-//    @param ssys: system dynamics
-//    @type ssys: L{LtiSysDyn}
-//
-//    @param abstraction: abstract system dynamics
-//    @type abstraction: L{AbstractPwa}
-//
-//    @param start: index of the initial state in C{abstraction.ts}
-//    @type start: int >= 0
-//
-//    @param end: index of the end state in C{abstraction.ts}
-//    @type end: int >= 0
-//
-//    @param R: state cost matrix for::
-//    x = [x(1)' x(2)' .. x(N)']'
-//    If empty, zero matrix is used.
-//    @type R: size (N*xdim x N*xdim)
-//
-//    @param r: cost vector for state trajectory:
-//    x = [x(1)' x(2)' .. x(N)']'
-//    @type r: size (N*xdim x 1)
-//
-//    @param Q: input cost matrix for control input::
-//            u = [u(0)' u(1)' .. u(N-1)']'
-//    If empty, identity matrix is used.
-//    @type Q: size (N*udim x N*udim)
-//
-//    @param distance_error_weight: cost weight for |x(N)-xc|_{ord}
-//
-//    @param ord: norm used for cost function::
-//            f(x, u) = |Rx|_{ord} + |Qu|_{ord} + r'x + distance_error_weight *|xc - x(N)|_{ord}
-//    @type ord: ord \in {1, 2, np.inf}
-//
-//    @return: array A where row k contains the control input: u(k)
-//    for k = 0, 1 ... N-1
-//    @rtype: (N x m) numpy 2darray
-////////////////////////////////////////////////////////////////////////////////
-
-    /*Initialize*/
 
     //Set input back to zero (safety precaution)
     gsl_matrix_set_zero(low_u);

@@ -1,4 +1,4 @@
-#include "init_c_from_py.h"
+#include "cimple_c_from_py.h"
 #include "act_impl.h"
 
 int main(){

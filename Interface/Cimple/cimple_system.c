@@ -1,104 +1,43 @@
 //
 // Created by L. Jonathan Feldstein
 
-#include "system.h"
-struct polytope *polytope_alloc(size_t k, size_t n){
+#include "cimple_system.h"
 
-    struct polytope *return_polytope = malloc (sizeof (struct polytope));
-
-    return_polytope->H = gsl_matrix_alloc(k, n);
-    if (return_polytope->H == NULL) {
-        free (return_polytope);
-        return NULL;
-    }
-
-    return_polytope->G = gsl_vector_alloc(k);
-    if (return_polytope->H == NULL) {
-        free (return_polytope);
-        return NULL;
-    }
-
-    return_polytope->chebyshev_center = malloc(n* sizeof (double));
-    if (return_polytope->chebyshev_center == NULL) {
-        free (return_polytope);
-        return NULL;
-    }
-
-    return return_polytope;
-}
-void polytope_free(polytope *polytope){
-    gsl_matrix_free(polytope->H);
-    gsl_vector_free(polytope->G);
-    free(polytope->chebyshev_center);
-    free(polytope);
-}
-struct region_of_polytopes *region_of_polytopes_alloc(size_t *k,size_t k_hull, size_t n, int number_of_polytopes){
-
-    struct region_of_polytopes *return_region_of_polytopes = malloc (sizeof (struct region_of_polytopes));
-
-    return_region_of_polytopes->polytopes = malloc(sizeof(polytope)*number_of_polytopes);
-    for(int i = 0; i < number_of_polytopes; i++){
-        return_region_of_polytopes->polytopes[i] = polytope_alloc(*(k+i), n);
-    }
-    if (return_region_of_polytopes->polytopes == NULL) {
-        free (return_region_of_polytopes);
-        return NULL;
-    }
-
-    return_region_of_polytopes->hull_of_region = polytope_alloc(k_hull, n);
-    if (return_region_of_polytopes->polytopes == NULL) {
-        free (return_region_of_polytopes);
-        return NULL;
-    }
-
-    return_region_of_polytopes->number_of_polytopes = number_of_polytopes;
-
-    return return_region_of_polytopes;
-}
-void region_of_polytopes_free(region_of_polytopes * region_of_polytopes){
-    polytope_free(region_of_polytopes->hull_of_region);
-    for(int i = 0; i< region_of_polytopes->number_of_polytopes; i++){
-        polytope_free(region_of_polytopes->polytopes[i]);
-    }
-    free(region_of_polytopes->polytopes);
-    free(region_of_polytopes);
-
-}
 struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j){
 
     struct system_dynamics_helper_functions *return_helper_functions = malloc (sizeof (struct system_dynamics_helper_functions));
+
+    return_helper_functions->A_N = gsl_matrix_alloc(n*N, n);
+    if (return_helper_functions->A_N == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
+
+    return_helper_functions->A_K = gsl_matrix_alloc(n*N, n*N);
+    if (return_helper_functions->A_K == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
 
     return_helper_functions->Ct = gsl_matrix_alloc(n*N, m*N);
     if (return_helper_functions->Ct == NULL) {
         free (return_helper_functions);
         return NULL;
     }
-//
-//    return_helper_functions->L = gsl_matrix_alloc(k, n);
-//    if (return_helper_functions->L == NULL) {
-//        free (return_helper_functions);
-//        return NULL;
-//    }
-//
-//    return_helper_functions->M = gsl_matrix_alloc(k, n);
-//    if (return_helper_functions->M == NULL) {
-//        free (return_helper_functions);
-//        return NULL;
-//    }
 
-    return_helper_functions->L_default = gsl_matrix_alloc(n*N, (n+m*N));
-    if (return_helper_functions->L_default == NULL) {
+    return_helper_functions->B_diag = gsl_matrix_alloc(n*N, m*N);
+    if (return_helper_functions->B_diag == NULL) {
         free (return_helper_functions);
         return NULL;
     }
 
-    return_helper_functions->E_default = gsl_matrix_alloc(n* N, p* N);
-    if (return_helper_functions->E_default == NULL) {
+    return_helper_functions->E_diag = gsl_matrix_alloc(n*N, p*N);
+    if (return_helper_functions->E_diag == NULL) {
         free (return_helper_functions);
         return NULL;
     }
 
-     return_helper_functions->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
+    return_helper_functions->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
     if (return_helper_functions->D_vertices == NULL) {
         free (return_helper_functions);
         return NULL;
@@ -109,16 +48,24 @@ struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t
         free (return_helper_functions);
         return NULL;
     }
-    //LUn = np.shape(PU.A)[0]
 
-    //LU = np.zeros([LUn*N, n+N*m])
+    return_helper_functions->E_default = gsl_matrix_alloc(n* N, p* N);
+    if (return_helper_functions->E_default == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
+
+    return_helper_functions->L_default = gsl_matrix_alloc(n*N, (n+m*N));
+    if (return_helper_functions->L_default == NULL) {
+        free (return_helper_functions);
+        return NULL;
+    }
+
     return_helper_functions->LU = gsl_matrix_alloc(u_set_size*N, n+N*m);
     if (return_helper_functions->LU == NULL) {
         free (return_helper_functions);
         return NULL;
     }
-
-    //MU = np.tile(PU.b.reshape(PU.b.size, 1), (N, 1))
 
     return_helper_functions->MU = gsl_vector_alloc(u_set_size*N);
     if (return_helper_functions->MU == NULL) {
@@ -126,15 +73,11 @@ struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t
         return NULL;
     }
 
-    //GU = np.zeros([LUn*N, p*N])
-
     return_helper_functions->GU = gsl_matrix_alloc(u_set_size*N, p*N);
     if (return_helper_functions->GU == NULL) {
         free (return_helper_functions);
         return NULL;
     }
-
-    //K_hat = np.tile(K, (N, 1))
 
     return_helper_functions->K_hat = gsl_vector_alloc(n*N);
     if (return_helper_functions->K_hat == NULL) {
@@ -142,50 +85,6 @@ struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t
         return NULL;
     }
 
-    /*B_diag = B
-    E_diag = E
-    for i in range(N-1):
-    B_diag = _block_diag2(B_diag, B)
-    E_diag = _block_diag2(E_diag, E)
-
-     */
-    return_helper_functions->B_diag = gsl_matrix_alloc(n*N, m*N);
-    if (return_helper_functions->B_diag == NULL) {
-        free (return_helper_functions);
-        return NULL;
-    }
-    return_helper_functions->E_diag = gsl_matrix_alloc(n*N, p*N);
-    if (return_helper_functions->E_diag == NULL) {
-        free (return_helper_functions);
-        return NULL;
-    }
-
-    //A_n = np.eye(n)
-    return_helper_functions->A_N = gsl_matrix_alloc(n, n);
-    if (return_helper_functions->A_N == NULL) {
-        free (return_helper_functions);
-        return NULL;
-    }
-
-    //A_k = np.zeros([n, n*N])
-    return_helper_functions->A_K = gsl_matrix_alloc(n, n*N);
-    if (return_helper_functions->A_K == NULL) {
-        free (return_helper_functions);
-        return NULL;
-    }
-
-    //A_n = np.eye(n)
-    return_helper_functions->A_N_2 = gsl_matrix_alloc(n*N, n);
-    if (return_helper_functions->A_N_2 == NULL) {
-        free (return_helper_functions);
-        return NULL;
-    }
-
-    return_helper_functions->A_K_2 = gsl_matrix_alloc(n*N, n*N);
-    if (return_helper_functions->A_K_2 == NULL) {
-        free (return_helper_functions);
-        return NULL;
-    }
     return return_helper_functions;
 }
 void helper_functions_free(system_dynamics_helper_functions *helper_functions){
@@ -202,18 +101,14 @@ void helper_functions_free(system_dynamics_helper_functions *helper_functions){
     gsl_matrix_free(helper_functions->E_diag);
     gsl_matrix_free(helper_functions->A_N);
     gsl_matrix_free(helper_functions->A_K);
-    gsl_matrix_free(helper_functions->A_N_2);
-    gsl_matrix_free(helper_functions->A_K_2);
     free(helper_functions);
 }
 struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j) {
-    // Try to allocate structure.
 
     struct system_dynamics *return_dynamics = malloc (sizeof (struct system_dynamics));
-    if (return_dynamics == NULL)
+    if (return_dynamics == NULL){
         return NULL;
-
-    // Try to allocate data, free structure if fail.
+    }
 
     return_dynamics->A = gsl_matrix_alloc(n, n);
     if (return_dynamics->A == NULL) {

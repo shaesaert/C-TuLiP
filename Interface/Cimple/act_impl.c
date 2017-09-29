@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include "find_controller.h"
+#include "cimple_controller.h"
 
 void ACT_1(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     int target_cell =1;
