@@ -33,12 +33,17 @@ struct polytope *polytope_alloc(size_t k, size_t n){
 
     return return_polytope;
 }
+
 void polytope_free(polytope *polytope){
     gsl_matrix_free(polytope->H);
     gsl_vector_free(polytope->G);
     free(polytope->chebyshev_center);
     free(polytope);
 }
+
+/**
+ * "Constructor" Dynamically allocates the space a region of polytope needs
+ */
 struct region_of_polytopes *region_of_polytopes_alloc(size_t *k,size_t k_hull, size_t n, int number_of_polytopes){
 
     struct region_of_polytopes *return_region_of_polytopes = malloc (sizeof (struct region_of_polytopes));
@@ -62,6 +67,10 @@ struct region_of_polytopes *region_of_polytopes_alloc(size_t *k,size_t k_hull, s
 
     return return_region_of_polytopes;
 }
+
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
+ */
 void region_of_polytopes_free(region_of_polytopes * region_of_polytopes){
     polytope_free(region_of_polytopes->hull_of_region);
     for(int i = 0; i< region_of_polytopes->number_of_polytopes; i++){
@@ -72,11 +81,18 @@ void region_of_polytopes_free(region_of_polytopes * region_of_polytopes){
 
 }
 
+/**
+ * Converts two C arrays to a polytope consistent of a left side matrix (i.e. H) and right side vector (i.e. G)
+ */
 void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side, char*name){
 
     gsl_matrix_from_array(polytope->H, left_side, name);
     gsl_vector_from_array(polytope->G, right_side, name);
 };
+
+/**
+ * Checks whether a state is in a certain polytope
+ */
 int state_in_polytope(polytope *polytope, gsl_vector *x){
     gsl_vector * result = gsl_vector_alloc(x->size);
     gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
@@ -88,6 +104,10 @@ int state_in_polytope(polytope *polytope, gsl_vector *x){
     return 1;
 };
 
+//TODO project on array of dimensions instead of first n dimensions
+/**
+ * Projects polytope on lower dimensions (e.g. new_dimension = n => projects polytope on first n columns)
+ */
 void polytope_project(polytope *polytope, size_t new_dimension){
 //    /*Projects a polytope onto lower dimensions.
 //
@@ -154,21 +174,11 @@ void polytope_project(polytope *polytope, size_t new_dimension){
 //        return;
 //    }
 };
-void polytope_reduce(polytope *polytope){
-//////////////////////////////////////////////////////////////////////
-//    Removes redundant inequalities in the hyperplane representation
-//    of the polytope with the algorithm described at
-//    http://www.ifor.math.ethz.ch/~fukuda/polyfaq/node24.html
-//    by solving one LP for each facet
-//
-//    Warning:
-//    - nonEmptyBounded == 0 case is not tested much.
-//
-//    @type poly: L{Polytope} or L{Region}
-//
-//    @return: Reduced L{Polytope} or L{Region} object
-//////////////////////////////////////////////////////////////////////
 
+/**
+ * Reduces redundant number of rows of polytope
+ */
+void polytope_reduce(polytope *polytope){
 // poly, nonEmptyBounded=1, abs_tol=ABS_TOL
 
 // Does not check if it is a region
