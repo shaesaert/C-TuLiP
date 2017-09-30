@@ -9201,7 +9201,7 @@ def write_cimpl_file(ctrl, sys_dyn, disc_dynamics, N=5, ordinance=2, mid_weight=
     tab = "    "
     f.write("""
     #include <stdio.h>
-    #include "find_controller.h"
+    #include "cimple_controller.h"
     """)
     x0 = np.zeros(sys_dyn.A.shape[1])
     disturbance_ind = range(1, N)
