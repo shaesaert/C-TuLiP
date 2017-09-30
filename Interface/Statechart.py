@@ -9812,10 +9812,10 @@ def write_cimpl_file(ctrl, sys_dyn, disc_dynamics, N=5, ordinance=2, mid_weight=
 
 #
 # with open("act_impl.c", "w") as f:
-#     f.write(statechart.write_cimple_file(ctrl))
+#     f.write(Statechart.write_cimple_file(ctrl))
 #
 # with open("act_impl.h", "w") as f:
-#     f.write(statechart.write_cimple_header(ctrl))
+#     f.write(Statechart.write_cimple_header(ctrl))
 #
 # with open("cimple_c_from_py.c", "w") as f:
-#     f.write(statechart.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name=""))
+#     f.write(Statechart.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name=""))
