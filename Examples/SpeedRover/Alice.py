@@ -18,7 +18,7 @@ from tulip import hybrid
 from tulip.abstract import prop2part, discretize
 
 import Interface.DSL as DSL
-import Interface.Statechart as dumpsmach
+from Interface import Statechart
 from Interface.Reduce import *
 from Interface.Transform import *
 
@@ -198,7 +198,7 @@ for Case in Cases:
 
     # write strategy plus control modes at the same time to a statechart
     with open(filename+".xml", "w") as f:
-       f.write(dumpsmach.tulip_to_xmi(ctrl_red,ctrl_modes))
+       f.write(Statechart.tulip_to_xmi(ctrl_red, ctrl_modes))
     # Alternatively, they can be programmed one by one:
     # -- the discrete strategy:
     #   with open(filename+".xml", "w") as f:
