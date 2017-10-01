@@ -229,6 +229,15 @@ for Case in Cases:
         f.write("Original & " + str(len(ctrl.nodes())) + " & " + str(len(ctrl.transitions())) + "& "
                 + str(len(ctrl.nodes())) + " & " + str(len(ctrl.transitions())) + "\n")
 
+
+    with open("act_impl.c", "w") as f:
+        f.write(Statechart.write_cimple_file(ctrl))
+
+    with open("act_impl.h", "w") as f:
+        f.write(Statechart.write_cimple_header(ctrl))
+
+    with open("cimple_c_from_py.c", "w") as f:
+        f.write(Statechart.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name=""))
 print("----------------------------------\n Output results  \n----------------------------------")
 
 with open("Tabular.txt", "w") as f:
