@@ -4,6 +4,21 @@
 
 #include "cimple_controller.h"
 
+void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
+    printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
+    fflush(stdout);
+
+    gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);
+    get_input(u, now, d_dyn, s_dyn, target, f_cost);
+    printf("Applying it...");
+    fflush(stdout);
+    apply_control(now->x, u, s_dyn->A, s_dyn->B);
+    printf("New state:");
+    gsl_vector_print(now->x, "now->");
+    fflush(stdout);
+    // Clean up!
+    gsl_matrix_free(u);
+}
 
 /**
  * Apply the calculated control to the current state using system dynamics
