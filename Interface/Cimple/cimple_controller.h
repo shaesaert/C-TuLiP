@@ -15,12 +15,12 @@
 
 /**
  * @brief Action to get plant from current cell to target cell.
- * 
- * @param target
- * @param now
- * @param d_dyn
- * @param s_dyn
- * @param f_cost
+ *
+ * @param target target region the plant is supposed to reach
+ * @param now current state of the plant
+ * @param d_dyn discrete abstraction of the system
+ * @param s_dyn system dynamics including auxiliary matrices
+ * @param f_cost cost function to be minimized on the path
  */
 void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
 /**

@@ -4,6 +4,10 @@
 
 #include "cimple_controller.h"
 
+
+/**
+ * Action to get plant from current cell to target cell.
+ */
 void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
     fflush(stdout);
