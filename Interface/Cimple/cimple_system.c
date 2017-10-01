@@ -3,106 +3,117 @@
 
 #include "cimple_system.h"
 
-struct system_dynamics_helper_functions *helper_functions_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j){
+/**
+ * "Constructor" Dynamically allocates the memory all auxiliary matrices need
+ */
+struct auxiliary_matrices *aux_matrices_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j){
 
-    struct system_dynamics_helper_functions *return_helper_functions = malloc (sizeof (struct system_dynamics_helper_functions));
+    struct auxiliary_matrices *return_aux_matrices = malloc (sizeof (struct auxiliary_matrices));
 
-    return_helper_functions->A_N = gsl_matrix_alloc(n*N, n);
-    if (return_helper_functions->A_N == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->A_N = gsl_matrix_alloc(n*N, n);
+    if (return_aux_matrices->A_N == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->A_K = gsl_matrix_alloc(n*N, n*N);
-    if (return_helper_functions->A_K == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->A_K = gsl_matrix_alloc(n*N, n*N);
+    if (return_aux_matrices->A_K == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->Ct = gsl_matrix_alloc(n*N, m*N);
-    if (return_helper_functions->Ct == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->Ct = gsl_matrix_alloc(n*N, m*N);
+    if (return_aux_matrices->Ct == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->B_diag = gsl_matrix_alloc(n*N, m*N);
-    if (return_helper_functions->B_diag == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->B_diag = gsl_matrix_alloc(n*N, m*N);
+    if (return_aux_matrices->B_diag == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->E_diag = gsl_matrix_alloc(n*N, p*N);
-    if (return_helper_functions->E_diag == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->E_diag = gsl_matrix_alloc(n*N, p*N);
+    if (return_aux_matrices->E_diag == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
-    if (return_helper_functions->D_vertices == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
+    if (return_aux_matrices->D_vertices == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->D_one_step = gsl_matrix_alloc(d_one_i, d_one_j);
-    if (return_helper_functions->D_one_step == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->D_one_step = gsl_matrix_alloc(d_one_i, d_one_j);
+    if (return_aux_matrices->D_one_step == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->E_default = gsl_matrix_alloc(n* N, p* N);
-    if (return_helper_functions->E_default == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->E_default = gsl_matrix_alloc(n* N, p* N);
+    if (return_aux_matrices->E_default == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->L_default = gsl_matrix_alloc(n*N, (n+m*N));
-    if (return_helper_functions->L_default == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->L_default = gsl_matrix_alloc(n*N, (n+m*N));
+    if (return_aux_matrices->L_default == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->LU = gsl_matrix_alloc(u_set_size*N, n+N*m);
-    if (return_helper_functions->LU == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->LU = gsl_matrix_alloc(u_set_size*N, n+N*m);
+    if (return_aux_matrices->LU == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->MU = gsl_vector_alloc(u_set_size*N);
-    if (return_helper_functions->MU == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->MU = gsl_vector_alloc(u_set_size*N);
+    if (return_aux_matrices->MU == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->GU = gsl_matrix_alloc(u_set_size*N, p*N);
-    if (return_helper_functions->GU == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->GU = gsl_matrix_alloc(u_set_size*N, p*N);
+    if (return_aux_matrices->GU == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return_helper_functions->K_hat = gsl_vector_alloc(n*N);
-    if (return_helper_functions->K_hat == NULL) {
-        free (return_helper_functions);
+    return_aux_matrices->K_hat = gsl_vector_alloc(n*N);
+    if (return_aux_matrices->K_hat == NULL) {
+        free (return_aux_matrices);
         return NULL;
     }
 
-    return return_helper_functions;
+    return return_aux_matrices;
 }
-void helper_functions_free(system_dynamics_helper_functions *helper_functions){
-    gsl_matrix_free(helper_functions->D_vertices);
-    gsl_matrix_free(helper_functions->D_one_step);
-    gsl_matrix_free(helper_functions->L_default);
-    gsl_matrix_free(helper_functions->E_default);
-    gsl_vector_free(helper_functions->MU);
-    gsl_matrix_free(helper_functions->LU);
-    gsl_matrix_free(helper_functions->GU);
-    gsl_matrix_free(helper_functions->Ct);
-    gsl_vector_free(helper_functions->K_hat);
-    gsl_matrix_free(helper_functions->B_diag);
-    gsl_matrix_free(helper_functions->E_diag);
-    gsl_matrix_free(helper_functions->A_N);
-    gsl_matrix_free(helper_functions->A_K);
-    free(helper_functions);
+
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the auxiliary matrices
+ */
+void aux_matrices_free(auxiliary_matrices *aux_matrices){
+    gsl_matrix_free(aux_matrices->D_vertices);
+    gsl_matrix_free(aux_matrices->D_one_step);
+    gsl_matrix_free(aux_matrices->L_default);
+    gsl_matrix_free(aux_matrices->E_default);
+    gsl_vector_free(aux_matrices->MU);
+    gsl_matrix_free(aux_matrices->LU);
+    gsl_matrix_free(aux_matrices->GU);
+    gsl_matrix_free(aux_matrices->Ct);
+    gsl_vector_free(aux_matrices->K_hat);
+    gsl_matrix_free(aux_matrices->B_diag);
+    gsl_matrix_free(aux_matrices->E_diag);
+    gsl_matrix_free(aux_matrices->A_N);
+    gsl_matrix_free(aux_matrices->A_K);
+    free(aux_matrices);
 }
+
+/**
+ * "Constructor" Dynamically allocates the memory the complete system dynamics need
+ */
 struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j) {
 
     struct system_dynamics *return_dynamics = malloc (sizeof (struct system_dynamics));
@@ -142,16 +153,20 @@ struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, siz
         free (return_dynamics);
         return NULL;
     }
-    return_dynamics->helper_functions = helper_functions_alloc(n, p, m, u_set_size, N, d_ext_i, d_ext_j, d_one_i, d_one_j);
-    if (return_dynamics->helper_functions == NULL) {
+    return_dynamics->aux_matrices = aux_matrices_alloc(n, p, m, u_set_size, N, d_ext_i, d_ext_j, d_one_i, d_one_j);
+    if (return_dynamics->aux_matrices == NULL) {
         free(return_dynamics);
         return NULL;
     }
 
     return return_dynamics;
 }
+
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the system dynamics
+ */
 void system_dynamics_free(system_dynamics * system_dynamics){
-    helper_functions_free(system_dynamics->helper_functions);
+    aux_matrices_free(system_dynamics->aux_matrices);
     polytope_free(system_dynamics->U_set);
     polytope_free(system_dynamics->W_set);
     gsl_matrix_free(system_dynamics->A);
@@ -160,6 +175,10 @@ void system_dynamics_free(system_dynamics * system_dynamics){
     gsl_vector_free(system_dynamics->K);
     free(system_dynamics);
 }
+
+/**
+ * "Constructor" Dynamically allocates the memory for the state of the plant
+ */
 struct current_state *state_alloc(size_t n, int cell){
 
     struct current_state *return_state = malloc (sizeof (struct current_state));
@@ -174,11 +193,19 @@ struct current_state *state_alloc(size_t n, int cell){
 
     return return_state;
 }
+
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the state of the plant
+ */
 void state_free(current_state *state){
 
     gsl_vector_free(state->x);
     free(state);
 }
+
+/**
+ * "Constructor" Dynamically allocates the memory for cost function matrices
+ */
 struct cost_function *cost_function_alloc(size_t n,size_t m, size_t N, double distance_error_weight){
 
     struct cost_function *return_cost_function = malloc (sizeof (struct cost_function));
@@ -205,12 +232,21 @@ struct cost_function *cost_function_alloc(size_t n,size_t m, size_t N, double di
 
     return return_cost_function;
 }
+
+
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the cost function matrices
+ */
 void cost_function_free(cost_function *cost_function){
     gsl_matrix_free(cost_function->R);
     gsl_vector_free(cost_function->r);
     gsl_matrix_free(cost_function->Q);
     free(cost_function);
 }
+
+/**
+ * "Constructor" Dynamically allocates the memory for the discrete abstraction of the system
+ */
 struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size_t *polytope_sizes, size_t *hull_sizes, int *orig_polytopes_in_region, size_t *orig_polytope_sizes, size_t *orig_hull_sizes, size_t n, int number_of_regions, int number_of_original_regions, int closed_loop, int conservative, int ord, size_t time_horizon){
 
     struct discrete_dynamics *return_discrete_dynamics = malloc (sizeof (struct discrete_dynamics));
@@ -246,6 +282,9 @@ struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size
     return return_discrete_dynamics;
 }
 
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the discrete dynamics
+ */
 void discrete_dynamics_free(discrete_dynamics *d_dyn){
 
     for(int i = 0; i<d_dyn->number_of_regions; i++){

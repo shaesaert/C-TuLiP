@@ -124,9 +124,9 @@ void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytop
     // Get disturbance sets
     gsl_vector * D_hat = gsl_vector_alloc(precedent_polytope->G->size);
     if (!(gsl_matrix_isnull(Dist))){
-        gsl_matrix * maxima = gsl_matrix_alloc(Dist->size1, s_dyn->helper_functions->D_one_step->size2);
+        gsl_matrix * maxima = gsl_matrix_alloc(Dist->size1, s_dyn->aux_matrices->D_one_step->size2);
         //Calculate Dist.Dextremes (extremum of each dimension of each polytope)
-        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Dist, s_dyn->helper_functions->D_one_step,0.0, maxima);
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Dist, s_dyn->aux_matrices->D_one_step,0.0, maxima);
         //find the maximum for each dimension of each polytope
         for(size_t i = 0; i < sum_dim; i++){
             gsl_vector_view max_row = gsl_matrix_row(maxima, i);
@@ -236,16 +236,16 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
 
 /*Update L and M*/
     // Lk = H_diag.L_default
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, s_dyn->helper_functions->L_default,0.0,&Lk.matrix);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, s_dyn->aux_matrices->L_default,0.0,&Lk.matrix);
 
     // Gk = H_diag.E_default
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, s_dyn->helper_functions->E_default,0.0,Gk);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, s_dyn->aux_matrices->E_default,0.0,Gk);
 
     /*Find maxima of Gk.Dextremes*/
     //TODO: if Gk non zero else...
-    gsl_matrix * maxima = gsl_matrix_alloc(Gk->size1, s_dyn->helper_functions->D_vertices->size2);
+    gsl_matrix * maxima = gsl_matrix_alloc(Gk->size1, s_dyn->aux_matrices->D_vertices->size2);
     //Calculate Gk.Dextremes (extremum of each dimension of each polytope)
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Gk, s_dyn->helper_functions->D_vertices,0.0, maxima);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Gk, s_dyn->aux_matrices->D_vertices,0.0, maxima);
     gsl_vector *D_hat = gsl_vector_alloc(sum_polytope_dim);
     //find the maximum for each dimension of each polytope
     for(size_t i = 0; i < sum_polytope_dim; i++){
@@ -347,8 +347,8 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_matrix * P = gsl_matrix_alloc(N*m, N*m);
         gsl_matrix * R2_dot_Ct = gsl_matrix_alloc(N*n, N*m);
         gsl_matrix_set_zero(R2_dot_Ct);
-        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, R2, s_dyn->helper_functions->Ct, 0.0, R2_dot_Ct);
-        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, s_dyn->helper_functions->Ct, R2_dot_Ct, 0.0, P);
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, R2, s_dyn->aux_matrices->Ct, 0.0, R2_dot_Ct);
+        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, s_dyn->aux_matrices->Ct, R2_dot_Ct, 0.0, P);
         gsl_matrix_add(P, Q2);
 
         //Clean up!
@@ -360,10 +360,10 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_vector_set_zero(q);
         gsl_vector * A_N_dot_x = gsl_vector_alloc(N*n);
         gsl_vector_set_zero(A_N_dot_x);
-        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->helper_functions->A_N, now->x, 0.0, A_N_dot_x);
+        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->aux_matrices->A_N, now->x, 0.0, A_N_dot_x);
         gsl_vector * A_K_dot_K_hat = gsl_vector_alloc(N*n);
         gsl_vector_set_zero(A_K_dot_K_hat);
-        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->helper_functions->A_K, s_dyn->helper_functions->K_hat, 0.0, A_K_dot_K_hat);
+        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->aux_matrices->A_K, s_dyn->aux_matrices->K_hat, 0.0, A_K_dot_K_hat);
 
         //[x^T.A_N^T + (A_K.K_hat)^T]^T
         gsl_vector_add(A_N_dot_x, A_K_dot_K_hat);
@@ -374,7 +374,7 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 
         //(0.5*r^T.Ct)
         gsl_vector *Right_side = gsl_vector_alloc(N*m);
-        gsl_blas_dgemv(CblasTrans, 0.5, s_dyn->helper_functions->Ct, f_cost->r, 0.0, Right_side);
+        gsl_blas_dgemv(CblasTrans, 0.5, s_dyn->aux_matrices->Ct, f_cost->r, 0.0, Right_side);
         gsl_vector_add(q, Right_side);
 
         //Clean up!

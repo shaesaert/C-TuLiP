@@ -9,6 +9,9 @@
 //void projection_exthull(polytope poly, int new_dim);
 //void projection_iterhull(polytope poly, int new_dim);
 
+/**
+ * "Constructor" Dynamically allocates the space a polytope needs
+ */
 struct polytope *polytope_alloc(size_t k, size_t n){
 
     struct polytope *return_polytope = malloc (sizeof (struct polytope));
@@ -34,6 +37,9 @@ struct polytope *polytope_alloc(size_t k, size_t n){
     return return_polytope;
 }
 
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the polytope
+ */
 void polytope_free(polytope *polytope){
     gsl_matrix_free(polytope->H);
     gsl_vector_free(polytope->G);
