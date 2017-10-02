@@ -14,6 +14,16 @@
 #include "cimple_polytope_library.h"
 
 /**
+ * @brief Action to get plant from current cell to target cell.
+ *
+ * @param target target region the plant is supposed to reach
+ * @param now current state of the plant
+ * @param d_dyn discrete abstraction of the system
+ * @param s_dyn system dynamics including auxiliary matrices
+ * @param f_cost cost function to be minimized on the path
+ */
+void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
+/**
  * @brief Apply the calculated control to the current state using system dynamics
  * @param x current state at time [0]
  * @param u matrix with next N inputs calculated by the MPC controller
