@@ -9704,67 +9704,67 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     f.write(tab + "double *sys_help_A_K = malloc(n* time_horizon * n * time_horizon* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_A_K", A_K)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_K, sys_help_A_K, "s_dyn->helper_functions->A_K");\n""" + tab + """free(sys_help_A_K);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->A_K, sys_help_A_K, "s_dyn->aux_matrices->A_K");\n""" + tab + """free(sys_help_A_K);\n""")
 
     f.write(tab + "double *sys_help_A_N = malloc(n* time_horizon * n * sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_A_N", A_N)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_N, "s_dyn->helper_functions->A_N");\n""" + tab + """free(sys_help_A_N);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->A_N, sys_help_A_N, "s_dyn->aux_matrices->A_N");\n""" + tab + """free(sys_help_A_N);\n""")
 
     f.write(tab + "double *sys_help_E_diag = malloc(n*time_horizon* p*time_horizon* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_E_diag", E_diag)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->E_diag, sys_help_E_diag, "s_dyn->helper_functions->E_diag");\n""" + tab + """free(sys_help_E_diag);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->E_diag, sys_help_E_diag, "s_dyn->aux_matrices->E_diag");\n""" + tab + """free(sys_help_E_diag);\n""")
 
     f.write(tab + "double *sys_help_B_diag = malloc(n*time_horizon* m*time_horizon* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_B_diag", B_diag)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->B_diag, sys_help_B_diag, "s_dyn->helper_functions->B_diag");\n""" + tab + """free(sys_help_B_diag);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->B_diag, sys_help_B_diag, "s_dyn->aux_matrices->B_diag");\n""" + tab + """free(sys_help_B_diag);\n""")
 
     f.write(tab + "double *sys_help_K_hat = malloc(n* time_horizon* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_K_hat", K_hat)
     f.write(
-        tab + """gsl_vector_from_array(s_dyn->helper_functions->K_hat, sys_help_K_hat, "s_dyn->helper_functions->K_hat");\n""" + tab + """free(sys_help_K_hat);\n""")
+        tab + """gsl_vector_from_array(s_dyn->aux_matrices->K_hat, sys_help_K_hat, "s_dyn->aux_matrices->K_hat");\n""" + tab + """free(sys_help_K_hat);\n""")
 
     f.write(tab + "double *sys_help_D_vertices = malloc(d_ext_i* d_ext_j* sizeof(double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_D_vertices", D_vertices)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->D_vertices, sys_help_D_vertices, "s_dyn->helper_functions->D_vertices");\n""" + tab + """free(sys_help_D_vertices);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->D_vertices, sys_help_D_vertices, "s_dyn->aux_matrices->D_vertices");\n""" + tab + """free(sys_help_D_vertices);\n""")
 
     f.write(tab + "double *sys_help_D_one_step = malloc(d_one_i* d_one_j* sizeof(double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_D_one_step", D_one_step)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->D_one_step, sys_help_D_one_step,"s_dyn->helper_functions->D_one_step");\n""" + tab + """free(sys_help_D_one_step);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->D_one_step, sys_help_D_one_step,"s_dyn->aux_matrices->D_one_step");\n""" + tab + """free(sys_help_D_one_step);\n""")
 
     f.write(tab + "double *sys_help_L_default = malloc(n*time_horizon * (n+m*(time_horizon))* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_L_default", L_default)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->L_default, sys_help_L_default, "s_dyn->helper_functions->L_default");\n""" + tab + """free(sys_help_L_default);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->L_default, sys_help_L_default, "s_dyn->aux_matrices->L_default");\n""" + tab + """free(sys_help_L_default);\n""")
 
     f.write(tab + "double *sys_help_E_default = malloc(n* time_horizon* p* time_horizon* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_E_default", E_default)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->E_default, sys_help_E_default, "s_dyn->helper_functions->E_default");\n""" + tab + """free(sys_help_E_default);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->E_default, sys_help_E_default, "s_dyn->aux_matrices->E_default");\n""" + tab + """free(sys_help_E_default);\n""")
 
     f.write(tab + "double *sys_help_Ct = malloc(n*time_horizon*m*time_horizon*sizeof(double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_Ct", Ct)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->Ct, sys_help_Ct, "s_dyn->helper_functions->Ct");\n""" + tab + """free(sys_help_Ct);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->Ct, sys_help_Ct, "s_dyn->aux_matrices->Ct");\n""" + tab + """free(sys_help_Ct);\n""")
 
     f.write(tab + "double *sys_help_MU = malloc(u_set_size*time_horizon * sizeof(double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_MU", MU)
     f.write(
-        tab + """gsl_vector_from_array(s_dyn->helper_functions->MU, sys_help_MU, "s_dyn->helper_functions->MU");\n""" + tab + """free(sys_help_MU);\n""")
+        tab + """gsl_vector_from_array(s_dyn->aux_matrices->MU, sys_help_MU, "s_dyn->aux_matrices->MU");\n""" + tab + """free(sys_help_MU);\n""")
 
     f.write(tab + "double *sys_help_GU = malloc(u_set_size*time_horizon* p*time_horizon* sizeof(double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_GU", GU)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->GU, sys_help_GU,"s_dyn->helper_functions->GU");\n""" + tab + """free(sys_help_GU);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->GU, sys_help_GU,"s_dyn->aux_matrices->GU");\n""" + tab + """free(sys_help_GU);\n""")
 
     f.write(tab + "double *sys_help_LU = malloc(u_set_size*time_horizon * (n+m*(time_horizon))* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_LU", LU)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->LU, sys_help_LU, "s_dyn->helper_functions->LU");\n""" + tab + """free(sys_help_LU);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->aux_matrices->LU, sys_help_LU, "s_dyn->aux_matrices->LU");\n""" + tab + """free(sys_help_LU);\n""")
 
     f.write("""
     // Set cost function\n""")
