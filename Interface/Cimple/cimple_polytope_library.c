@@ -2,6 +2,8 @@
 // Created by be107admin on 9/25/17.
 //
 
+#include <math.h>
+#include <gsl/gsl_vector_double.h>
 #include "cimple_polytope_library.h"
 
 //TODO
@@ -185,6 +187,7 @@ void polytope_project(polytope *polytope, size_t new_dimension){
  * Reduces redundant number of rows of polytope
  */
 void polytope_reduce(polytope *polytope){
+//    polytope_list *polytopeHead = NULL;
 // poly, nonEmptyBounded=1, abs_tol=ABS_TOL
 
 // Does not check if it is a region
@@ -208,18 +211,19 @@ void polytope_reduce(polytope *polytope){
 // `poly` isn't flat
 //    A_arr = poly.A
 //    b_arr = poly.b
+
 // Remove rows with b = inf
 //
 //    // create list h, g
 //    int num_eq = 0;
-//    for(int i = 0; i < polytope->G->size; i++){
-//        if(gsl_vector_get(polytope->G, i) != INFINITY){
-//            // add gsl_matrix_row(polytope->H, i); to list h
-//            // add gsl_vector_get(polytope->G, i); to list g
+//    for(size_t i = polytope->G->size; i < 0; i--){
+//        if(gsl_vector_get(polytope->G, i-1) != INFINITY){
+//            gsl_vector_view current_view = gsl_matrix_row(polytope->H, i);
+//            polytope_list_push(&polytopeHead, &current_view.vector ,gsl_vector_get(polytope->G, i));
 //            num_eq++;
 //        }
 //    }
-//// first eliminate the linearly dependent rows corresponding to the same hyperplane
+// first eliminate the linearly dependent rows corresponding to the same hyperplane
 //    M1 = np.hstack([A_arr, np.array([b_arr]).T]).T
 //            M1row = 1/sqrt(np.sum(M1**2, 0))
 //    M1n = np.dot(M1, np.diag(M1row))
@@ -270,3 +274,23 @@ void polytope_reduce(polytope *polytope){
 //    return polyOut
 
 };
+
+//void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue){
+//
+//    polytope_list *newNode = NULL;
+//
+//    /* Allocate memory for new node (with its payload). */
+//    newNode=malloc(sizeof(*newNode));
+//    if(NULL == newNode) {
+//        fprintf(stderr, "Error: malloc() failed.\n");
+//        exit(EXIT_FAILURE);
+//    }
+//
+//    /* Initialize the new node's content. */
+//    newNode->vector = newVector;
+//    newNode->value = newValue;
+//
+//    /* Link this node into the list as the new head node. */
+//    newNode->node = *list_head;
+//    *list_head = newNode;
+//}

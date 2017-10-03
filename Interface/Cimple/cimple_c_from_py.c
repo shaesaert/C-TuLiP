@@ -5,7 +5,6 @@
 
 #include "cimple_c_from_py.h"
 
-
 /**
  * Allocates the needed memory space on the heap for all major structs, that get reused a lot
  */
@@ -286,8 +285,8 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     memcpy(original_right_side[5], (double []){-74.0,76.0},2* sizeof(double));
     memcpy(original_left_side[6], (double []){-1.0,1.0},2* sizeof(double));
     memcpy(original_right_side[6], (double []){-65.0,72.0},2* sizeof(double));
-    memcpy(original_hulls_left_side[4], (double []){1.0,-1.0},2* sizeof(double));
-    memcpy(original_hulls_right_side[4], (double []){80.0,-65.0},2* sizeof(double));
+    memcpy(original_hulls_left_side[4], (double []){-1.0,1.0},2* sizeof(double));
+    memcpy(original_hulls_right_side[4], (double []){-65.0,80.0},2* sizeof(double));
 
     int polytope_count = 0;
     for(int i = 0; i< number_of_regions; i++){

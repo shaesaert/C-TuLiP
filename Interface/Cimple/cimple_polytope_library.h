@@ -23,6 +23,17 @@ typedef struct polytope{
 
 }polytope;
 
+///**
+// * list of vectors
+// *
+// * Idea: list of matrix row views, to build an easily changeable (reduced) matrix/polytope
+// */
+//typedef struct polytope_list{
+//    gsl_vector *vector;
+//    double value;
+//    struct polytope_list* node;
+//}polytope_list;
+
 /**
  * @brief "Constructor" Dynamically allocates the space a polytope needs
  * @param k H.size1 == G.size
@@ -109,5 +120,8 @@ void polytope_project(polytope *polytope, size_t new_dimension);
  * @param polytope
  */
 void polytope_reduce(polytope *polytope);
+
+//void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue);
+
 
 #endif //CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H

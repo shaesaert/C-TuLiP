@@ -9701,25 +9701,15 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     f.write(
         tab + """gsl_vector_from_array(s_dyn->W_set->G, sys_WSetG, "s_dyn->W_set->G");\n""" + tab + """free(sys_WSetG);\n""")
 
-    f.write(tab + "double *sys_help_A_k = malloc(n* n*time_horizon* sizeof (double));\n")
-    write_np_matrix_c_array(f, 1, "sys_help_A_k", A_k)
+    f.write(tab + "double *sys_help_A_K = malloc(n* time_horizon * n * time_horizon* sizeof (double));\n")
+    write_np_matrix_c_array(f, 1, "sys_help_A_K", A_K)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_K, sys_help_A_k, "s_dyn->helper_functions->A_K");\n""" + tab + """free(sys_help_A_k);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_K, sys_help_A_K, "s_dyn->helper_functions->A_K");\n""" + tab + """free(sys_help_A_K);\n""")
 
-    f.write(tab + "double *sys_help_A_n = malloc(n* n* sizeof (double));\n")
-    write_np_matrix_c_array(f, 1, "sys_help_A_n", A_n)
+    f.write(tab + "double *sys_help_A_N = malloc(n* time_horizon * n * sizeof (double));\n")
+    write_np_matrix_c_array(f, 1, "sys_help_A_N", A_N)
     f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_n, "s_dyn->helper_functions->A_N");\n""" + tab + """free(sys_help_A_n);\n""")
-
-    f.write(tab + "double *sys_help_A_K_2 = malloc(n* time_horizon * n * time_horizon* sizeof (double));\n")
-    write_np_matrix_c_array(f, 1, "sys_help_A_K_2", A_K)
-    f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_K_2, sys_help_A_K_2, "s_dyn->helper_functions->A_K_2");\n""" + tab + """free(sys_help_A_K_2);\n""")
-
-    f.write(tab + "double *sys_help_A_N_2 = malloc(n* time_horizon * n * sizeof (double));\n")
-    write_np_matrix_c_array(f, 1, "sys_help_A_N_2", A_N)
-    f.write(
-        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_N_2, sys_help_A_N_2, "s_dyn->helper_functions->A_N_2");\n""" + tab + """free(sys_help_A_N_2);\n""")
+        tab + """gsl_matrix_from_array(s_dyn->helper_functions->A_N, sys_help_A_N, "s_dyn->helper_functions->A_N");\n""" + tab + """free(sys_help_A_N);\n""")
 
     f.write(tab + "double *sys_help_E_diag = malloc(n*time_horizon* p*time_horizon* sizeof (double));\n")
     write_np_matrix_c_array(f, 1, "sys_help_E_diag", E_diag)

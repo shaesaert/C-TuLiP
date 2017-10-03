@@ -2,8 +2,8 @@
 // Created by L. Jonathan Feldstein
 //
 
-#ifndef CIMPLE_FIND_CONTROLLER_H
-#define CIMPLE_FIND_CONTROLLER_H
+#ifndef CIMPLE_CIMPLE_CONTROLLER_H
+#define CIMPLE_CIMPLE_CONTROLLER_H
 
 #include <stddef.h>
 #include <math.h>
@@ -141,4 +141,4 @@ void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytop
  */
 void set_path_constraints(gsl_matrix* L_full, gsl_vector *M_full, system_dynamics * s_dyn, polytope *list_polytopes[], size_t N);
 
-#endif //CIMPLE_FIND_CONTROLLER_H
+#endif //CIMPLE_CIMPLE_CONTROLLER_H
