@@ -9176,12 +9176,12 @@ import numpy as np
 def write_np_matrix_c_array(f, tab_number, c_array, py_matrix):
     tab = "    "
     matrix_array = np.array(py_matrix)
-    f.write(tab * tab_number + "memcpy(" + c_array + ", (double []){")
+    f.write(tab * tab_number + "memcpy(" + c_array + ", ((double []){")
     for i in range(matrix_array.size):
         f.write(str(matrix_array.item(i)))
         if i < (matrix_array.size - 1):
             f.write(",")
-    f.write("}," + str(matrix_array.size) + "* sizeof(double));\n")
+    f.write("})," + str(matrix_array.size) + "* sizeof(double));\n")
 
 
 def write_cimple_header(ctrl):
@@ -9242,7 +9242,7 @@ def write_cimple_file(ctrl):
         # Write action functions
         f.write("void ACT_" + str(
             trans_to) + "(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){\n")
-        f.write(tab + "int target_cell =" + str(trans_to) + ";\n")
+        f.write(tab + "int target_cell =" + str(trans_to[1::]) + ";\n")
         f.write(tab + """printf("Computing control sequence to go from cell %d to cell """ + str(
             trans_to) + """...", (*now).current_cell);\n""")
         f.write(tab + "fflush(stdout);\n\n")
@@ -9588,33 +9588,33 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
     size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
     size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));\n""")
-    f.write(tab + "memcpy(polytope_sizes, (size_t []){")
+    f.write(tab + "memcpy(polytope_sizes, ((size_t []){")
     for i in range(len(polytope_sizes)):
         f.write(str(polytope_sizes[i]))
         if i < (len(polytope_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(polytope_sizes)) + "* sizeof(polytope_sizes[0]));\n")
+    f.write("})," + str(len(polytope_sizes)) + "* sizeof(polytope_sizes[0]));\n")
 
-    f.write(tab + "memcpy(hull_sizes, (size_t []){")
+    f.write(tab + "memcpy(hull_sizes, ((size_t []){")
     for i in range(len(hull_sizes)):
         f.write(str(hull_sizes[i]))
         if i < (len(hull_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(hull_sizes)) + "* sizeof(hull_sizes[0]));\n")
+    f.write("})," + str(len(hull_sizes)) + "* sizeof(hull_sizes[0]));\n")
 
-    f.write(tab + "memcpy(original_polytope_sizes, (size_t []){")
+    f.write(tab + "memcpy(original_polytope_sizes, ((size_t []){")
     for i in range(len(orig_polytope_sizes)):
         f.write(str(orig_polytope_sizes[i]))
         if i < (len(orig_polytope_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(orig_polytope_sizes)) + "* sizeof(original_polytope_sizes[0]));\n")
+    f.write("})," + str(len(orig_polytope_sizes)) + "* sizeof(original_polytope_sizes[0]));\n")
 
-    f.write(tab + "memcpy(original_hull_sizes, (size_t []){")
+    f.write(tab + "memcpy(original_hull_sizes, ((size_t []){")
     for i in range(len(orig_hull_sizes)):
         f.write(str(orig_hull_sizes[i]))
         if i < (len(orig_hull_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(orig_hull_sizes)) + "* sizeof(original_hull_sizes[0]));\n")
+    f.write("})," + str(len(orig_hull_sizes)) + "* sizeof(original_hull_sizes[0]));\n")
 
     f.write("""
     *now = state_alloc(n,default_cell);
@@ -9788,33 +9788,33 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
     size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
     size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));\n""")
-    f.write(tab + "memcpy(polytope_sizes, (size_t []){")
+    f.write(tab + "memcpy(polytope_sizes, ((size_t []){")
     for i in range(len(polytope_sizes)):
         f.write(str(polytope_sizes[i]))
         if i < (len(polytope_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(polytope_sizes)) + "* sizeof(polytope_sizes[0]));\n")
+    f.write("})," + str(len(polytope_sizes)) + "* sizeof(polytope_sizes[0]));\n")
 
-    f.write(tab + "memcpy(hull_sizes, (size_t []){")
+    f.write(tab + "memcpy(hull_sizes, ((size_t []){")
     for i in range(len(hull_sizes)):
         f.write(str(hull_sizes[i]))
         if i < (len(hull_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(hull_sizes)) + "* sizeof(hull_sizes[0]));\n")
+    f.write("})," + str(len(hull_sizes)) + "* sizeof(hull_sizes[0]));\n")
 
-    f.write(tab + "memcpy(original_polytope_sizes, (size_t []){")
+    f.write(tab + "memcpy(original_polytope_sizes, ((size_t []){")
     for i in range(len(orig_polytope_sizes)):
         f.write(str(orig_polytope_sizes[i]))
         if i < (len(orig_polytope_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(orig_polytope_sizes)) + "* sizeof(original_polytope_sizes[0]));\n")
+    f.write("})," + str(len(orig_polytope_sizes)) + "* sizeof(original_polytope_sizes[0]));\n")
 
-    f.write(tab + "memcpy(original_hull_sizes, (size_t []){")
+    f.write(tab + "memcpy(original_hull_sizes, ((size_t []){")
     for i in range(len(orig_hull_sizes)):
         f.write(str(orig_hull_sizes[i]))
         if i < (len(orig_hull_sizes) - 1):
             f.write(",")
-    f.write("}," + str(len(orig_hull_sizes)) + "* sizeof(original_hull_sizes[0]));\n")
+    f.write("})," + str(len(orig_hull_sizes)) + "* sizeof(original_hull_sizes[0]));\n")
 
     f.write("""
     double **left_side = malloc(total_number_polytopes* sizeof(double*));
