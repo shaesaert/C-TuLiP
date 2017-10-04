@@ -9655,7 +9655,14 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     f.write(tab + "size_t w_set_size =" + str(sys_dyn.Wset.A.shape[0]) + ";\n")
 
     f.write(tab + "double *initial_state = malloc(n* sizeof (double));\n")
-    # TODO write_matrix_c_array(f, 2, initial_state, )
+
+    f.write(tab + "memcpy(initial_state, (double []){")
+    for i in range(n):
+        f.write(str(0.0))
+        if i < (n - 1):
+            f.write(",")
+    f.write("}," + str(n) + "* sizeof(initial_state[0]));\n")
+
     f.write("""    
     // Initialize state:
     gsl_vector_from_array(now->x, initial_state, "now->x");
