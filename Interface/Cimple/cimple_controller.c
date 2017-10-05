@@ -2,6 +2,7 @@
 // Created by L.Jonathan Feldstein
 //
 
+#include <gsl/gsl_vector_double.h>
 #include "cimple_controller.h"
 
 
@@ -31,11 +32,12 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
     printf("apply_control: begin at");
     gsl_vector_print(x, "x[0]");
     fflush(stdout);
-
+    gsl_vector *x_temp = gsl_vector_alloc(x->size);
     //Apply input to state of next N time steps
     // x[k+1] = A.x[k] + B.u[k+1]
     int time = 0;
     for (size_t k = 0; k < (u->size2); k++){
+        gsl_vector_set_zero(x_temp);
         printf("apply_control: u[%d] = ", time);
         gsl_vector_view u_view = gsl_matrix_column(u, k);
         gsl_vector_print(&u_view.vector,"u[]");
@@ -44,12 +46,14 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
         gsl_vector_view u_col = gsl_matrix_column(u,k);
 
         //A.x[k-1]
-        gsl_blas_dgemv(CblasNoTrans, 1, A, x, 0, x);
+        gsl_blas_dgemv(CblasNoTrans, 1, A, x, 0, x_temp);
         //B.u[k]
         gsl_blas_dgemv(CblasNoTrans, 1, B, &u_col.vector, 0 , Btu);
         //update x[k-1] => x[k]
+        gsl_vector_set_zero(x);
+        gsl_vector_add(x, x_temp);
         gsl_vector_add(x, Btu);
-        printf("new state: x[%d] = ", time+1);
+        printf("Temporary state: x[%d] = ", time+1);
         gsl_vector_print(x,"x[]");
         fflush(stdout);
         gsl_vector_free(Btu);

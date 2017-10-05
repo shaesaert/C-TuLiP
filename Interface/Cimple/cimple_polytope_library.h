@@ -23,16 +23,16 @@ typedef struct polytope{
 
 }polytope;
 
-///**
-// * list of vectors
-// *
-// * Idea: list of matrix row views, to build an easily changeable (reduced) matrix/polytope
-// */
-//typedef struct polytope_list{
-//    gsl_vector *vector;
-//    double value;
-//    struct polytope_list* node;
-//}polytope_list;
+/**
+ * list of vectors
+ *
+ * Idea: list of matrix row views, to build an easily changeable (reduced) matrix/polytope
+ */
+typedef struct polytope_list{
+    gsl_vector *vector;
+    double value;
+    struct polytope_list* node;
+}polytope_list;
 
 /**
  * @brief "Constructor" Dynamically allocates the space a polytope needs
@@ -89,7 +89,7 @@ void region_of_polytopes_free(region_of_polytopes * region_of_polytopes);
  * @param right_side C array to be converted to right side vector
  * @param name name of polytope, will be displayed to user terminal to inform about successfull initialization
  */
-void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side, char*name);
+void polytope_from_arrays(polytope *polytope, double *left_side, double *right_side, double *cheby, char*name);
 
 /**
  * @brief Checks whether a state is in a certain polytope
@@ -121,7 +121,7 @@ void polytope_project(polytope *polytope, size_t new_dimension);
  */
 void polytope_reduce(polytope *polytope);
 
-//void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue);
+void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue);
 
 
 #endif //CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H

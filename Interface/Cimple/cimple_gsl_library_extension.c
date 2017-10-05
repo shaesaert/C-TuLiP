@@ -39,3 +39,11 @@ void gsl_matrix_from_array(gsl_matrix *matrix, double *array, char* name){
     gsl_matrix_print(matrix, name);
     fflush(stdout);
 };
+
+gsl_matrix * gsl_matrix_diag_from_vector(gsl_vector * X){
+    gsl_matrix * mat = gsl_matrix_alloc(X->size, X->size);
+    gsl_vector_view diag = gsl_matrix_diagonal(mat);
+    gsl_matrix_set_all(mat, 0.0); //or whatever number you like
+    gsl_vector_memcpy(&diag.vector, X);
+    return mat;
+}

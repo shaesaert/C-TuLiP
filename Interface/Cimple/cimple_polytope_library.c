@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include <gsl/gsl_vector_double.h>
+#include <gsl/gsl_matrix.h>
 #include "cimple_polytope_library.h"
 
 //TODO
@@ -92,10 +93,13 @@ void region_of_polytopes_free(region_of_polytopes * region_of_polytopes){
 /**
  * Converts two C arrays to a polytope consistent of a left side matrix (i.e. H) and right side vector (i.e. G)
  */
-void polytope_from_arrays(polytope *polytope, size_t k, size_t n, double *left_side, double *right_side, char*name){
+void polytope_from_arrays(polytope *polytope, double *left_side, double *right_side, double *cheby, char*name){
 
     gsl_matrix_from_array(polytope->H, left_side, name);
     gsl_vector_from_array(polytope->G, right_side, name);
+    for(int i = 0; i < polytope->H->size2; i++){
+        polytope->chebyshev_center[i] = cheby[i];
+    }
 };
 
 /**
@@ -187,7 +191,7 @@ void polytope_project(polytope *polytope, size_t new_dimension){
  * Reduces redundant number of rows of polytope
  */
 void polytope_reduce(polytope *polytope){
-//    polytope_list *polytopeHead = NULL;
+    polytope_list *polytopeHead = NULL;
 // poly, nonEmptyBounded=1, abs_tol=ABS_TOL
 
 // Does not check if it is a region
@@ -214,15 +218,35 @@ void polytope_reduce(polytope *polytope){
 
 // Remove rows with b = inf
 //
-//    // create list h, g
+//    // create list h, g and diagonal norm matrix
 //    int num_eq = 0;
+//    gsl_vector * norm_vector = gsl_vector_alloc(polytope->H->size2 + 1);
+//    gsl_vector_set_zero(norm_vector);
 //    for(size_t i = polytope->G->size; i < 0; i--){
 //        if(gsl_vector_get(polytope->G, i-1) != INFINITY){
+//            for(size_t j = 0; j < polytope->H->size2; j++){
+//                double current_value = gsl_vector_get(norm_vector,j);
+//                double value = gsl_matrix_get(polytope->H, i, j);
+//                current_value += value * value;
+//                gsl_vector_set(norm_vector, j, current_value);
+//            }
+//            double current_g_value = gsl_vector_get(norm_vector, polytope->H->size2);
+//            double g_value = gsl_vector_get(polytope->G,i);
+//            current_g_value += g_value*g_value;
+//            gsl_vector_set(norm_vector, polytope->H->size2, current_g_value);
 //            gsl_vector_view current_view = gsl_matrix_row(polytope->H, i);
 //            polytope_list_push(&polytopeHead, &current_view.vector ,gsl_vector_get(polytope->G, i));
 //            num_eq++;
 //        }
 //    }
+//    for(size_t k = 0; k < norm_vector->size; k++){
+//        double norm_squared = gsl_vector_get(norm_vector , k);
+//        norm_squared = 1/sqrt(norm_squared);
+//        gsl_vector_set(norm_vector, k, norm_squared);
+//    }
+//    gsl_matrix_diag_from_vector(norm_vector);
+//    gsl_vector_free(norm_vector);
+//
 // first eliminate the linearly dependent rows corresponding to the same hyperplane
 //    M1 = np.hstack([A_arr, np.array([b_arr]).T]).T
 //            M1row = 1/sqrt(np.sum(M1**2, 0))
@@ -275,22 +299,22 @@ void polytope_reduce(polytope *polytope){
 
 };
 
-//void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue){
-//
-//    polytope_list *newNode = NULL;
-//
-//    /* Allocate memory for new node (with its payload). */
-//    newNode=malloc(sizeof(*newNode));
-//    if(NULL == newNode) {
-//        fprintf(stderr, "Error: malloc() failed.\n");
-//        exit(EXIT_FAILURE);
-//    }
-//
-//    /* Initialize the new node's content. */
-//    newNode->vector = newVector;
-//    newNode->value = newValue;
-//
-//    /* Link this node into the list as the new head node. */
-//    newNode->node = *list_head;
-//    *list_head = newNode;
-//}
+void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue){
+
+    polytope_list *newNode = NULL;
+
+    /* Allocate memory for new node (with its payload). */
+    newNode=malloc(sizeof(*newNode));
+    if(NULL == newNode) {
+        fprintf(stderr, "Error: malloc() failed.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Initialize the new node's content. */
+    newNode->vector = newVector;
+    newNode->value = newValue;
+
+    /* Link this node into the list as the new head node. */
+    newNode->node = *list_head;
+    *list_head = newNode;
+}

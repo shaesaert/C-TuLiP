@@ -39,4 +39,5 @@ void gsl_matrix_print(gsl_matrix *matrix, char *name);
 ////////////////////////////////////////////////////////////////////////////////
 void gsl_vector_print(gsl_vector *vector, char *name);
 
+gsl_matrix * gsl_matrix_diag_from_vector(gsl_vector * X);
 #endif //CIMPLE_GSL_LIBRARY_CIMPLE_EXTENSION_H

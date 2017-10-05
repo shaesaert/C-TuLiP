@@ -9828,14 +9828,17 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     double **right_side = malloc(total_number_polytopes* sizeof(double*));
     double **hulls_left_side = malloc(number_of_regions*sizeof(double*));
     double **hulls_right_side = malloc(number_of_regions*sizeof(double*));
+    double **cheby = malloc(total_number_polytopes * sizeof(double*));
+    double **hull_cheby = malloc(number_of_regions*sizeof(double*));
     for (int i = 0; i < total_number_polytopes; i++) {
         left_side[i] = malloc(polytope_sizes[i]* n * sizeof(double));            
         right_side[i] = malloc(polytope_sizes[i] * sizeof(double));
-
+        cheby[i] = malloc(n*sizeof(double));
     }
     for (int i = 0; i < number_of_regions; i++) {
         hulls_left_side[i] = malloc(hull_sizes[i]* n * sizeof(double));            
         hulls_right_side[i] = malloc(hull_sizes[i] * sizeof(double));
+        hull_cheby[i] = malloc(n*sizeof(double));
 
     }\n""")
     polytope_count_py = 0
@@ -9845,6 +9848,8 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
         for polytope in region:
             write_np_matrix_c_array(f, 1, "left_side[" + str(polytope_count_py + j) + "]", polytope.A)
             write_np_matrix_c_array(f, 1, "right_side[" + str(polytope_count_py + j) + "]", polytope.b)
+            rc, xc = pc.cheby_ball(polytope)
+            write_np_matrix_c_array(f, 1, "cheby[" + str(polytope_count_py + j) + "]", xc)
             j += 1
         polytope_count_py += len(region)
         # Take convex hull
@@ -9862,6 +9867,8 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
         write_np_matrix_c_array(f, 1, "hulls_left_side[" + str(i) + "]", hull_of_region.A)
         write_np_matrix_c_array(f, 1, "hulls_right_side[" + str(i) + "]", hull_of_region.b)
+        rc, xc_hull = pc.cheby_ball(hull_of_region)
+        write_np_matrix_c_array(f, 1, "hull_cheby[" + str(i) + "]", xc_hull)
         i += 1
 
     f.write("""
@@ -9869,14 +9876,18 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     double **original_right_side = malloc(original_total_number_polytopes* sizeof(double));
     double **original_hulls_left_side = malloc(number_of_original_regions*sizeof(double));
     double **original_hulls_right_side = malloc(number_of_original_regions*sizeof(double));
+    double **original_cheby = malloc(original_total_number_polytopes * sizeof(double*));
+    double **original_hull_cheby = malloc(number_of_original_regions*sizeof(double*));
     for (int i = 0; i < original_total_number_polytopes; i++) {
         original_left_side[i] = malloc(original_polytope_sizes[i]* n * sizeof(double));            
         original_right_side[i] = malloc(original_polytope_sizes[i] * sizeof(double));
+        original_cheby[i] = malloc(n*sizeof(double));
 
     }
     for (int i = 0; i < number_of_original_regions; i++) {
         original_hulls_left_side[i] = malloc(original_hull_sizes[i]* n * sizeof(double));            
         original_hulls_right_side[i] = malloc(original_hull_sizes[i] * sizeof(double));
+        original_hull_cheby[i] = malloc(n*sizeof(double));
 
     }\n""")
     orig_polytope_count_py = 0
@@ -9886,6 +9897,8 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
         for polytope in region:
             write_np_matrix_c_array(f, 1, "original_left_side[" + str(orig_polytope_count_py + j) + "]", polytope.A)
             write_np_matrix_c_array(f, 1, "original_right_side[" + str(orig_polytope_count_py + j) + "]", polytope.b)
+            rc, xc = pc.cheby_ball(polytope)
+            write_np_matrix_c_array(f, 1, "original_cheby[" + str(orig_polytope_count_py + j) + "]", xc)
             j += 1
         orig_polytope_count_py += len(region)
         # Take convex hull
@@ -9903,26 +9916,28 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
         write_np_matrix_c_array(f, 1, "original_hulls_left_side[" + str(i) + "]", hull_of_region.A)
         write_np_matrix_c_array(f, 1, "original_hulls_right_side[" + str(i) + "]", hull_of_region.b)
+        rc, xc_orig_hull = pc.cheby_ball(hull_of_region)
+        write_np_matrix_c_array(f, 1, "original_hull_cheby[" + str(i) + "]", xc_orig_hull)
         i += 1
 
     f.write("""
     int polytope_count = 0;
     for(int i = 0; i< number_of_regions; i++){
         for(int j = 0; j< d_dyn->regions[i]->number_of_polytopes; j++){
-            polytope_from_arrays(d_dyn->regions[i]->polytopes[j],polytope_sizes[j+polytope_count] ,n,left_side[j+polytope_count],right_side[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
+            polytope_from_arrays(d_dyn->regions[i]->polytopes[j],left_side[j+polytope_count],right_side[j+polytope_count], cheby[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
         }
         polytope_count +=d_dyn->regions[i]->number_of_polytopes;
-        polytope_from_arrays(d_dyn->regions[i]->hull_of_region,hull_sizes[i],n,hulls_left_side[i],hulls_right_side[i],"d_dyn->regions[i]->hull_of_region" );
+        polytope_from_arrays(d_dyn->regions[i]->hull_of_region,hulls_left_side[i],hulls_right_side[i], hull_cheby[i], "d_dyn->regions[i]->hull_of_region" );
     }\n\n""")
 
     f.write("""
     int original_polytope_count = 0;
     for(int i = 0; i< number_of_original_regions; i++){
         for(int j = 0; j< d_dyn->original_regions[i]->number_of_polytopes; j++){
-            polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j],original_polytope_sizes[j+original_polytope_count] ,n,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
+            polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j] ,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], original_cheby[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
         }
         original_polytope_count +=d_dyn->original_regions[i]->number_of_polytopes;
-        polytope_from_arrays(d_dyn->original_regions[i]->hull_of_region,original_hull_sizes[i],n,original_hulls_left_side[i],original_hulls_right_side[i], "d_dyn->original_regions[i]->hull_of_region" );
+        polytope_from_arrays(d_dyn->original_regions[i]->hull_of_region, original_hulls_left_side[i],original_hulls_right_side[i], original_hull_cheby[i],"d_dyn->original_regions[i]->hull_of_region" );
     }""")
 
     f.write("""    
@@ -9930,36 +9945,43 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     for (int i = 0; i < total_number_polytopes; i++) {
         free(left_side[i]);
         free(right_side[i]);
+        free(cheby[i]);
     }
     for (int i = 0; i < number_of_regions; i++) {
         free(hulls_left_side[i]);
         free(hulls_right_side[i]);
+        free(hull_cheby[i]);
     }        
     for (int i = 0; i < original_total_number_polytopes; i++) {
         free(original_left_side[i]);
         free(original_right_side[i]);
+        free(original_cheby[i]);
     }        
     for (int i = 0; i < number_of_original_regions; i++) {
         free(original_hulls_left_side[i]);
         free(original_hulls_right_side[i]);
+        free(original_hull_cheby[i]);
     }
     free(polytope_sizes);
     free(hull_sizes);
     free(left_side);
     free(right_side);
+    free(cheby);
     free(hulls_left_side);
     free(hulls_right_side);
+    free(hull_cheby);
     free(original_polytope_sizes);
     free(original_hull_sizes);
     free(original_left_side);
     free(original_right_side);
+    free(original_cheby);
     free(original_hulls_left_side);
     free(original_hulls_right_side);
+    free(original_hull_cheby);
     """)
     f.write("\n" + tab + "}\n")
 
     return f.getvalue()
-
     #
 # with open("act_impl.c", "w") as f:
 #     f.write(Statechart.write_cimple_file(ctrl))
