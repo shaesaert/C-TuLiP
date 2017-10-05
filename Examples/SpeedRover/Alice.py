@@ -208,7 +208,16 @@ for Case in Cases:
     # with open("low_ctrl"+".xml", "w") as f:
     #    f.write(dumpsmach.mealy_to_xmi_uml(ctrl_modes,name="Ctrl_modes",outputs={'act'},relabel=True, Type='control'))
 
-    # write strategy plus control modes at the same time to a statechart
+
+       #
+    with open("act_impl.c", "w") as f:
+        f.write(Statechart.write_cimple_file(ctrl_modes))
+
+    with open("act_impl.h", "w") as f:
+        f.write(Statechart.write_cimple_header(ctrl_modes))
+
+    with open("cimple_c_from_py.c", "w") as f:
+        f.write(Statechart.write_init_file(ctrl_red, sys_dyn, disc_dynamics, 5, 2, 0.0, name=""))
 
     print('Original model:')
     Orig_len += (str(len(ctrl.nodes())),)
