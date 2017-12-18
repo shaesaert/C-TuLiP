@@ -10,10 +10,10 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     //Set help variables
 
     size_t time_horizon = 5;
-    int number_of_regions= 10;
-    int number_of_original_regions= 5;
+    int number_of_regions= 4;
+    int number_of_original_regions= 4;
     int closed_loop = 1;
-    int conservative = 1;
+    int conservative = 0;
     int ord =2;
     size_t n =1;
     size_t m =1;
@@ -26,20 +26,20 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     size_t w_set_size =2;
     double distance_weight =3;
 
-    int default_cell = 0;
-    size_t total_number_polytopes = 10;
-    int polytopes_in_region[10] = {1,1,1,1,1,1,1,1,1,1};
-    size_t original_total_number_polytopes = 7;
-    int orig_polytopes_in_region[5] = {1,1,1,1,3};
+    int default_cell = 3;
+    size_t total_number_polytopes = 4;
+    int polytopes_in_region[4] = {1,1,1,1};
+    size_t original_total_number_polytopes = 4;
+    int orig_polytopes_in_region[4] = {1,1,1,1};
 
     size_t *polytope_sizes= malloc(total_number_polytopes * sizeof(size_t));
     size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
     size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
     size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));
-    memcpy(polytope_sizes, ((size_t []){2,2,2,2,2,2,2,2,2,2}),10* sizeof(polytope_sizes[0]));
-    memcpy(hull_sizes, ((size_t []){2,2,2,2,2,2,2,2,2,2}),10* sizeof(hull_sizes[0]));
-    memcpy(original_polytope_sizes, ((size_t []){2,2,2,2,2,2,2}),7* sizeof(original_polytope_sizes[0]));
-    memcpy(original_hull_sizes, ((size_t []){2,2,2,2,2}),5* sizeof(original_hull_sizes[0]));
+    memcpy(polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(polytope_sizes[0]));
+    memcpy(hull_sizes, ((size_t []){2,2,2,2}),4* sizeof(hull_sizes[0]));
+    memcpy(original_polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(original_polytope_sizes[0]));
+    memcpy(original_hull_sizes, ((size_t []){2,2,2,2}),4* sizeof(original_hull_sizes[0]));
 
     *now = state_alloc(n,default_cell);
     *s_dyn = system_dynamics_alloc(n, m, p, w_set_size, u_set_size, time_horizon, d_ext_i, d_ext_j, d_one_i, d_one_j);
@@ -57,8 +57,8 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     //Set help variables
 
     size_t time_horizon = 5;
-    int number_of_regions= 10;
-    int number_of_original_regions= 5;
+    int number_of_regions= 4;
+    int number_of_original_regions= 4;
     size_t n =1;
     size_t m =1;
     size_t p =1;
@@ -103,11 +103,11 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     gsl_matrix_from_array(s_dyn->W_set->H, sys_WSetH,"s_dyn->W_set->H");
     free(sys_WSetH);
     double *sys_USetG = malloc(u_set_size* sizeof (double));
-    memcpy(sys_USetG, ((double []){1.0,1.0}),2* sizeof(double));
+    memcpy(sys_USetG, ((double []){2.0,2.0}),2* sizeof(double));
     gsl_vector_from_array(s_dyn->U_set->G, sys_USetG, "s_dyn->U_set->G");
     free(sys_USetG);
     double *sys_WSetG = malloc(w_set_size* sizeof (double));
-    memcpy(sys_WSetG, ((double []){0.1,0.1}),2* sizeof(double));
+    memcpy(sys_WSetG, ((double []){0.01,0.01}),2* sizeof(double));
     gsl_vector_from_array(s_dyn->W_set->G, sys_WSetG, "s_dyn->W_set->G");
     free(sys_WSetG);
     double *sys_help_A_K = malloc(n* time_horizon * n * time_horizon* sizeof (double));
@@ -131,11 +131,11 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     gsl_vector_from_array(s_dyn->aux_matrices->K_hat, sys_help_K_hat, "s_dyn->aux_matrices->K_hat");
     free(sys_help_K_hat);
     double *sys_help_D_vertices = malloc(d_ext_i* d_ext_j* sizeof(double));
-    memcpy(sys_help_D_vertices, ((double []){0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1}),160* sizeof(double));
+    memcpy(sys_help_D_vertices, ((double []){0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01}),160* sizeof(double));
     gsl_matrix_from_array(s_dyn->aux_matrices->D_vertices, sys_help_D_vertices, "s_dyn->aux_matrices->D_vertices");
     free(sys_help_D_vertices);
     double *sys_help_D_one_step = malloc(d_one_i* d_one_j* sizeof(double));
-    memcpy(sys_help_D_one_step, ((double []){0.1,-0.1}),2* sizeof(double));
+    memcpy(sys_help_D_one_step, ((double []){0.01,-0.01}),2* sizeof(double));
     gsl_matrix_from_array(s_dyn->aux_matrices->D_one_step, sys_help_D_one_step,"s_dyn->aux_matrices->D_one_step");
     free(sys_help_D_one_step);
     double *sys_help_L_default = malloc(n*time_horizon * (n+m*(time_horizon))* sizeof (double));
@@ -151,7 +151,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     gsl_matrix_from_array(s_dyn->aux_matrices->Ct, sys_help_Ct, "s_dyn->aux_matrices->Ct");
     free(sys_help_Ct);
     double *sys_help_MU = malloc(u_set_size*time_horizon * sizeof(double));
-    memcpy(sys_help_MU, ((double []){1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}),10* sizeof(double));
+    memcpy(sys_help_MU, ((double []){2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0}),10* sizeof(double));
     gsl_vector_from_array(s_dyn->aux_matrices->MU, sys_help_MU, "s_dyn->aux_matrices->MU");
     free(sys_help_MU);
     double *sys_help_GU = malloc(u_set_size*time_horizon* p*time_horizon* sizeof(double));
@@ -177,17 +177,17 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     gsl_vector_from_array(f_cost->r, cf_r, "f_cost->r");
     free(cf_r);
 
-    size_t total_number_polytopes = 10;
-    size_t original_total_number_polytopes = 7;
+    size_t total_number_polytopes = 4;
+    size_t original_total_number_polytopes = 4;
 
     size_t *polytope_sizes= malloc(total_number_polytopes * sizeof(size_t));
     size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
     size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
     size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));
-    memcpy(polytope_sizes, ((size_t []){2,2,2,2,2,2,2,2,2,2}),10* sizeof(polytope_sizes[0]));
-    memcpy(hull_sizes, ((size_t []){2,2,2,2,2,2,2,2,2,2}),10* sizeof(hull_sizes[0]));
-    memcpy(original_polytope_sizes, ((size_t []){2,2,2,2,2,2,2}),7* sizeof(original_polytope_sizes[0]));
-    memcpy(original_hull_sizes, ((size_t []){2,2,2,2,2}),5* sizeof(original_hull_sizes[0]));
+    memcpy(polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(polytope_sizes[0]));
+    memcpy(hull_sizes, ((size_t []){2,2,2,2}),4* sizeof(hull_sizes[0]));
+    memcpy(original_polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(original_polytope_sizes[0]));
+    memcpy(original_hull_sizes, ((size_t []){2,2,2,2}),4* sizeof(original_hull_sizes[0]));
 
     double **left_side = malloc(total_number_polytopes* sizeof(double*));
     double **right_side = malloc(total_number_polytopes* sizeof(double*));
@@ -207,65 +207,29 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
     }
     memcpy(left_side[0], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(right_side[0], ((double []){84.50000000000004,-80.0}),2* sizeof(double));
-    memcpy(cheby[0], ((double []){82.25000000000003}),1* sizeof(double));
+    memcpy(right_side[0], ((double []){20.0,-15.0}),2* sizeof(double));
+    memcpy(cheby[0], ((double []){17.5}),1* sizeof(double));
     memcpy(hulls_left_side[0], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[0], ((double []){84.50000000000004,-80.0}),2* sizeof(double));
-    memcpy(hull_cheby[0], ((double []){82.25000000000003}),1* sizeof(double));
+    memcpy(hulls_right_side[0], ((double []){20.0,-15.0}),2* sizeof(double));
+    memcpy(hull_cheby[0], ((double []){17.5}),1* sizeof(double));
     memcpy(left_side[1], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(right_side[1], ((double []){78.0,-76.0}),2* sizeof(double));
-    memcpy(cheby[1], ((double []){77.0}),1* sizeof(double));
+    memcpy(right_side[1], ((double []){15.0,-10.0}),2* sizeof(double));
+    memcpy(cheby[1], ((double []){12.5}),1* sizeof(double));
     memcpy(hulls_left_side[1], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[1], ((double []){78.0,-76.0}),2* sizeof(double));
-    memcpy(hull_cheby[1], ((double []){77.0}),1* sizeof(double));
+    memcpy(hulls_right_side[1], ((double []){15.0,-10.0}),2* sizeof(double));
+    memcpy(hull_cheby[1], ((double []){12.5}),1* sizeof(double));
     memcpy(left_side[2], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(right_side[2], ((double []){74.0,-72.0}),2* sizeof(double));
-    memcpy(cheby[2], ((double []){73.0}),1* sizeof(double));
+    memcpy(right_side[2], ((double []){10.0,-5.0}),2* sizeof(double));
+    memcpy(cheby[2], ((double []){7.5}),1* sizeof(double));
     memcpy(hulls_left_side[2], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[2], ((double []){74.0,-72.0}),2* sizeof(double));
-    memcpy(hull_cheby[2], ((double []){73.0}),1* sizeof(double));
-    memcpy(left_side[3], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(right_side[3], ((double []){-60.49999999999999,65.0}),2* sizeof(double));
-    memcpy(cheby[3], ((double []){62.75}),1* sizeof(double));
-    memcpy(hulls_left_side[3], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[3], ((double []){-60.49999999999999,65.0}),2* sizeof(double));
-    memcpy(hull_cheby[3], ((double []){62.75}),1* sizeof(double));
-    memcpy(left_side[4], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(right_side[4], ((double []){-78.0,80.0}),2* sizeof(double));
-    memcpy(cheby[4], ((double []){79.0}),1* sizeof(double));
-    memcpy(hulls_left_side[4], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[4], ((double []){-78.0,80.0}),2* sizeof(double));
-    memcpy(hull_cheby[4], ((double []){79.0}),1* sizeof(double));
-    memcpy(left_side[5], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(right_side[5], ((double []){-74.0,76.0}),2* sizeof(double));
-    memcpy(cheby[5], ((double []){75.0}),1* sizeof(double));
-    memcpy(hulls_left_side[5], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[5], ((double []){-74.0,76.0}),2* sizeof(double));
-    memcpy(hull_cheby[5], ((double []){75.0}),1* sizeof(double));
-    memcpy(left_side[6], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(right_side[6], ((double []){-67.5,72.0}),2* sizeof(double));
-    memcpy(cheby[6], ((double []){69.75}),1* sizeof(double));
-    memcpy(hulls_left_side[6], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[6], ((double []){-67.5,72.0}),2* sizeof(double));
-    memcpy(hull_cheby[6], ((double []){69.75}),1* sizeof(double));
-    memcpy(left_side[7], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(right_side[7], ((double []){-65.0,67.5}),2* sizeof(double));
-    memcpy(cheby[7], ((double []){66.25}),1* sizeof(double));
-    memcpy(hulls_left_side[7], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[7], ((double []){-65.0,67.5}),2* sizeof(double));
-    memcpy(hull_cheby[7], ((double []){66.25}),1* sizeof(double));
-    memcpy(left_side[8], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(right_side[8], ((double []){85.0,-84.50000000000004}),2* sizeof(double));
-    memcpy(cheby[8], ((double []){84.75000000000003}),1* sizeof(double));
-    memcpy(hulls_left_side[8], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[8], ((double []){85.0,-84.50000000000004}),2* sizeof(double));
-    memcpy(hull_cheby[8], ((double []){84.75000000000003}),1* sizeof(double));
-    memcpy(left_side[9], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(right_side[9], ((double []){-60.0,60.49999999999999}),2* sizeof(double));
-    memcpy(cheby[9], ((double []){60.25}),1* sizeof(double));
-    memcpy(hulls_left_side[9], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(hulls_right_side[9], ((double []){-60.0,60.49999999999999}),2* sizeof(double));
-    memcpy(hull_cheby[9], ((double []){60.25}),1* sizeof(double));
+    memcpy(hulls_right_side[2], ((double []){10.0,-5.0}),2* sizeof(double));
+    memcpy(hull_cheby[2], ((double []){7.5}),1* sizeof(double));
+    memcpy(left_side[3], ((double []){1.0,-1.0}),2* sizeof(double));
+    memcpy(right_side[3], ((double []){5.0,0.0}),2* sizeof(double));
+    memcpy(cheby[3], ((double []){2.5}),1* sizeof(double));
+    memcpy(hulls_left_side[3], ((double []){1.0,-1.0}),2* sizeof(double));
+    memcpy(hulls_right_side[3], ((double []){5.0,0.0}),2* sizeof(double));
+    memcpy(hull_cheby[3], ((double []){2.5}),1* sizeof(double));
 
     double **original_left_side = malloc(original_total_number_polytopes* sizeof(double));
     double **original_right_side = malloc(original_total_number_polytopes* sizeof(double));
@@ -286,41 +250,29 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
     }
     memcpy(original_left_side[0], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_right_side[0], ((double []){85.0,-80.0}),2* sizeof(double));
-    memcpy(original_cheby[0], ((double []){82.5}),1* sizeof(double));
+    memcpy(original_right_side[0], ((double []){20.0,-15.0}),2* sizeof(double));
+    memcpy(original_cheby[0], ((double []){17.5}),1* sizeof(double));
     memcpy(original_hulls_left_side[0], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_hulls_right_side[0], ((double []){85.0,-80.0}),2* sizeof(double));
-    memcpy(original_hull_cheby[0], ((double []){82.5}),1* sizeof(double));
+    memcpy(original_hulls_right_side[0], ((double []){20.0,-15.0}),2* sizeof(double));
+    memcpy(original_hull_cheby[0], ((double []){17.5}),1* sizeof(double));
     memcpy(original_left_side[1], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_right_side[1], ((double []){78.0,-76.0}),2* sizeof(double));
-    memcpy(original_cheby[1], ((double []){77.0}),1* sizeof(double));
+    memcpy(original_right_side[1], ((double []){15.0,-10.0}),2* sizeof(double));
+    memcpy(original_cheby[1], ((double []){12.5}),1* sizeof(double));
     memcpy(original_hulls_left_side[1], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_hulls_right_side[1], ((double []){78.0,-76.0}),2* sizeof(double));
-    memcpy(original_hull_cheby[1], ((double []){77.0}),1* sizeof(double));
+    memcpy(original_hulls_right_side[1], ((double []){15.0,-10.0}),2* sizeof(double));
+    memcpy(original_hull_cheby[1], ((double []){12.5}),1* sizeof(double));
     memcpy(original_left_side[2], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_right_side[2], ((double []){74.0,-72.0}),2* sizeof(double));
-    memcpy(original_cheby[2], ((double []){73.0}),1* sizeof(double));
+    memcpy(original_right_side[2], ((double []){10.0,-5.0}),2* sizeof(double));
+    memcpy(original_cheby[2], ((double []){7.5}),1* sizeof(double));
     memcpy(original_hulls_left_side[2], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_hulls_right_side[2], ((double []){74.0,-72.0}),2* sizeof(double));
-    memcpy(original_hull_cheby[2], ((double []){73.0}),1* sizeof(double));
+    memcpy(original_hulls_right_side[2], ((double []){10.0,-5.0}),2* sizeof(double));
+    memcpy(original_hull_cheby[2], ((double []){7.5}),1* sizeof(double));
     memcpy(original_left_side[3], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_right_side[3], ((double []){65.0,-60.0}),2* sizeof(double));
-    memcpy(original_cheby[3], ((double []){62.5}),1* sizeof(double));
+    memcpy(original_right_side[3], ((double []){5.0,0.0}),2* sizeof(double));
+    memcpy(original_cheby[3], ((double []){2.5}),1* sizeof(double));
     memcpy(original_hulls_left_side[3], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_hulls_right_side[3], ((double []){65.0,-60.0}),2* sizeof(double));
-    memcpy(original_hull_cheby[3], ((double []){62.5}),1* sizeof(double));
-    memcpy(original_left_side[4], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(original_right_side[4], ((double []){-78.0,80.0}),2* sizeof(double));
-    memcpy(original_cheby[4], ((double []){79.0}),1* sizeof(double));
-    memcpy(original_left_side[5], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(original_right_side[5], ((double []){-74.0,76.0}),2* sizeof(double));
-    memcpy(original_cheby[5], ((double []){75.0}),1* sizeof(double));
-    memcpy(original_left_side[6], ((double []){-1.0,1.0}),2* sizeof(double));
-    memcpy(original_right_side[6], ((double []){-65.0,72.0}),2* sizeof(double));
-    memcpy(original_cheby[6], ((double []){68.5}),1* sizeof(double));
-    memcpy(original_hulls_left_side[4], ((double []){1.0,-1.0}),2* sizeof(double));
-    memcpy(original_hulls_right_side[4], ((double []){80.0,-65.0}),2* sizeof(double));
-    memcpy(original_hull_cheby[4], ((double []){72.5}),1* sizeof(double));
+    memcpy(original_hulls_right_side[3], ((double []){5.0,0.0}),2* sizeof(double));
+    memcpy(original_hull_cheby[3], ((double []){2.5}),1* sizeof(double));
 
     int polytope_count = 0;
     for(int i = 0; i< number_of_regions; i++){

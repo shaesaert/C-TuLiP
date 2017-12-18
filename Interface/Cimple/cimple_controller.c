@@ -3,6 +3,7 @@
 //
 
 #include <gsl/gsl_vector_double.h>
+#include <gsl/gsl_matrix.h>
 #include "cimple_controller.h"
 
 
@@ -63,7 +64,7 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
 /**
  * Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step
  */
-void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytope *P2, system_dynamics *s_dyn){
+poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *P2, system_dynamics *s_dyn, matrix_t * constraints){
     /*Under-approximate N-step attractor of polytope P2, with N > 0.
      *
      *See docstring of function `_solve_closed_loop_fixed_horizon`
@@ -164,18 +165,10 @@ void solve_feasible_closed_loop(polytope *return_polytope, polytope *P1, polytop
     //Clean up!
     gsl_vector_free(D_hat);
 
-    polytope_reduce(precedent_polytope);
-
-    // Project precedent polytope onto lower dim
-    polytope_project(precedent_polytope, n);
-
-    polytope_reduce(precedent_polytope);
-
-    gsl_matrix_view precedent_view = gsl_matrix_submatrix(precedent_polytope->H,0,0,precedent_polytope->H->size1, n);
-
-    gsl_matrix_memcpy(return_polytope->H,&precedent_view.matrix);
-    gsl_vector_memcpy(return_polytope->G,precedent_polytope->G);
+    polytope_to_constraints(constraints, precedent_polytope);
+    matrix_print(constraints);
     polytope_free(precedent_polytope);
+    return poly_add_constraints(p_universe, constraints);
 };
 
 /**
@@ -303,14 +296,28 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
     gsl_matrix_memcpy(polytope_list[0]->H, P1->H);
     gsl_vector_memcpy(polytope_list[0]->G, P1->G);
     if (closed_loop == 1) {
+        poly_t *p_universe, *new_polytope;
+        p_universe = poly_universe((int)n+(int)m);
         polytope_list[N] = polytope_alloc(P3->H->size1,P3->H->size2);
         gsl_matrix_memcpy(polytope_list[N]->H, P3->H);
         gsl_vector_memcpy(polytope_list[N]->G, P3->G);
         //check partition system is in after i time steps
         for (size_t i = N; i > 1; i--){
             //TODO: check if target polytope full dim
-            polytope_list[i-1] = polytope_alloc((P1->H->size1+polytope_list[i]->H->size1+s_dyn->U_set->H->size1), n);
-            solve_feasible_closed_loop(polytope_list[i-1], P1, polytope_list[i], s_dyn);
+            matrix_t* constraints = matrix_alloc((int)P1->H->size1+(int)polytope_list[i]->H->size1+(int)s_dyn->U_set->H->size1, (int)n+(int)m+2,false);
+            new_polytope = solve_feasible_closed_loop(p_universe, P1, polytope_list[i], s_dyn, constraints);
+            // Project precedent polytope onto lower dim
+
+
+            //    poly_minimize(new_polytope);
+            matrix_free(constraints);
+            poly_minimize(new_polytope);
+
+            polytope_list[i-1] = polytope_alloc((size_t)new_polytope->C->nbrows,n);
+            poly_print(new_polytope);
+            polytope_from_constraints(polytope_list[i-1], new_polytope->C);
+            poly_free(new_polytope);
+            poly_free(p_universe);
         }
     }else {
         for (int i = 1; i < N; i++) {
@@ -413,110 +420,112 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_vector_print(q, "q");
         gsl_matrix_print(&L_u.matrix, "L_u");
         gsl_vector_print(&M_view.vector, "M_view");
-        Py_Initialize();
-
-        //Check if CVXOPT is installed
-        if (import_cvxopt() < 0) {
-            fprintf(stderr, "error importing cvxopt");
-            exit(EXIT_FAILURE);
-        }
-
-        //Import cvxopt.solvers
-        PyObject *solvers = PyImport_ImportModule("cvxopt.solvers");
-        if (!solvers) {
-            fprintf(stderr, "error importing cvxopt.solvers");
-            exit(EXIT_FAILURE);
-        }
-
-        //Get reference to solvers.qp
-        PyObject *qp = PyObject_GetAttrString(solvers, "qp");
-        if (!qp) {
-            fprintf(stderr, "error referencing cvxopt.solvers.qp");
-            Py_DECREF(solvers);
-            exit(EXIT_FAILURE);
-        }
-
-        //Transform P to CVXOPT compatible matrix: P =>P_cvx
-        PyObject *P_cvx = (PyObject *)Matrix_New(N*m, N*m, DOUBLE);
-        for(size_t l = 0; l< N*m; l++){
-            for(size_t k = 0; k < N*m; k++){
-                MAT_BUFD(P_cvx)[l+k*(N*m)] = gsl_matrix_get(P,l,k);
-            }
-        }
         gsl_matrix_free(P);
-
-        //Transform q to CVXOPT compatible vector: q => q_cvx
-        PyObject *q_cvx = (PyObject *)Matrix_New(N*m,1 , DOUBLE);
-        for(size_t k = 0; k< (N*m); k++){
-            MAT_BUFD(q_cvx)[k] = gsl_vector_get(q, k);
-        }
         gsl_vector_free(q);
-
-        //Transform L_u to CVXOPT compatible matrix: L_u => L_u_cvx
-        PyObject *L_u_cvx = (PyObject *)Matrix_New(L_u.matrix.size1 ,L_u.matrix.size2, DOUBLE);
-        for(size_t l = 0; l< L_u.matrix.size1; l++){
-            for(size_t k = 0; k < L_u.matrix.size2; k++){
-                MAT_BUFD(L_u_cvx)[k+l*(L_u.matrix.size2)] = gsl_matrix_get(&L_u.matrix,l,k);
-            }
-        }
-
-        PyObject *M_view_cvx = (PyObject *)Matrix_New(M_view.vector.size, 1, DOUBLE);
-        for(size_t k = 0; k< M_view.vector.size; k++){
-            MAT_BUFD(M_view_cvx)[k] = gsl_vector_get(&M_view.vector,k);
-        }
-        /* pack matrices into an argument tuple*/
-        PyObject *pArgs = PyTuple_New(4);
-        PyTuple_SetItem(pArgs, 0, P_cvx);
-        PyTuple_SetItem(pArgs, 1, q_cvx);
-        PyTuple_SetItem(pArgs, 2, L_u_cvx);
-        PyTuple_SetItem(pArgs, 3, M_view_cvx);
-
-        PyObject *solution = PyObject_CallObject(qp, pArgs);
-        if (!solution) {
-            PyErr_Print();
-            Py_DECREF(solvers);
-            Py_DECREF(qp);
-            Py_DECREF(pArgs);
-            exit(EXIT_FAILURE);
-        }
-        /*PyObject *status = PyDict_GetItemString(solution, "status");
-        if (*status != "optimal"){
-            fprintf(stderr, "getInputHelper: QP solver finished with status %s", solution.status);
-            exit(EXIT_FAILURE);
-        }*/
-
-        //Get value from Python Dictionary
-        PyObject *primal_objective = PyDict_GetItemString(solution, "primal objective");
-        double cost = PyFloat_AS_DOUBLE(primal_objective);
-        printf("Cost: %.3f", cost);
-        //ONLY interested if cost is lower than current optimal path!
-        if(cost < *low_cost){
-            printf(">> Better solution x: found");
-            PyObject *x_cvx = PyDict_GetItemString(solution, "x");
-            // Transform x_cvx to GSL compatible matrix: x_cvx => low_u
-            for(size_t i = 0; i<n; i++){
-                for(size_t j = 0; j<N; j++){
-                    gsl_matrix_set(low_u,i, j,MAT_BUFD(x_cvx)[j+(i*N)]);
-                }
-            }
-            gsl_matrix_print(low_u, "u");
-            *low_cost = cost;
-            //Clean up!
-            Py_DECREF(x_cvx);
-
-        }
-
-        //Clean up!
-        Py_DECREF(solvers);
-        Py_DECREF(qp);
-        Py_DECREF(pArgs);
-        Py_DECREF(solution);
-        Py_DECREF(primal_objective);
-
-        Py_Finalize();
-
-        gsl_matrix_free(L_full);
-        gsl_vector_free(M_full);
+//        Py_Initialize();
+//
+//        //Check if CVXOPT is installed
+//        if (import_cvxopt() < 0) {
+//            fprintf(stderr, "error importing cvxopt");
+//            exit(EXIT_FAILURE);
+//        }
+//
+//        //Import cvxopt.solvers
+//        PyObject *solvers = PyImport_ImportModule("cvxopt.solvers");
+//        if (!solvers) {
+//            fprintf(stderr, "error importing cvxopt.solvers");
+//            exit(EXIT_FAILURE);
+//        }
+//
+//        //Get reference to solvers.qp
+//        PyObject *qp = PyObject_GetAttrString(solvers, "qp");
+//        if (!qp) {
+//            fprintf(stderr, "error referencing cvxopt.solvers.qp");
+//            Py_DECREF(solvers);
+//            exit(EXIT_FAILURE);
+//        }
+//
+//        //Transform P to CVXOPT compatible matrix: P =>P_cvx
+//        PyObject *P_cvx = (PyObject *)Matrix_New(N*m, N*m, DOUBLE);
+//        for(size_t l = 0; l< N*m; l++){
+//            for(size_t k = 0; k < N*m; k++){
+//                MAT_BUFD(P_cvx)[l+k*(N*m)] = gsl_matrix_get(P,l,k);
+//            }
+//        }
+//        gsl_matrix_free(P);
+//
+//        //Transform q to CVXOPT compatible vector: q => q_cvx
+//        PyObject *q_cvx = (PyObject *)Matrix_New(N*m,1 , DOUBLE);
+//        for(size_t k = 0; k< (N*m); k++){
+//            MAT_BUFD(q_cvx)[k] = gsl_vector_get(q, k);
+//        }
+//        gsl_vector_free(q);
+//
+//        //Transform L_u to CVXOPT compatible matrix: L_u => L_u_cvx
+//        PyObject *L_u_cvx = (PyObject *)Matrix_New(L_u.matrix.size1 ,L_u.matrix.size2, DOUBLE);
+//        for(size_t l = 0; l< L_u.matrix.size1; l++){
+//            for(size_t k = 0; k < L_u.matrix.size2; k++){
+//                MAT_BUFD(L_u_cvx)[k+l*(L_u.matrix.size2)] = gsl_matrix_get(&L_u.matrix,l,k);
+//            }
+//        }
+//
+//        PyObject *M_view_cvx = (PyObject *)Matrix_New(M_view.vector.size, 1, DOUBLE);
+//        for(size_t k = 0; k< M_view.vector.size; k++){
+//            MAT_BUFD(M_view_cvx)[k] = gsl_vector_get(&M_view.vector,k);
+//        }
+//        /* pack matrices into an argument tuple*/
+//        PyObject *pArgs = PyTuple_New(4);
+//        PyTuple_SetItem(pArgs, 0, P_cvx);
+//        PyTuple_SetItem(pArgs, 1, q_cvx);
+//        PyTuple_SetItem(pArgs, 2, L_u_cvx);
+//        PyTuple_SetItem(pArgs, 3, M_view_cvx);
+//
+//        PyObject *solution = PyObject_CallObject(qp, pArgs);
+//        if (!solution) {
+//            PyErr_Print();
+//            Py_DECREF(solvers);
+//            Py_DECREF(qp);
+//            Py_DECREF(pArgs);
+//            exit(EXIT_FAILURE);
+//        }
+//        /*PyObject *status = PyDict_GetItemString(solution, "status");
+//        if (*status != "optimal"){
+//            fprintf(stderr, "getInputHelper: QP solver finished with status %s", solution.status);
+//            exit(EXIT_FAILURE);
+//        }*/
+//
+//        //Get value from Python Dictionary
+//        PyObject *primal_objective = PyDict_GetItemString(solution, "primal objective");
+//        double cost = PyFloat_AS_DOUBLE(primal_objective);
+//        printf("Cost: %.3f", cost);
+//        //ONLY interested if cost is lower than current optimal path!
+//        if(cost < *low_cost){
+//            printf(">> Better solution x: found");
+//            PyObject *x_cvx = PyDict_GetItemString(solution, "x");
+//            // Transform x_cvx to GSL compatible matrix: x_cvx => low_u
+//            for(size_t i = 0; i<n; i++){
+//                for(size_t j = 0; j<N; j++){
+//                    gsl_matrix_set(low_u,i, j,MAT_BUFD(x_cvx)[j+(i*N)]);
+//                }
+//            }
+//            gsl_matrix_print(low_u, "u");
+//            *low_cost = cost;
+//            //Clean up!
+//            Py_DECREF(x_cvx);
+//
+//        }
+//
+//        //Clean up!
+//        Py_DECREF(solvers);
+//        Py_DECREF(qp);
+//        Py_DECREF(pArgs);
+//        Py_DECREF(solution);
+//        Py_DECREF(primal_objective);
+//
+//        Py_Finalize();
+//
+//        gsl_matrix_free(L_full);
+//        gsl_vector_free(M_full);
     }
 
     //TODO: Once more than norm2 is needed
@@ -602,7 +611,6 @@ void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_d
                 * element_value += err_weight * xc[i];
                 gsl_vector_set(f_cost->r, j, *element_value);
             }
-
             search_better_path(low_u, now,s_dyn, P1, P3,d_dyn->ord, d_dyn->closed_loop, N, f_cost, &low_cost);
             //Reset r vector to default values
             for (size_t j = n * (N - 1); j < n*N; j++){

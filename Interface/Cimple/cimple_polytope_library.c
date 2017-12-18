@@ -105,7 +105,7 @@ void polytope_from_arrays(polytope *polytope, double *left_side, double *right_s
 /**
  * Checks whether a state is in a certain polytope
  */
-int state_in_polytope(polytope *polytope, gsl_vector *x){
+int polytope_check_state(polytope *polytope, gsl_vector *x){
     gsl_vector * result = gsl_vector_alloc(x->size);
     gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
     for(size_t i = 1; i<= x->size; i++){
@@ -116,6 +116,36 @@ int state_in_polytope(polytope *polytope, gsl_vector *x){
     return 1;
 };
 
+void polytope_to_constraints(matrix_t *new, polytope *original){
+    for(size_t i = 0; i<original->H->size1; i++){
+        pkint_set_si(new->p[i][0], 1);
+        double g_i_d = gsl_vector_get(original->G, i);
+        g_i_d = g_i_d*1000;
+        g_i_d = round(g_i_d);
+        int g_i = (int) g_i_d;
+        pkint_set_si(new->p[i][1], g_i);
+        for (size_t j = 0; j < original->H->size2; j++) {
+            double h_i_j_d = gsl_matrix_get(original->H, i, j);
+            h_i_j_d = h_i_j_d*(-1000);
+            h_i_j_d = round(h_i_j_d);
+            int h_i_j = (int) h_i_j_d;
+            pkint_set_si(new->p[i][j+2], h_i_j);
+        }
+    }
+}
+
+void polytope_from_constraints(polytope *new, matrix_t *original){
+    for(size_t i = 0; i<original->nbrows; i++){
+        long g_i = original->p[i][1].rep;
+        double g_i_d = g_i/1000;
+        gsl_vector_set(new->G,i, g_i_d);
+        for (size_t j = 0; j < new->H->size2; ++j) {
+            long h_i_j = original->p[i][j+2].rep;
+            double h_i_j_d = h_i_j/1000;
+            gsl_matrix_set(new->H,i,j, h_i_j_d);
+        }
+    }
+}
 //TODO project on array of dimensions instead of first n dimensions
 /**
  * Projects polytope on lower dimensions (e.g. new_dimension = n => projects polytope on first n columns)
@@ -191,7 +221,7 @@ void polytope_project(polytope *polytope, size_t new_dimension){
  * Reduces redundant number of rows of polytope
  */
 void polytope_reduce(polytope *polytope){
-    polytope_list *polytopeHead = NULL;
+//    polytope_list *polytopeHead = NULL;
 // poly, nonEmptyBounded=1, abs_tol=ABS_TOL
 
 // Does not check if it is a region

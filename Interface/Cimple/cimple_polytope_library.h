@@ -6,6 +6,7 @@
 #define CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H
 
 #include "cimple_gsl_library_extension.h"
+#include <polka/poly.h>
 
 /**
  * H left side of polytope (sometimes noted A or L)
@@ -97,8 +98,17 @@ void polytope_from_arrays(polytope *polytope, double *left_side, double *right_s
  * @param x state to be checked
  * @return 0 if state is not in polytope or 1 if it is
  */
-int state_in_polytope(polytope *polytope, gsl_vector *x);
+int polytope_check_state(polytope *polytope, gsl_vector *x);
 
+/**
+ * @brief Transforms a polytope from gsl format to a polka constraints matrix
+ * @param new empty polka matrix
+ * @param original filled cimple polytope
+ */
+void polytope_to_constraints(matrix_t *new, polytope *original);
+
+
+void polytope_from_constraints(polytope *new, matrix_t *original);
 /**
  * @brief Projects polytope on lower dimensions (e.g. new_dimension = n => projects polytope on first n columns)
  * @param polytope

@@ -8,22 +8,12 @@
 #include <stdio.h>
 #include "cimple_controller.h"
 
-void ACT_1(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
+void ACT_m1(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
 
-void ACT_2(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
+void ACT_m0(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
 
-void ACT_3(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
+void ACT_m2(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
 
-void ACT_8(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
-
-void ACT_4(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
-
-void ACT_5(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
-
-void ACT_6(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
-
-void ACT_7(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
-
-void ACT_0(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
+void ACT_m3(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
 
 #endif //CIMPLE_ACT_IMPL_H
