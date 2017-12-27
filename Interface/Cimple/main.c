@@ -16,6 +16,7 @@ int main(){
 
     ACT_m3(now, d_dyn, s_dyn, f_cost);
 
+
     system_dynamics_free(s_dyn);
     discrete_dynamics_free(d_dyn);
     cost_function_free(f_cost);

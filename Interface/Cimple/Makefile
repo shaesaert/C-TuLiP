@@ -4,7 +4,7 @@ CC ?= /usr/bin/gcc
 
 CFLAGS ?= -std=c99 -g -Wall -Werror -O0 -c -DPOLKA_NUM=1
  
-LDFLAGS = -lm -lz -lgsl -lgslcblas -ldl -lutil -lpthread -lpython2.7 -lpolkai
+LDFLAGS = -lm -lgsl -lgslcblas -ldl -lutil -lpthread -lpython2.7 -lpolkai
 
 INC = -I/usr/include -I/usr/include/python2.7 
 

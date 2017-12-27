@@ -165,7 +165,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
     // Set cost function
     double *cf_R = malloc(n* time_horizon* n* time_horizon* sizeof (double));
-    memcpy(cf_R, ((double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}),25* sizeof(double));
+    memcpy(cf_R, ((double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0}),25* sizeof(double));
     gsl_matrix_from_array(f_cost->R, cf_R, "f_cost->R");
     free(cf_R);
     double *cf_Q = malloc(m* time_horizon* m* time_horizon* sizeof (double));
