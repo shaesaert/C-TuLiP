@@ -136,13 +136,11 @@ void polytope_to_constraints(matrix_t *new, polytope *original){
 
 void polytope_from_constraints(polytope *new, matrix_t *original){
     for(size_t i = 0; i<original->nbrows; i++){
-        long g_i = original->p[i][1].rep;
-        double g_i_d = g_i/1000;
-        gsl_vector_set(new->G,i, g_i_d);
+        double g_i = (original->p[i][1].rep)/1000;
+        gsl_vector_set(new->G,i, g_i);
         for (size_t j = 0; j < new->H->size2; ++j) {
-            long h_i_j = original->p[i][j+2].rep;
-            double h_i_j_d = h_i_j/1000;
-            gsl_matrix_set(new->H,i,j, h_i_j_d);
+            double h_i_j = (original->p[i][j+2].rep)/1000;
+            gsl_matrix_set(new->H,i,j, h_i_j);
         }
     }
 }

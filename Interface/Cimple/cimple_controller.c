@@ -166,10 +166,8 @@ poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *
     gsl_vector_free(D_hat);
 
     polytope_to_constraints(constraints, precedent_polytope);
-    printf("\nprinting constraint matrix:\n");
     matrix_print(constraints);
     polytope_free(precedent_polytope);
-    printf("\npuniverse: %d \n", poly_dimension(p_universe));
     return poly_add_constraints(p_universe, constraints);
 };
 
@@ -309,15 +307,15 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
             matrix_t* constraints = matrix_alloc((int)P1->H->size1+(int)polytope_list[i]->H->size1+(int)s_dyn->U_set->H->size1, (int)n+(int)m+2,false);
             new_polytope = solve_feasible_closed_loop(p_universe, P1, polytope_list[i], s_dyn, constraints);
             // Project precedent polytope onto lower dim
-            poly_print(new_polytope);
             reduced_polytope = poly_remove_dimensions(new_polytope, (int)m);
             poly_free(new_polytope);
-            poly_print(reduced_polytope);
             //    poly_minimize(new_polytope);
             matrix_free(constraints);
             poly_minimize(reduced_polytope);
+            poly_print(reduced_polytope);
 
             polytope_list[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
+            printf("round %d", (int)i);
             poly_print(reduced_polytope);
             polytope_from_constraints(polytope_list[i-1], reduced_polytope->C);
             poly_free(reduced_polytope);
