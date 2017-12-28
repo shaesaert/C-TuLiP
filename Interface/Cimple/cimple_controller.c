@@ -182,7 +182,7 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
     size_t n = s_dyn->A->size2;  // State space dimension
     size_t p = s_dyn->E->size2;  // Disturbance space dimension
     size_t sum_polytope_dim = 0; // Sum of dimension n of all polytopes in the list
-    for(size_t i = 0; i < N; i++){
+    for(size_t i = 0; i < N+1; i++){
 
         sum_polytope_dim += list_polytopes[i]->H->size1;
 
@@ -228,7 +228,7 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
 
     //Loop over N and polytopes in parallel
     size_t polytope_count = 0;
-    for(int i = 0; i<N; i++){
+    for(int i = 0; i<N+1; i++){
 
         polytope *polytope_step_i = list_polytopes[i];
 

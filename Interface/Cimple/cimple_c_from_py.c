@@ -138,12 +138,12 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     memcpy(sys_help_D_one_step, ((double []){0.01,-0.01}),2* sizeof(double));
     gsl_matrix_from_array(s_dyn->aux_matrices->D_one_step, sys_help_D_one_step,"s_dyn->aux_matrices->D_one_step");
     free(sys_help_D_one_step);
-    double *sys_help_L_default = malloc(n*time_horizon * (n+m*(time_horizon))* sizeof (double));
-    memcpy(sys_help_L_default, ((double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,0.0}),30* sizeof(double));
+    double *sys_help_L_default = malloc(n*(time_horizon+1) * (n+m*(time_horizon))* sizeof (double));
+    memcpy(sys_help_L_default, ((double []){1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0}),36* sizeof(double));
     gsl_matrix_from_array(s_dyn->aux_matrices->L_default, sys_help_L_default, "s_dyn->aux_matrices->L_default");
     free(sys_help_L_default);
-    double *sys_help_E_default = malloc(n* time_horizon* p* time_horizon* sizeof (double));
-    memcpy(sys_help_E_default, ((double []){0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0}),25* sizeof(double));
+    double *sys_help_E_default = malloc(n* (time_horizon+1)* p* (time_horizon+1)* sizeof (double));
+    memcpy(sys_help_E_default, ((double []){0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,0.0}),36* sizeof(double));
     gsl_matrix_from_array(s_dyn->aux_matrices->E_default, sys_help_E_default, "s_dyn->aux_matrices->E_default");
     free(sys_help_E_default);
     double *sys_help_Ct = malloc(n*time_horizon*m*time_horizon*sizeof(double));
