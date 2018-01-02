@@ -52,13 +52,13 @@ struct auxiliary_matrices *aux_matrices_alloc(size_t n, size_t p, size_t m, size
         return NULL;
     }
 
-    return_aux_matrices->E_default = gsl_matrix_alloc(n* N, p* N);
+    return_aux_matrices->E_default = gsl_matrix_alloc(n* (N+1), p* (N+1));
     if (return_aux_matrices->E_default == NULL) {
         free (return_aux_matrices);
         return NULL;
     }
 
-    return_aux_matrices->L_default = gsl_matrix_alloc(n*N, (n+m*N));
+    return_aux_matrices->L_default = gsl_matrix_alloc(n*(N+1), (n+m*N));
     if (return_aux_matrices->L_default == NULL) {
         free (return_aux_matrices);
         return NULL;

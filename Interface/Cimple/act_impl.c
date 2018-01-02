@@ -3,73 +3,90 @@
 //
 
 #include <stdio.h>
+#include <gsl/gsl_matrix.h>
 #include "cimple_controller.h"
 
 void ACT_m1(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     int target_cell =1;
     printf("Computing control sequence to go from cell %d to cell m1...", (*now).current_cell);
     fflush(stdout);
-
-    gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);
-    get_input(u, now, d_dyn, s_dyn, target_cell, f_cost);
-    printf("Applying it...");
-    fflush(stdout);
-    apply_control(now->x, u, s_dyn->A, s_dyn->B);
-    printf("New state:");
-    gsl_vector_print(now->x, "now->");
-    fflush(stdout);
-    // Clean up!
-    gsl_matrix_free(u);
+    for(size_t i=0; i<d_dyn->time_horizon;i++) {
+        size_t current_time_horizon = d_dyn->time_horizon - i;
+        gsl_matrix *u = gsl_matrix_alloc(now->x->size, current_time_horizon);
+        get_input(u, now, d_dyn, s_dyn, target_cell, f_cost, current_time_horizon);
+        printf("Applying it...");
+        fflush(stdout);
+        gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
+        get_disturbance(w, 0, 0.1);
+        apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        printf("New state:");
+        gsl_vector_print(now->x, "now->");
+        fflush(stdout);
+        // Clean up!
+        gsl_matrix_free(u);
+    }
 }
 
 void ACT_m0(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     int target_cell =0;
     printf("Computing control sequence to go from cell %d to cell m0...", (*now).current_cell);
     fflush(stdout);
-
-    gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);
-    get_input(u, now, d_dyn, s_dyn, target_cell, f_cost);
-    printf("Applying it...");
-    fflush(stdout);
-    apply_control(now->x, u, s_dyn->A, s_dyn->B);
-    printf("New state:");
-    gsl_vector_print(now->x, "now->");
-    fflush(stdout);
-    // Clean up!
-    gsl_matrix_free(u);
+    for(size_t i=0; i<d_dyn->time_horizon;i++) {
+        size_t current_time_horizon = d_dyn->time_horizon - i;
+        gsl_matrix *u = gsl_matrix_alloc(now->x->size, current_time_horizon);
+        get_input(u, now, d_dyn, s_dyn, target_cell, f_cost, current_time_horizon);
+        printf("Applying it...");
+        fflush(stdout);
+        gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
+        get_disturbance(w, 0, 0.1);
+        apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        printf("New state:");
+        gsl_vector_print(now->x, "now->");
+        fflush(stdout);
+        // Clean up!
+        gsl_matrix_free(u);
+    }
 }
 
 void ACT_m2(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     int target_cell =2;
     printf("Computing control sequence to go from cell %d to cell m2...", (*now).current_cell);
     fflush(stdout);
-
-    gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);
-    get_input(u, now, d_dyn, s_dyn, target_cell, f_cost);
-    printf("Applying it...");
-    fflush(stdout);
-    apply_control(now->x, u, s_dyn->A, s_dyn->B);
-    printf("New state:");
-    gsl_vector_print(now->x, "now->");
-    fflush(stdout);
-    // Clean up!
-    gsl_matrix_free(u);
+    for(size_t i=0; i<d_dyn->time_horizon;i++) {
+        size_t current_time_horizon = d_dyn->time_horizon - i;
+        gsl_matrix *u = gsl_matrix_alloc(now->x->size, current_time_horizon);
+        get_input(u, now, d_dyn, s_dyn, target_cell, f_cost, current_time_horizon);
+        printf("Applying it...");
+        fflush(stdout);
+        gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
+        get_disturbance(w, 0, 0.1);
+        apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        printf("New state:");
+        gsl_vector_print(now->x, "now->");
+        fflush(stdout);
+        // Clean up!
+        gsl_matrix_free(u);
+    }
 }
 
 void ACT_m3(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     int target_cell =3;
     printf("Computing control sequence to go from cell %d to cell m3...", (*now).current_cell);
     fflush(stdout);
-
-    gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);
-    get_input(u, now, d_dyn, s_dyn, target_cell, f_cost);
-    printf("Applying it...");
-    fflush(stdout);
-    apply_control(now->x, u, s_dyn->A, s_dyn->B);
-    printf("New state:");
-    gsl_vector_print(now->x, "now->");
-    fflush(stdout);
-    // Clean up!
-    gsl_matrix_free(u);
+    for(size_t i=0; i<d_dyn->time_horizon;i++) {
+        size_t current_time_horizon = d_dyn->time_horizon - i;
+        gsl_matrix *u = gsl_matrix_alloc(now->x->size, current_time_horizon);
+        get_input(u, now, d_dyn, s_dyn, target_cell, f_cost, current_time_horizon);
+        printf("Applying it...");
+        fflush(stdout);
+        gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
+        get_disturbance(w, 0, 0.1);
+        apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        printf("New state:");
+        gsl_vector_print(now->x, "now->");
+        fflush(stdout);
+        // Clean up!
+        gsl_matrix_free(u);
+    }
 }
 

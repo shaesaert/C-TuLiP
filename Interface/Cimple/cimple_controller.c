@@ -4,7 +4,9 @@
 
 #include <gsl/gsl_vector_double.h>
 #include <gsl/gsl_matrix.h>
+#include <math.h>
 #include "cimple_controller.h"
+#include "../../../../../opt/gurobi752/linux64/include/gurobi_c.h"
 
 
 /**
@@ -13,54 +15,94 @@
 void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
     printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
     fflush(stdout);
-
-    gsl_matrix * u = gsl_matrix_alloc(now->x->size, d_dyn->time_horizon);
-    get_input(u, now, d_dyn, s_dyn, target, f_cost);
-    printf("Applying it...");
-    fflush(stdout);
-    apply_control(now->x, u, s_dyn->A, s_dyn->B);
-    printf("New state:");
-    gsl_vector_print(now->x, "now->");
-    fflush(stdout);
-    // Clean up!
-    gsl_matrix_free(u);
+    for(size_t i=0; i<d_dyn->time_horizon;i++){
+        size_t current_time_horizon = d_dyn->time_horizon-i;
+        gsl_matrix * u = gsl_matrix_alloc(now->x->size, current_time_horizon);
+        get_input(u, now, d_dyn, s_dyn, target, f_cost, current_time_horizon);
+        printf("Applying it...");
+        fflush(stdout);
+        gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
+        get_disturbance(w, 0, 0.1);
+        apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        printf("New state:");
+        gsl_vector_print(now->x, "now->");
+        fflush(stdout);
+        // Clean up!
+        gsl_matrix_free(u);
+    }
 }
 
 /**
  * Apply the calculated control to the current state using system dynamics
  */
-void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B) {
-    printf("apply_control: begin at");
-    gsl_vector_print(x, "x[0]");
+void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B,gsl_matrix *E, gsl_vector* w, size_t current_time) {
+    printf("apply_control time(%d) ", (int) current_time);
+    gsl_vector_print(x, "x");
     fflush(stdout);
     gsl_vector *x_temp = gsl_vector_alloc(x->size);
     //Apply input to state of next N time steps
     // x[k+1] = A.x[k] + B.u[k+1]
-    int time = 0;
-    for (size_t k = 0; k < (u->size2); k++){
-        gsl_vector_set_zero(x_temp);
-        printf("apply_control: u[%d] = ", time);
-        gsl_vector_view u_view = gsl_matrix_column(u, k);
-        gsl_vector_print(&u_view.vector,"u[]");
-        fflush(stdout);
-        gsl_vector *Btu = gsl_vector_alloc(x->size);
-        gsl_vector_view u_col = gsl_matrix_column(u,k);
+    gsl_vector_set_zero(x_temp);
+    printf("apply_control: u[%d] = ", (int)current_time);
+    gsl_vector_view u_view = gsl_matrix_column(u, 0);
+    gsl_vector_print(&u_view.vector,"u");
+    fflush(stdout);
+    gsl_vector *Btu = gsl_vector_alloc(x->size);
+    gsl_vector_view u_col = gsl_matrix_column(u,0);
 
-        //A.x[k-1]
-        gsl_blas_dgemv(CblasNoTrans, 1, A, x, 0, x_temp);
-        //B.u[k]
-        gsl_blas_dgemv(CblasNoTrans, 1, B, &u_col.vector, 0 , Btu);
-        //update x[k-1] => x[k]
-        gsl_vector_set_zero(x);
-        gsl_vector_add(x, x_temp);
-        gsl_vector_add(x, Btu);
-        printf("Temporary state: x[%d] = ", time+1);
-        gsl_vector_print(x,"x[]");
-        fflush(stdout);
-        gsl_vector_free(Btu);
-    }
+    //A.x
+    gsl_blas_dgemv(CblasNoTrans, 1, A, x, 0, x_temp);
+    //B.u
+    gsl_blas_dgemv(CblasNoTrans, 1, B, &u_col.vector, 0 , Btu);
+    //update x[k-1] => x[k]
+    gsl_vector_set_zero(x);
+    gsl_vector_add(x, x_temp);
+    gsl_vector_add(x, Btu);
+    //E.w
+    gsl_vector_set_zero(x_temp);
+    gsl_blas_dgemv(CblasNoTrans, 1, E, w, 0, x_temp);
+    gsl_vector_add(x,x_temp);
+    gsl_vector_free(x_temp);
+    printf("Temporary state: x[%d] = ", (int)current_time+1);
+    gsl_vector_print(x,"x");
+    fflush(stdout);
+    gsl_vector_free(Btu);
 };
 
+double randn (double mu, double sigma)
+{
+    double U1, U2, W, mult;
+    static double X1, X2;
+    static int call = 0;
+
+    if (call == 1)
+    {
+        call = !call;
+        return (mu + sigma * (double) X2);
+    }
+
+    do
+    {
+        U1 = -1 + ((double) rand () / RAND_MAX) * 2;
+        U2 = -1 + ((double) rand () / RAND_MAX) * 2;
+        W = pow (U1, 2) + pow (U2, 2);
+    }
+    while (W >= 1 || W == 0);
+
+    mult = sqrt ((-2 * log (W)) / W);
+    X1 = U1 * mult;
+    X2 = U2 * mult;
+
+    call = !call;
+
+    return (mu + sigma * (double) X1);
+}
+
+void get_disturbance(gsl_vector *w, double mu, double sigma){
+    for(size_t i = 0; i<w->size;i++){
+        gsl_vector_set(w,i,randn(mu,sigma));
+    }
+}
 /**
  * Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step
  */
@@ -252,16 +294,19 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
 
 /*Update L and M*/
     // Lk = H_diag.L_default
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, s_dyn->aux_matrices->L_default,0.0,&Lk.matrix);
+    gsl_matrix_view L_default_view = gsl_matrix_submatrix(s_dyn->aux_matrices->L_default,0,0,(N+1),(N+1));
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, &L_default_view.matrix ,0.0,&Lk.matrix);
 
     // Gk = H_diag.E_default
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, s_dyn->aux_matrices->E_default,0.0,Gk);
+    gsl_matrix_view E_default_view = gsl_matrix_submatrix(s_dyn->aux_matrices->E_default,0,0,(N+1),(N+1));
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, &E_default_view.matrix,0.0,Gk);
 
     /*Find maxima of Gk.Dextremes*/
     //TODO: if Gk non zero else...
-    gsl_matrix * maxima = gsl_matrix_alloc(Gk->size1, s_dyn->aux_matrices->D_vertices->size2);
+    gsl_matrix_view D_vertices_view = gsl_matrix_submatrix(s_dyn->aux_matrices->D_vertices,s_dyn->aux_matrices->D_vertices->size1-(N+1),0,(N+1),s_dyn->aux_matrices->D_vertices->size2);
+    gsl_matrix * maxima = gsl_matrix_alloc(Gk->size1, D_vertices_view.matrix.size2);
     //Calculate Gk.Dextremes (extremum of each dimension of each polytope)
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Gk, s_dyn->aux_matrices->D_vertices,0.0, maxima);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Gk, &D_vertices_view.matrix,0.0, maxima);
     gsl_vector *D_hat = gsl_vector_alloc(sum_polytope_dim);
     //find the maximum for each dimension of each polytope
     for(size_t i = 0; i < sum_polytope_dim; i++){
@@ -315,8 +360,6 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
             poly_print(reduced_polytope);
 
             polytope_list[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
-            printf("round %d", (int)i);
-            poly_print(reduced_polytope);
             polytope_from_constraints(polytope_list[i-1], reduced_polytope->C);
             poly_free(reduced_polytope);
             poly_free(p_universe);
@@ -388,17 +431,20 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 
         // symmetrize
         gsl_matrix * Q2 = gsl_matrix_alloc(N*m, N*m);
-        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, f_cost->Q,f_cost->Q, 0.0, Q2);
+        gsl_matrix_view Q_view = gsl_matrix_submatrix(f_cost->Q,(f_cost->Q->size1-N),(f_cost->Q->size2-N),(N),(N));
+        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &Q_view.matrix,&Q_view.matrix, 0.0, Q2);
         gsl_matrix * R2 = gsl_matrix_alloc(N*n, N*n);
-        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, f_cost->R,f_cost->R, 0.0, R2);
+        gsl_matrix_view R_view = gsl_matrix_submatrix(f_cost->R,(f_cost->R->size1-N),(f_cost->R->size2-N),(N),(N));
+        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &R_view.matrix,&R_view.matrix, 0.0, R2);
 
 
         //Calculate P
         gsl_matrix * P = gsl_matrix_alloc(N*m, N*m);
         gsl_matrix * R2_dot_Ct = gsl_matrix_alloc(N*n, N*m);
         gsl_matrix_set_zero(R2_dot_Ct);
-        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, R2, s_dyn->aux_matrices->Ct, 0.0, R2_dot_Ct);
-        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, s_dyn->aux_matrices->Ct, R2_dot_Ct, 0.0, P);
+        gsl_matrix_view Ct_view = gsl_matrix_submatrix(s_dyn->aux_matrices->Ct,0,0,N,N);
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, R2, &Ct_view.matrix, 0.0, R2_dot_Ct);
+        gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &Ct_view.matrix, R2_dot_Ct, 0.0, P);
         gsl_matrix_add(P, Q2);
 
         //Clean up!
@@ -410,10 +456,13 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_vector_set_zero(q);
         gsl_vector * A_N_dot_x = gsl_vector_alloc(N*n);
         gsl_vector_set_zero(A_N_dot_x);
-        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->aux_matrices->A_N, now->x, 0.0, A_N_dot_x);
+        gsl_matrix_view A_N_view = gsl_matrix_submatrix(s_dyn->aux_matrices->A_N,0,0,N,1);
+        gsl_blas_dgemv(CblasNoTrans, 1.0, &A_N_view.matrix, now->x, 0.0, A_N_dot_x);
         gsl_vector * A_K_dot_K_hat = gsl_vector_alloc(N*n);
         gsl_vector_set_zero(A_K_dot_K_hat);
-        gsl_blas_dgemv(CblasNoTrans, 1.0, s_dyn->aux_matrices->A_K, s_dyn->aux_matrices->K_hat, 0.0, A_K_dot_K_hat);
+        gsl_matrix_view A_K_view = gsl_matrix_submatrix(s_dyn->aux_matrices->A_K,0,0,N,N);
+        gsl_vector_view K_hat_view = gsl_vector_subvector(s_dyn->aux_matrices->K_hat,0,N);
+        gsl_blas_dgemv(CblasNoTrans, 1.0, &A_K_view.matrix, &K_hat_view.vector, 0.0, A_K_dot_K_hat);
 
         //[x^T.A_N^T + (A_K.K_hat)^T]^T
         gsl_vector_add(A_N_dot_x, A_K_dot_K_hat);
@@ -424,7 +473,8 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 
         //(0.5*r^T.Ct)
         gsl_vector *Right_side = gsl_vector_alloc(N*m);
-        gsl_blas_dgemv(CblasTrans, 0.5, s_dyn->aux_matrices->Ct, f_cost->r, 0.0, Right_side);
+        gsl_vector_view r_view = gsl_vector_subvector(f_cost->r,(f_cost->r->size-N),N);
+        gsl_blas_dgemv(CblasTrans, 0.5, &Ct_view.matrix, &r_view.vector, 0.0, Right_side);
         gsl_vector_add(q, Right_side);
 
         //Clean up!
@@ -441,6 +491,95 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_matrix_print(&L_u.matrix, "L_u");
         gsl_vector_print(&M_view.vector, "M_view");
 
+        //Initialization
+        poly_t *p_universe, *minimized_polytope;
+        p_universe = poly_universe((int)N);
+        matrix_t* min_constraints = matrix_alloc((int)L_u.matrix.size1, (int)L_u.matrix.size2+2,false);
+
+        //Minimizing
+        polytope * constraints_polytope = polytope_alloc(L_u.matrix.size1, L_u.matrix.size2);
+        gsl_matrix_memcpy(constraints_polytope->H,&L_u.matrix);
+        gsl_vector_memcpy(constraints_polytope->G,&M_view.vector);
+        polytope_to_constraints(min_constraints, constraints_polytope);
+        minimized_polytope = poly_add_constraints(p_universe,min_constraints);
+        poly_minimize(minimized_polytope);
+        poly_print(minimized_polytope);
+
+        //back to gsl polytope
+        polytope *opt_constraints = polytope_alloc((size_t)minimized_polytope->C->nbrows,N);
+        polytope_from_constraints(opt_constraints, minimized_polytope->C);
+
+        //Clean up
+        matrix_free(min_constraints);
+        poly_free(minimized_polytope);
+        poly_free(p_universe);
+//
+//        polytope *opt_constraints = polytope_alloc(10,N);
+//        gsl_vector_set(opt_constraints->G,0,1);
+//        gsl_vector_set(opt_constraints->G,1,-1);
+//        gsl_vector_set(opt_constraints->G,2,1);
+//        gsl_vector_set(opt_constraints->G,3,-1);
+//        gsl_vector_set(opt_constraints->G,4,1);
+//        gsl_vector_set(opt_constraints->G,5,-1);
+//        gsl_vector_set(opt_constraints->G,6,1);
+//        gsl_vector_set(opt_constraints->G,7,-1);
+//        gsl_vector_set(opt_constraints->G,8,1);
+//        gsl_vector_set(opt_constraints->G,9,-1);
+//        gsl_matrix_set(opt_constraints->H,0,0,0.2);
+//        gsl_matrix_set(opt_constraints->H,0,1,0);
+//        gsl_matrix_set(opt_constraints->H,0,2,0);
+//        gsl_matrix_set(opt_constraints->H,0,3,0);
+//        gsl_matrix_set(opt_constraints->H,0,4,0);
+//
+//        gsl_matrix_set(opt_constraints->H,1,0,-20);
+//        gsl_matrix_set(opt_constraints->H,1,1,0);
+//        gsl_matrix_set(opt_constraints->H,1,2,0);
+//        gsl_matrix_set(opt_constraints->H,1,3,0);
+//        gsl_matrix_set(opt_constraints->H,1,4,0);
+//        gsl_matrix_set(opt_constraints->H,2,0,0.2);
+//        gsl_matrix_set(opt_constraints->H,2,1,0.2);
+//        gsl_matrix_set(opt_constraints->H,2,2,0);
+//        gsl_matrix_set(opt_constraints->H,2,3,0);
+//        gsl_matrix_set(opt_constraints->H,2,4,0);
+//
+//        gsl_matrix_set(opt_constraints->H,3,0,-20);
+//        gsl_matrix_set(opt_constraints->H,3,1,-20);
+//        gsl_matrix_set(opt_constraints->H,3,2,0);
+//        gsl_matrix_set(opt_constraints->H,3,3,0);
+//        gsl_matrix_set(opt_constraints->H,3,4,0);
+//        gsl_matrix_set(opt_constraints->H,4,0,0.2);
+//        gsl_matrix_set(opt_constraints->H,4,1,0.2);
+//        gsl_matrix_set(opt_constraints->H,4,2,0.2);
+//        gsl_matrix_set(opt_constraints->H,4,3,0);
+//        gsl_matrix_set(opt_constraints->H,4,4,0);
+//
+//        gsl_matrix_set(opt_constraints->H,5,0,-20);
+//        gsl_matrix_set(opt_constraints->H,5,1,-20);
+//        gsl_matrix_set(opt_constraints->H,5,2,-20);
+//        gsl_matrix_set(opt_constraints->H,5,3,0);
+//        gsl_matrix_set(opt_constraints->H,5,4,0);
+//        gsl_matrix_set(opt_constraints->H,6,0,0.2);
+//        gsl_matrix_set(opt_constraints->H,6,1,0.2);
+//        gsl_matrix_set(opt_constraints->H,6,2,0.2);
+//        gsl_matrix_set(opt_constraints->H,6,3,0.2);
+//        gsl_matrix_set(opt_constraints->H,6,4,0);
+//
+//        gsl_matrix_set(opt_constraints->H,7,0,-20);
+//        gsl_matrix_set(opt_constraints->H,7,1,-20);
+//        gsl_matrix_set(opt_constraints->H,7,2,-20);
+//        gsl_matrix_set(opt_constraints->H,7,3,-20);
+//        gsl_matrix_set(opt_constraints->H,7,4,0);
+//        gsl_matrix_set(opt_constraints->H,8,0,0.2);
+//        gsl_matrix_set(opt_constraints->H,8,1,0.2);
+//        gsl_matrix_set(opt_constraints->H,8,2,0.2);
+//        gsl_matrix_set(opt_constraints->H,8,3,0.2);
+//        gsl_matrix_set(opt_constraints->H,8,4,0.2);
+//
+//        gsl_matrix_set(opt_constraints->H,9,0,-20);
+//        gsl_matrix_set(opt_constraints->H,9,1,-20);
+//        gsl_matrix_set(opt_constraints->H,9,2,-20);
+//        gsl_matrix_set(opt_constraints->H,9,3,-20);
+//        gsl_matrix_set(opt_constraints->H,9,4,-20);
         Py_Initialize();
 
         //Check if CVXOPT is installed
@@ -465,7 +604,7 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         }
 
         //Transform P to CVXOPT compatible matrix: P =>P_cvx
-        PyObject *P_cvx = (PyObject *)Matrix_New(N*m, N*m, DOUBLE);
+        PyObject *P_cvx = (PyObject *)Matrix_New(P->size1, P->size2, DOUBLE);
         for(size_t l = 0; l< N*m; l++){
             for(size_t k = 0; k < N*m; k++){
                 MAT_BUFD(P_cvx)[l+k*(N*m)] = gsl_matrix_get(P,l,k);
@@ -474,23 +613,23 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_matrix_free(P);
 
         //Transform q to CVXOPT compatible vector: q => q_cvx
-        PyObject *q_cvx = (PyObject *)Matrix_New(N*m,1 , DOUBLE);
+        PyObject *q_cvx = (PyObject *)Matrix_New(q->size,1 , DOUBLE);
         for(size_t k = 0; k< (N*m); k++){
             MAT_BUFD(q_cvx)[k] = gsl_vector_get(q, k);
         }
         gsl_vector_free(q);
 
         //Transform L_u to CVXOPT compatible matrix: L_u => L_u_cvx
-        PyObject *L_u_cvx = (PyObject *)Matrix_New(L_u.matrix.size1 ,L_u.matrix.size2, DOUBLE);
-        for(size_t l = 0; l< L_u.matrix.size1; l++){
-            for(size_t k = 0; k < L_u.matrix.size2; k++){
-                MAT_BUFD(L_u_cvx)[k+l*(L_u.matrix.size2)] = gsl_matrix_get(&L_u.matrix,l,k);
+        PyObject *L_u_cvx = (PyObject *)Matrix_New(opt_constraints->H->size1 ,opt_constraints->H->size2, DOUBLE);
+        for(size_t l = 0; l< opt_constraints->H->size1; l++){
+            for(size_t k = 0; k < opt_constraints->H->size2; k++){
+                MAT_BUFD(L_u_cvx)[k+l*(opt_constraints->H->size2)] = gsl_matrix_get(opt_constraints->H,l,k);
             }
         }
 
-        PyObject *M_view_cvx = (PyObject *)Matrix_New(M_view.vector.size, 1, DOUBLE);
-        for(size_t k = 0; k< M_view.vector.size; k++){
-            MAT_BUFD(M_view_cvx)[k] = gsl_vector_get(&M_view.vector,k);
+        PyObject *M_view_cvx = (PyObject *)Matrix_New(opt_constraints->G->size, 1, DOUBLE);
+        for(size_t k = 0; k< opt_constraints->G->size; k++){
+            MAT_BUFD(M_view_cvx)[k] = gsl_vector_get(opt_constraints->G,k);
         }
         /* pack matrices into an argument tuple*/
         PyObject *pArgs = PyTuple_New(4);
@@ -571,7 +710,7 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 /**
  * Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
  */
-void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, int target_cell, cost_function * f_cost) {
+void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, int target_cell, cost_function * f_cost,size_t current_time_horizon) {
 
     //Set input back to zero (safety precaution)
     gsl_matrix_set_zero(low_u);
@@ -579,7 +718,7 @@ void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_d
 
     //Help variables:
     size_t n = now->x->size;
-    size_t N = d_dyn->time_horizon;
+    size_t N = current_time_horizon;
 
     double low_cost = INFINITY;
     double err_weight = f_cost->distance_error_weight;

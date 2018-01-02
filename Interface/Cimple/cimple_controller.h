@@ -30,9 +30,21 @@ void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dyna
  * @param A system dynamics
  * @param B input dynamics
  */
-void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B);
+void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B, gsl_matrix *E, gsl_vector *w, size_t current_time);
 
+/**
+ * @brief Generates random numbers with normal distribution
+ * @param mu
+ * @param sigma
+ * @return
+ */
+double randn (double mu, double sigma);
 
+/**
+ * Fill a vector with gaussian distributed noise
+ * @param w
+ */
+void get_disturbance(gsl_vector *w, double mu, double sigma);
 /**
  * @brief Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
  *
@@ -78,7 +90,7 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B);
  * @param target_cell index of target region in discrete dynamics (d_dyn)
  * @param f_cost cost func matrices: f(x, u) = |Rx|_{ord} + |Qu|_{ord} + r'x + distance_error_weight *|xc - x(N)|_{ord}
  */
-void get_input (gsl_matrix *u, current_state * now, discrete_dynamics *d_dyn, system_dynamics *s_dyn, int target_cell, cost_function * f_cost);
+void get_input (gsl_matrix *u, current_state * now, discrete_dynamics *d_dyn, system_dynamics *s_dyn, int target_cell, cost_function * f_cost, size_t current_time_horizon);
 
 
 /**
