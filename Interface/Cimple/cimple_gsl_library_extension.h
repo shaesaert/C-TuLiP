@@ -6,6 +6,7 @@
 #define CIMPLE_GSL_LIBRARY_CIMPLE_EXTENSION_H
 
 #include <gsl/gsl_blas.h>
+#include <gurobi_c.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // @fn gsl_matrix_from_array()
@@ -40,4 +41,9 @@ void gsl_matrix_print(gsl_matrix *matrix, char *name);
 void gsl_vector_print(gsl_vector *vector, char *name);
 
 gsl_matrix * gsl_matrix_diag_from_vector(gsl_vector * X);
+
+int gsl_matrix_to_qpterm_gurobi(gsl_matrix *P, GRBmodel *model, size_t N);
+
+int gsl_vector_to_linterm_gurobi(gsl_vector *q, GRBmodel *model, size_t N);
+
 #endif //CIMPLE_GSL_LIBRARY_CIMPLE_EXTENSION_H

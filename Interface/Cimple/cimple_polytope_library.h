@@ -6,6 +6,7 @@
 #define CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H
 
 #include "cimple_gsl_library_extension.h"
+#include <gurobi_c.h>
 #include <polka/poly.h>
 
 /**
@@ -109,29 +110,8 @@ void polytope_to_constraints(matrix_t *new, polytope *original);
 
 
 void polytope_from_constraints(polytope *new, matrix_t *original);
-/**
- * @brief Projects polytope on lower dimensions (e.g. new_dimension = n => projects polytope on first n columns)
- * @param polytope
- * @param new_dimension number of dimensions to project on
- */
-void polytope_project(polytope *polytope, size_t new_dimension);
 
-/**
- * @brief Reduces redundant number of rows of polytope
- *
- * Removes redundant inequalities in the hyperplane representation
- * of the polytope with the algorithm described at
- * http://www.ifor.math.ethz.ch/~fukuda/polyfaq/node24.html
- * by solving one LP for each facet
- *
- * Warning:
- * - nonEmptyBounded == 0 case does not exist
- *
- * @param polytope
- */
-void polytope_reduce(polytope *polytope);
-
-void polytope_list_push(polytope_list **list_head, gsl_vector * newVector, double newValue);
+int polytope_to_constraints_gurobi(polytope *constraints, GRBmodel *model, size_t N);
 
 
 #endif //CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H

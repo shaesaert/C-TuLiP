@@ -87,7 +87,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     gsl_matrix_from_array(s_dyn->B, sys_B,"s_dyn->B");
     free(sys_B);
     double *sys_E = malloc(n* p* sizeof (double));
-    memcpy(sys_E, ((double []){0.0}),1* sizeof(double));
+    memcpy(sys_E, ((double []){1.0}),1* sizeof(double));
     gsl_matrix_from_array(s_dyn->E, sys_E, "s_dyn->E");
     free(sys_E);
     double *sys_K = malloc(n* sizeof (double));

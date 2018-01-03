@@ -47,3 +47,33 @@ gsl_matrix * gsl_matrix_diag_from_vector(gsl_vector * X){
     gsl_vector_memcpy(&diag.vector, X);
     return mat;
 }
+
+int gsl_matrix_to_qpterm_gurobi(gsl_matrix *P, GRBmodel *model, size_t N){
+
+    int error = 0;
+    int qrow[N*N];
+    int qcol[N*N];
+    double qval[N*N];
+    for(size_t i = 0; i < N; i++){
+        for(size_t j = 0; j < N; j++){
+            qrow[i*N+j]=(int)i;
+            qcol[i*N+j]=(int)j;
+            qval[i*N+j]=gsl_matrix_get(P,i,j);
+        }
+    }
+    error = GRBaddqpterms(model, (int)(N*N), qrow, qcol, qval);
+
+    return error;
+};
+
+int gsl_vector_to_linterm_gurobi(gsl_vector *q, GRBmodel *model, size_t N){
+
+    int error = 0;
+    for(size_t i =0; i < N; i++){
+        error = GRBsetdblattrelement(model, GRB_DBL_ATTR_OBJ, 0, gsl_vector_get(q,i));
+        if(error){
+            return error;
+        }
+    }
+    return error;
+};

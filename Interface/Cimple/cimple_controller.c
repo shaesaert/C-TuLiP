@@ -6,7 +6,6 @@
 #include <gsl/gsl_matrix.h>
 #include <math.h>
 #include "cimple_controller.h"
-#include "../../../../../opt/gurobi752/linux64/include/gurobi_c.h"
 
 
 /**
@@ -513,6 +512,9 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         matrix_free(min_constraints);
         poly_free(minimized_polytope);
         poly_free(p_universe);
+
+        gsl_matrix_free(L_full);
+        gsl_vector_free(M_full);
 //
 //        polytope *opt_constraints = polytope_alloc(10,N);
 //        gsl_vector_set(opt_constraints->G,0,1);
@@ -580,110 +582,108 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 //        gsl_matrix_set(opt_constraints->H,9,2,-20);
 //        gsl_matrix_set(opt_constraints->H,9,3,-20);
 //        gsl_matrix_set(opt_constraints->H,9,4,-20);
-        Py_Initialize();
+//
+        //Initialization for qp in gurobi
+        GRBenv   *env   = NULL;
+        GRBmodel *model = NULL;
+        int       error = 0;
+        double    sol[N];
+        int       optimstatus;
+        double    cost;
 
-        //Check if CVXOPT is installed
-        if (import_cvxopt() < 0) {
-            fprintf(stderr, "error importing cvxopt");
-            exit(EXIT_FAILURE);
-        }
 
-        //Import cvxopt.solvers
-        PyObject *solvers = PyImport_ImportModule("cvxopt.solvers");
-        if (!solvers) {
-            fprintf(stderr, "error importing cvxopt.solvers");
-            exit(EXIT_FAILURE);
-        }
+        /* Create environment */
 
-        //Get reference to solvers.qp
-        PyObject *qp = PyObject_GetAttrString(solvers, "qp");
-        if (!qp) {
-            fprintf(stderr, "error referencing cvxopt.solvers.qp");
-            Py_DECREF(solvers);
-            exit(EXIT_FAILURE);
-        }
+        error = GRBloadenv(&env, "qp.log");
+        if (error) goto QUIT;
 
-        //Transform P to CVXOPT compatible matrix: P =>P_cvx
-        PyObject *P_cvx = (PyObject *)Matrix_New(P->size1, P->size2, DOUBLE);
-        for(size_t l = 0; l< N*m; l++){
-            for(size_t k = 0; k < N*m; k++){
-                MAT_BUFD(P_cvx)[l+k*(N*m)] = gsl_matrix_get(P,l,k);
+        /* Create an empty model */
+
+        error = GRBnewmodel(env, &model, "qp", 0, NULL, NULL, NULL, NULL, NULL);
+        if (error) goto QUIT;
+        /* Add variables */
+
+        error = GRBaddvars(model, (int)N, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                           NULL);
+        if (error) goto QUIT;
+
+        /* Quadratic objective terms */
+
+        error = gsl_matrix_to_qpterm_gurobi(P, model, N);
+        if (error) goto QUIT;
+
+        /* Linear objective term */
+
+        error = gsl_vector_to_linterm_gurobi(q, model, N);
+        if (error) goto QUIT;
+
+
+        /* Add constraints*/
+
+        error = polytope_to_constraints_gurobi(opt_constraints,model,N);
+        if (error) goto QUIT;
+        /* Optimize model */
+
+        error = GRBoptimize(model);
+        if (error) goto QUIT;
+
+        /* Write model to 'qp.lp' */
+
+        error = GRBwrite(model, "qp.lp");
+        if (error) goto QUIT;
+
+        /* Capture solution information */
+
+        error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
+        if (error) goto QUIT;
+
+        error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &cost);
+        if (error) goto QUIT;
+
+        error = GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, (int)N, sol);
+        if (error) goto QUIT;
+
+        printf("\nOptimization complete\n");
+        if (optimstatus == GRB_OPTIMAL) {
+            printf("Optimal objective: %.4e\n", cost);
+
+            for(size_t i=0;i<N;i++){
+                printf("  u%d=%.4f", (int)i,sol[i]);
             }
-        }
-        gsl_matrix_free(P);
 
-        //Transform q to CVXOPT compatible vector: q => q_cvx
-        PyObject *q_cvx = (PyObject *)Matrix_New(q->size,1 , DOUBLE);
-        for(size_t k = 0; k< (N*m); k++){
-            MAT_BUFD(q_cvx)[k] = gsl_vector_get(q, k);
-        }
-        gsl_vector_free(q);
-
-        //Transform L_u to CVXOPT compatible matrix: L_u => L_u_cvx
-        PyObject *L_u_cvx = (PyObject *)Matrix_New(opt_constraints->H->size1 ,opt_constraints->H->size2, DOUBLE);
-        for(size_t l = 0; l< opt_constraints->H->size1; l++){
-            for(size_t k = 0; k < opt_constraints->H->size2; k++){
-                MAT_BUFD(L_u_cvx)[k+l*(opt_constraints->H->size2)] = gsl_matrix_get(opt_constraints->H,l,k);
-            }
+        } else if (optimstatus == GRB_INF_OR_UNBD) {
+            printf("Model is infeasible or unbounded\n");
+        } else {
+            printf("Optimization was stopped early\n");
         }
 
-        PyObject *M_view_cvx = (PyObject *)Matrix_New(opt_constraints->G->size, 1, DOUBLE);
-        for(size_t k = 0; k< opt_constraints->G->size; k++){
-            MAT_BUFD(M_view_cvx)[k] = gsl_vector_get(opt_constraints->G,k);
-        }
-        /* pack matrices into an argument tuple*/
-        PyObject *pArgs = PyTuple_New(4);
-        PyTuple_SetItem(pArgs, 0, P_cvx);
-        PyTuple_SetItem(pArgs, 1, q_cvx);
-        PyTuple_SetItem(pArgs, 2, L_u_cvx);
-        PyTuple_SetItem(pArgs, 3, M_view_cvx);
-
-        PyObject *solution = PyObject_CallObject(qp, pArgs);
-        if (!solution) {
-            PyErr_Print();
-            Py_DECREF(solvers);
-            Py_DECREF(qp);
-            Py_DECREF(pArgs);
-            exit(EXIT_FAILURE);
-        }
-        /*PyObject *status = PyDict_GetItemString(solution, "status");
-        if (*status != "optimal"){
-            fprintf(stderr, "getInputHelper: QP solver finished with status %s", solution.status);
-            exit(EXIT_FAILURE);
-        }*/
-
-        //Get value from Python Dictionary
-        PyObject *primal_objective = PyDict_GetItemString(solution, "primal objective");
-        double cost = PyFloat_AS_DOUBLE(primal_objective);
-        printf("Cost: %.3f", cost);
-        //ONLY interested if cost is lower than current optimal path!
         if(cost < *low_cost){
             printf(">> Better solution x: found");
-            PyObject *x_cvx = PyDict_GetItemString(solution, "x");
-            // Transform x_cvx to GSL compatible matrix: x_cvx => low_u
             for(size_t i = 0; i<n; i++){
                 for(size_t j = 0; j<N; j++){
-                    gsl_matrix_set(low_u,i, j,MAT_BUFD(x_cvx)[j+(i*N)]);
+                    gsl_matrix_set(low_u,i, j,sol[j]);
                 }
             }
             gsl_matrix_print(low_u, "u");
             *low_cost = cost;
-            //Clean up!
-            Py_DECREF(x_cvx);
-
         }
 
-        //Clean up!
-        Py_DECREF(solvers);
-        Py_DECREF(qp);
-        Py_DECREF(pArgs);
-        Py_DECREF(solution);
-        Py_DECREF(primal_objective);
+        QUIT:
 
-        Py_Finalize();
+        /* Error reporting */
 
-        gsl_matrix_free(L_full);
-        gsl_vector_free(M_full);
+        if (error) {
+            printf("ERROR: %s\n", GRBgeterrormsg(env));
+            exit(1);
+        }
+
+        /* Free model */
+
+        GRBfreemodel(model);
+
+        /* Free environment */
+
+        GRBfreeenv(env);
     }
 
     //TODO: Once more than norm2 is needed
