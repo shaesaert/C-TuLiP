@@ -2,11 +2,8 @@
 // Created by L.Jonathan Feldstein
 //
 
-#include <gsl/gsl_vector_double.h>
-#include <gsl/gsl_matrix.h>
-#include <math.h>
-#include "cimple_controller.h"
 
+#include "cimple_controller.h"
 
 /**
  * Action to get plant from current cell to target cell.

@@ -11,6 +11,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include "cimple_polytope_library.h"
+#include <pthread.h>
 
 /**
  * @brief Action to get plant from current cell to target cell.
