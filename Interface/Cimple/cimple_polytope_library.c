@@ -107,10 +107,10 @@ void polytope_from_arrays(polytope *polytope, double *left_side, double *right_s
  * Checks whether a state is in a certain polytope
  */
 int polytope_check_state(polytope *polytope, gsl_vector *x){
-    gsl_vector * result = gsl_vector_alloc(x->size);
+    gsl_vector * result = gsl_vector_alloc(polytope->G->size);
     gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
-    for(size_t i = 1; i<= x->size; i++){
-        if(gsl_vector_get(result, i) <= gsl_vector_get(polytope->G, i)){
+    for(size_t i = 0; i< polytope->G->size; i++){
+        if(gsl_vector_get(result, i) >= gsl_vector_get(polytope->G, i)){
             return 0;
         }
     }

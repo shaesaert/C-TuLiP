@@ -26,7 +26,7 @@ void gsl_vector_from_array(gsl_vector *vector, double *array, char* name){
     for(size_t j = 0; j<vector->size; j++){
         gsl_vector_set(vector, j, array[j]);
     }
-    gsl_vector_print(vector, name);
+//    gsl_vector_print(vector, name);
     fflush(stdout);
 };
 
@@ -36,7 +36,7 @@ void gsl_matrix_from_array(gsl_matrix *matrix, double *array, char* name){
             gsl_matrix_set(matrix, i, j, array[j+matrix->size2*i]);
         }
     }
-    gsl_matrix_print(matrix, name);
+//    gsl_matrix_print(matrix, name);
     fflush(stdout);
 };
 

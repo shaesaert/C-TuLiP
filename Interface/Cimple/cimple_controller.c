@@ -23,8 +23,36 @@ void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dyna
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
         apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        int new_cell_found = 0;
+        for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
+            if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)){
+                new_cell_found = 1;
+                break;
+            }
+        }
+        if(!new_cell_found){
+            for (int j = 0; j < d_dyn->regions[target]->number_of_polytopes; j++) {
+                if (polytope_check_state(d_dyn->regions[target]->polytopes[j], now->x)){
+                    new_cell_found = 1;
+                    now->current_cell=target;
+                    break;
+                }
+            }
+        }
+        if(!new_cell_found){
+            for(int k=0; k<d_dyn->number_of_regions;k++){
+                for (int j = 0; j < d_dyn->regions[k]->number_of_polytopes; j++) {
+                    if (polytope_check_state(d_dyn->regions[k]->polytopes[j], now->x)){
+                        now->current_cell=k;
+                        break;
+                    }
+                }
+            }
+        }
+
         printf("New state:");
         gsl_vector_print(now->x, "now->");
+        printf("New Cell: %d", now->current_cell);
         fflush(stdout);
         // Clean up!
         gsl_matrix_free(u);
@@ -207,7 +235,6 @@ poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *
     gsl_vector_free(D_hat);
 
     polytope_to_constraints(constraints, precedent_polytope);
-    matrix_print(constraints);
     polytope_free(precedent_polytope);
     return poly_add_constraints(p_universe, constraints);
 };
@@ -356,7 +383,6 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
             //    poly_minimize(new_polytope);
             matrix_free(constraints);
             poly_minimize(reduced_polytope);
-            poly_print(reduced_polytope);
 
             polytope_list[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
             polytope_from_constraints(polytope_list[i-1], reduced_polytope->C);
@@ -484,11 +510,11 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 
 
         /*CVXOPT solve quadratic problem*/
-
-        gsl_matrix_print(P, "P");
-        gsl_vector_print(q, "q");
-        gsl_matrix_print(&L_u.matrix, "L_u");
-        gsl_vector_print(&M_view.vector, "M_view");
+//
+//        gsl_matrix_print(P, "P");
+//        gsl_vector_print(q, "q");
+//        gsl_matrix_print(&L_u.matrix, "L_u");
+//        gsl_vector_print(&M_view.vector, "M_view");
 
         //Initialization
         poly_t *p_universe, *minimized_polytope;
@@ -582,7 +608,7 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 //        gsl_matrix_set(opt_constraints->H,9,2,-20);
 //        gsl_matrix_set(opt_constraints->H,9,3,-20);
 //        gsl_matrix_set(opt_constraints->H,9,4,-20);
-//
+
         //Initialization for qp in gurobi
         GRBenv   *env   = NULL;
         GRBmodel *model = NULL;
@@ -649,7 +675,9 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 
             for(size_t i=0;i<N;i++){
                 printf("  u%d=%.4f", (int)i,sol[i]);
+
             }
+            printf("\n");
 
         } else if (optimstatus == GRB_INF_OR_UNBD) {
             printf("Model is infeasible or unbounded\n");
@@ -658,13 +686,11 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         }
 
         if(cost < *low_cost){
-            printf(">> Better solution x: found");
             for(size_t i = 0; i<n; i++){
                 for(size_t j = 0; j<N; j++){
                     gsl_matrix_set(low_u,i, j,sol[j]);
                 }
             }
-            gsl_matrix_print(low_u, "u");
             *low_cost = cost;
         }
 
@@ -693,17 +719,6 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
      *  //ord == INFINITY
      *
      * }
-     * lp_solved_solution sol = pc.polytope.lpsolve(c_LP.flatten(), G_LP, h_LP);
-     *
-     * if (sol.status != 0){
-     *     fprintf(stderr, "getInputHelper: LP solver finished with message %s", sol.message);
-     *     exit(EXIT_FAILURE);
-     * }
-     * var = np.array(sol['x']).flatten();
-     * u = var[-N * m:];
-     * path.input = u.reshape(N, m);
-     * path.cost = sol['fun'];
-     * return path;
      * */
 };
 

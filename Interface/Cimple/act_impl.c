@@ -19,11 +19,40 @@ void ACT_m1(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
         apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        int new_cell_found = 0;
+        for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
+            if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)) {
+                new_cell_found = 1;
+                break;
+            }
+        }
+        if (!new_cell_found) {
+            for (int j = 0; j < d_dyn->regions[target_cell]->number_of_polytopes; j++) {
+                if (polytope_check_state(d_dyn->regions[target_cell]->polytopes[j], now->x)) {
+                    new_cell_found = 1;
+                    now->current_cell = target_cell;
+                    break;
+                }
+            }
+        }
+        if (!new_cell_found) {
+            for (int k = 0; k < d_dyn->number_of_regions; k++) {
+                for (int j = 0; j < d_dyn->regions[k]->number_of_polytopes; j++) {
+                    if (polytope_check_state(d_dyn->regions[k]->polytopes[j], now->x)) {
+                        now->current_cell = k;
+                        break;
+                    }
+                }
+            }
+        }
         printf("New state:");
         gsl_vector_print(now->x, "now->");
+        printf("New Cell: %d", now->current_cell);
+
         fflush(stdout);
         // Clean up!
         gsl_matrix_free(u);
+
     }
 }
 
@@ -40,11 +69,40 @@ void ACT_m0(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
         apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        int new_cell_found = 0;
+        for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
+            if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)) {
+                new_cell_found = 1;
+                break;
+            }
+        }
+        if (!new_cell_found) {
+            for (int j = 0; j < d_dyn->regions[target_cell]->number_of_polytopes; j++) {
+                if (polytope_check_state(d_dyn->regions[target_cell]->polytopes[j], now->x)) {
+                    new_cell_found = 1;
+                    now->current_cell = target_cell;
+                    break;
+                }
+            }
+        }
+        if (!new_cell_found) {
+            for (int k = 0; k < d_dyn->number_of_regions; k++) {
+                for (int j = 0; j < d_dyn->regions[k]->number_of_polytopes; j++) {
+                    if (polytope_check_state(d_dyn->regions[k]->polytopes[j], now->x)) {
+                        now->current_cell = k;
+                        break;
+                    }
+                }
+            }
+        }
         printf("New state:");
         gsl_vector_print(now->x, "now->");
+        printf("New Cell: %d", now->current_cell);
+
         fflush(stdout);
         // Clean up!
         gsl_matrix_free(u);
+
     }
 }
 
@@ -61,8 +119,36 @@ void ACT_m2(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
         apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        int new_cell_found = 0;
+        for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
+            if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)) {
+                new_cell_found = 1;
+                break;
+            }
+        }
+        if (!new_cell_found) {
+            for (int j = 0; j < d_dyn->regions[target_cell]->number_of_polytopes; j++) {
+                if (polytope_check_state(d_dyn->regions[target_cell]->polytopes[j], now->x)) {
+                    new_cell_found = 1;
+                    now->current_cell = target_cell;
+                    break;
+                }
+            }
+        }
+        if (!new_cell_found) {
+            for (int k = 0; k < d_dyn->number_of_regions; k++) {
+                for (int j = 0; j < d_dyn->regions[k]->number_of_polytopes; j++) {
+                    if (polytope_check_state(d_dyn->regions[k]->polytopes[j], now->x)) {
+                        now->current_cell = k;
+                        break;
+                    }
+                }
+            }
+        }
         printf("New state:");
         gsl_vector_print(now->x, "now->");
+        printf("New Cell: %d", now->current_cell);
+
         fflush(stdout);
         // Clean up!
         gsl_matrix_free(u);
@@ -82,8 +168,36 @@ void ACT_m3(current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
         apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        int new_cell_found = 0;
+        for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
+            if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)){
+                new_cell_found = 1;
+                break;
+            }
+        }
+        if(!new_cell_found){
+            for (int j = 0; j < d_dyn->regions[target_cell]->number_of_polytopes; j++) {
+                if (polytope_check_state(d_dyn->regions[target_cell]->polytopes[j], now->x)){
+                    new_cell_found = 1;
+                    now->current_cell=target_cell;
+                    break;
+                }
+            }
+        }
+        if(!new_cell_found){
+            for(int k=0; k<d_dyn->number_of_regions;k++){
+                for (int j = 0; j < d_dyn->regions[k]->number_of_polytopes; j++) {
+                    if (polytope_check_state(d_dyn->regions[k]->polytopes[j], now->x)){
+                        now->current_cell=k;
+                        break;
+                    }
+                }
+            }
+        }
         printf("New state:");
         gsl_vector_print(now->x, "now->");
+        printf("New Cell: %d", now->current_cell);
+
         fflush(stdout);
         // Clean up!
         gsl_matrix_free(u);
