@@ -110,7 +110,8 @@ void get_input (gsl_matrix *u,
                 system_dynamics *s_dyn,
                 int target_cell,
                 cost_function * f_cost,
-                size_t current_time_horizon);
+                size_t current_time_horizon,
+                polytope **polytope_list_backup);
 
 
 /**
@@ -146,7 +147,9 @@ void search_better_path(gsl_matrix *low_u,
                         int closed_loop,
                         size_t time_horizon,
                         cost_function * f_cost,
-                        double* low_cost);
+                        double* low_cost,
+                        polytope **polytope_list_backup,
+                        size_t total_time);
 
 /**
  * @brief Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step

@@ -3,8 +3,55 @@
 //
 
 
+#include <gsl/gsl_vector_double.h>
+#include <gsl/gsl_matrix.h>
 #include "cimple_controller.h"
 
+void * timer(void * arg){
+    struct timeval sec;
+    double* total_time_p = (double*)arg;
+    double total_time = *total_time_p;
+    int seconds = (int)floor(total_time);
+    int u_seconds;
+    u_seconds = (int)floor(total_time * pow(10,6) - seconds * pow(10,6));
+    sec.tv_sec = seconds;
+    sec.tv_usec = u_seconds;
+    printf("Time runs: %d.%d", (int)sec.tv_sec, (int)sec.tv_usec);
+    select(0,NULL,NULL,NULL,&sec);
+    pthread_exit(0);
+}
+void * main_computation(void *arg){
+
+    pthread_exit(0);
+}
+
+int check_backup(gsl_vector *x_real, gsl_vector *u, gsl_matrix *A, gsl_matrix *B, polytope *check_polytope){
+    gsl_vector *x_test = gsl_vector_alloc(x_real->size);
+    gsl_vector_memcpy(x_test, x_real);
+    gsl_vector *x_temp = gsl_vector_alloc(x_test->size);
+
+    gsl_vector *Btu = gsl_vector_alloc(x_test->size);
+    //A.x
+    gsl_blas_dgemv(CblasNoTrans, 1, A, x_test, 0, x_temp);
+    //B.u
+    gsl_blas_dgemv(CblasNoTrans, 1, B, u, 0 , Btu);
+    //update x[k-1] => x[k]
+    gsl_vector_set_zero(x_test);
+    gsl_vector_add(x_test, x_temp);
+    gsl_vector_add(x_test, Btu);
+    gsl_vector_free(Btu);
+    gsl_vector_free(x_temp);
+    if(polytope_check_state(check_polytope,x_test)){
+
+        gsl_vector_free(x_test);
+        return 1;
+    }else{
+
+        gsl_vector_free(x_test);
+        return 0;
+    }
+
+}
 /**
  * Action to get plant from current cell to target cell.
  */
@@ -12,17 +59,57 @@ void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dyna
          double sec){
     printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
     fflush(stdout);
+    //Setup threads and start timer
+
     gsl_matrix * u_backup = gsl_matrix_alloc(s_dyn->B->size2, d_dyn->time_horizon);
     gsl_matrix_set_zero(u_backup);
+    polytope **polytope_list_backup = malloc(sizeof(polytope)*(d_dyn->time_horizon+1));
     for(size_t i=0; i<d_dyn->time_horizon;i++){
+
+        //Create timer thread
+        pthread_t timer_id;
+        pthread_create(&timer_id, NULL, timer, &sec);
+
+        //Check whether backup is good
+
+
         size_t current_time_horizon = d_dyn->time_horizon-i;
         gsl_matrix_view u = gsl_matrix_submatrix(u_backup, 0, i, u_backup->size1, (u_backup->size2-i));
-        get_input(&u.matrix, now, d_dyn, s_dyn, target, f_cost, current_time_horizon);
+        gsl_vector_view u_last = gsl_matrix_column(u_backup,i);
+        int main_computation_completed = 0;
+        int backup_applicable = 0;
+        if(i != 0){
+            backup_applicable = check_backup(now->x, &u_last.vector ,s_dyn->A,s_dyn->B, polytope_list_backup[i]);
+        }
+        if(backup_applicable){
+
+            get_input(&u.matrix, now, d_dyn, s_dyn, target, f_cost, current_time_horizon, polytope_list_backup);
+            main_computation_completed = 1;
+
+        }else{
+            get_input(&u.matrix, now, d_dyn, s_dyn, target, f_cost, current_time_horizon, polytope_list_backup);
+        }
+
         printf("Applying it...");
         fflush(stdout);
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
-        apply_control(now->x, &u.matrix, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        //get timer back
+        pthread_join(timer_id, NULL);
+        if(main_computation_completed){
+
+            apply_control(now->x, &u.matrix, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+
+        }else if(backup_applicable){
+
+
+
+        }else{
+
+
+
+        }
+
         int new_cell_found = 0;
         for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
             if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)){
@@ -56,6 +143,10 @@ void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dyna
         fflush(stdout);
     }
     gsl_matrix_free(u_backup);
+    for(int i = 0; i< d_dyn->time_horizon+1; i++){
+        polytope_free(polytope_list_backup[i]);
+    }
+    free(polytope_list_backup);
 }
 
 /**
@@ -352,7 +443,7 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
 /**
  * Calculates (optimal) input to reach desired state (P3) from current state (now) through convex optimization
  */
-void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord , int closed_loop, size_t time_horizon, cost_function * f_cost, double *low_cost){
+void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord , int closed_loop, size_t time_horizon, cost_function * f_cost, double *low_cost, polytope **polytope_list_backup, size_t total_time){
 
     //Auxiliary variables
     size_t N = time_horizon;
@@ -408,6 +499,21 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
     gsl_matrix_set_zero(L_full);
     gsl_vector_set_zero(M_full);
     set_path_constraints(L_full, M_full, s_dyn, polytope_list, N);
+
+    //Updating backup list of polytopes
+    //If polytope list doesn't have to be initialized completely, old ones have first to be destroyed:
+    if(N< total_time) {
+        for (size_t i = total_time; i > total_time - N - 1; i--) {
+            polytope_free(polytope_list_backup[i]);
+        }
+    }
+    //List is updated (or created, if total_time == N)
+    for(size_t i = total_time-N; i< total_time+1; i++){
+        size_t k =i-(total_time-N);
+        polytope_list_backup[i] = polytope_alloc(polytope_list[k]->H->size1,polytope_list[k]->H->size2);
+        gsl_matrix_memcpy(polytope_list_backup[i]->H,polytope_list[k]->H);
+        gsl_vector_memcpy(polytope_list_backup[i]->G,polytope_list[k]->G);
+    }
 
     for(int i = 0; i< N+1; i++){
         polytope_free(polytope_list[i]);
@@ -724,7 +830,7 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 /**
  * Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
  */
-void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, int target_cell, cost_function * f_cost,size_t current_time_horizon) {
+void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, int target_cell, cost_function * f_cost,size_t current_time_horizon, polytope **polytope_list_backup) {
 
     //Set input back to zero (safety precaution)
     gsl_matrix_set_zero(low_u);
@@ -783,7 +889,7 @@ void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_d
                 * element_value += err_weight * xc[i];
                 gsl_vector_set(f_cost->r, j, *element_value);
             }
-            search_better_path(low_u, now,s_dyn, P1, P3,d_dyn->ord, d_dyn->closed_loop, N, f_cost, &low_cost);
+            search_better_path(low_u, now,s_dyn, P1, P3,d_dyn->ord, d_dyn->closed_loop, N, f_cost, &low_cost, polytope_list_backup, d_dyn->time_horizon);
             //Reset r vector to default values
             for (size_t j = n * (N - 1); j < n*N; j++){
                 double * element_value = gsl_vector_ptr(f_cost->r, j);
@@ -792,7 +898,7 @@ void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_d
             }
 
         } else{
-            search_better_path(low_u, now,s_dyn, P1, P3,d_dyn->ord, d_dyn->closed_loop, N, f_cost, &low_cost);
+            search_better_path(low_u, now,s_dyn, P1, P3,d_dyn->ord, d_dyn->closed_loop, N, f_cost, &low_cost, polytope_list_backup, d_dyn->time_horizon);
         }
     }
 
