@@ -15,7 +15,8 @@ int main(){
     system_alloc(&now, &s_dyn, &f_cost, &d_dyn);
     system_init(now, s_dyn, f_cost, d_dyn);
 
-    ACT(3, now, d_dyn, s_dyn, f_cost);
+    double sec = 2;
+    ACT(3, now, d_dyn, s_dyn, f_cost, sec);
 
 
     system_dynamics_free(s_dyn);
