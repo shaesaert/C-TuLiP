@@ -15,7 +15,8 @@ int main(){
     system_alloc(&now, &s_dyn, &f_cost, &d_dyn);
     system_init(now, s_dyn, f_cost, d_dyn);
 
-    ACT_m3(now, d_dyn, s_dyn, f_cost);
+    ACT(3, now, d_dyn, s_dyn, f_cost);
+
 
     system_dynamics_free(s_dyn);
     discrete_dynamics_free(d_dyn);
