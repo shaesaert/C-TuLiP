@@ -11,18 +11,21 @@
 /**
  * Action to get plant from current cell to target cell.
  */
-void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost){
+void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost,
+         double sec){
     printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
     fflush(stdout);
+    gsl_matrix * u_backup = gsl_matrix_alloc(s_dyn->B->size2, d_dyn->time_horizon);
+    gsl_matrix_set_zero(u_backup);
     for(size_t i=0; i<d_dyn->time_horizon;i++){
         size_t current_time_horizon = d_dyn->time_horizon-i;
-        gsl_matrix * u = gsl_matrix_alloc(now->x->size, current_time_horizon);
-        get_input(u, now, d_dyn, s_dyn, target, f_cost, current_time_horizon);
+        gsl_matrix_view u = gsl_matrix_submatrix(u_backup, 0, i, u_backup->size1, (u_backup->size2-i));
+        get_input(&u.matrix, now, d_dyn, s_dyn, target, f_cost, current_time_horizon);
         printf("Applying it...");
         fflush(stdout);
         gsl_vector *w = gsl_vector_alloc(s_dyn->E->size2);
         get_disturbance(w, 0, 0.1);
-        apply_control(now->x, u, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+        apply_control(now->x, &u.matrix, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
         int new_cell_found = 0;
         for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
             if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)){
@@ -54,9 +57,8 @@ void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dyna
         gsl_vector_print(now->x, "now->");
         printf("New Cell: %d", now->current_cell);
         fflush(stdout);
-        // Clean up!
-        gsl_matrix_free(u);
     }
+    gsl_matrix_free(u_backup);
 }
 
 /**

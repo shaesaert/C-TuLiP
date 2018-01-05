@@ -21,7 +21,12 @@
  * @param s_dyn system dynamics including auxiliary matrices
  * @param f_cost cost function to be minimized on the path
  */
-void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, cost_function * f_cost);
+void ACT(int target,
+         current_state * now,
+         discrete_dynamics * d_dyn,
+         system_dynamics * s_dyn,
+         cost_function * f_cost,
+         double sec);
 /**
  * @brief Apply the calculated control to the current state using system dynamics
  * @param x current state at time [0]
@@ -29,7 +34,13 @@ void ACT(int target, current_state * now, discrete_dynamics * d_dyn, system_dyna
  * @param A system dynamics
  * @param B input dynamics
  */
-void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B, gsl_matrix *E, gsl_vector *w, size_t current_time);
+void apply_control(gsl_vector *x,
+                   gsl_matrix *u,
+                   gsl_matrix *A,
+                   gsl_matrix *B,
+                   gsl_matrix *E,
+                   gsl_vector *w,
+                   size_t current_time);
 
 /**
  * @brief Generates random numbers with normal distribution
@@ -37,13 +48,16 @@ void apply_control(gsl_vector *x, gsl_matrix *u, gsl_matrix *A, gsl_matrix *B, g
  * @param sigma
  * @return
  */
-double randn (double mu, double sigma);
+double randn (double mu,
+              double sigma);
 
 /**
  * Fill a vector with gaussian distributed noise
  * @param w
  */
-void get_disturbance(gsl_vector *w, double mu, double sigma);
+void get_disturbance(gsl_vector *w,
+                     double mu,
+                     double sigma);
 /**
  * @brief Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
  *
@@ -89,7 +103,13 @@ void get_disturbance(gsl_vector *w, double mu, double sigma);
  * @param target_cell index of target region in discrete dynamics (d_dyn)
  * @param f_cost cost func matrices: f(x, u) = |Rx|_{ord} + |Qu|_{ord} + r'x + distance_error_weight *|xc - x(N)|_{ord}
  */
-void get_input (gsl_matrix *u, current_state * now, discrete_dynamics *d_dyn, system_dynamics *s_dyn, int target_cell, cost_function * f_cost, size_t current_time_horizon);
+void get_input (gsl_matrix *u,
+                current_state * now,
+                discrete_dynamics *d_dyn,
+                system_dynamics *s_dyn,
+                int target_cell,
+                cost_function * f_cost,
+                size_t current_time_horizon);
 
 
 /**
@@ -116,7 +136,15 @@ void get_input (gsl_matrix *u, current_state * now, discrete_dynamics *d_dyn, sy
  * @param f_cost predefined cost functions |Rx|_{ord} + |Qu|_{ord} + r'x + mid_weight * |xc - x(N)|_{ord}
  * @param low_cost cost associate to low_u
  */
-void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord, int closed_loop, size_t time_horizon, cost_function * f_cost,
+void search_better_path(gsl_matrix *low_u,
+                        current_state *now,
+                        system_dynamics *s_dyn,
+                        polytope *P1,
+                        polytope *P3,
+                        int ord,
+                        int closed_loop,
+                        size_t time_horizon,
+                        cost_function * f_cost,
                         double* low_cost);
 
 /**
@@ -126,7 +154,11 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
  * @param P2 last recursively calculated polytope
  * @param s_dyn system dynamics (including auxiliary matrices)
  */
-poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *P2, system_dynamics *s_dyn, matrix_t * constraints);
+poly_t * solve_feasible_closed_loop(poly_t *p_universe,
+                                    polytope *P1,
+                                    polytope *P2,
+                                    system_dynamics *s_dyn,
+                                    matrix_t * constraints);
 
 
 /**
@@ -150,6 +182,10 @@ poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *
  * [L_full; M_full] polytope intersection of required and allowed polytopes
  *
  */
-void set_path_constraints(gsl_matrix* L_full, gsl_vector *M_full, system_dynamics * s_dyn, polytope *list_polytopes[], size_t N);
+void set_path_constraints(gsl_matrix* L_full,
+                          gsl_vector *M_full,
+                          system_dynamics * s_dyn,
+                          polytope *list_polytopes[],
+                          size_t N);
 
 #endif //CIMPLE_CIMPLE_CONTROLLER_H
