@@ -24,7 +24,7 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     size_t d_one_j = 2;
     size_t u_set_size =2;
     size_t w_set_size =2;
-    double distance_weight =3;
+    double distance_weight =10;
 
     int default_cell = 3;
     size_t total_number_polytopes = 4;
@@ -87,7 +87,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     gsl_matrix_from_array(s_dyn->B, sys_B,"s_dyn->B");
     free(sys_B);
     double *sys_E = malloc(n* p* sizeof (double));
-    memcpy(sys_E, ((double []){0.0}),1* sizeof(double));
+    memcpy(sys_E, ((double []){1.0}),1* sizeof(double));
     gsl_matrix_from_array(s_dyn->E, sys_E, "s_dyn->E");
     free(sys_E);
     double *sys_K = malloc(n* sizeof (double));
@@ -165,7 +165,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
     // Set cost function
     double *cf_R = malloc(n* time_horizon* n* time_horizon* sizeof (double));
-    memcpy(cf_R, ((double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,9.0}),25* sizeof(double));
+    memcpy(cf_R, ((double []){0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0}),25* sizeof(double));
     gsl_matrix_from_array(f_cost->R, cf_R, "f_cost->R");
     free(cf_R);
     double *cf_Q = malloc(m* time_horizon* m* time_horizon* sizeof (double));

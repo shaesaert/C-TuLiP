@@ -2,9 +2,9 @@
 #---------------------------------------
 CC ?= /usr/bin/gcc
 
-CFLAGS ?= -std=c99 -g -Wall -Werror -O0 -c -m64 -DPOLKA_NUM=1
+CFLAGS ?= -std=c99 -g -Wall -Werror -O0 -c -m64 -pthread -DPOLKA_NUM=1
  
-LDFLAGS = -lm -lgsl -lgslcblas -ldl -lutil -lpthread -lpolkai -L/opt/gurobi752/linux64/lib/ -lgurobi75
+LDFLAGS = -lm -lgsl -lgslcblas -ldl -lutil -lpthread -ltime -lpolkai -L/opt/gurobi752/linux64/lib/ -lgurobi75
 
 INC = -I/usr/include -I/opt/gurobi752/linux64/include/
 

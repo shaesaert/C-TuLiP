@@ -39,7 +39,7 @@ struct polytope *polytope_alloc(size_t k, size_t n){
     }
 
     return return_polytope;
-}
+};
 
 /**
  * "Destructor" Deallocates the dynamically allocated memory of the polytope
@@ -49,7 +49,7 @@ void polytope_free(polytope *polytope){
     gsl_vector_free(polytope->G);
     free(polytope->chebyshev_center);
     free(polytope);
-}
+};
 
 /**
  * "Constructor" Dynamically allocates the space a region of polytope needs
@@ -76,7 +76,7 @@ struct region_of_polytopes *region_of_polytopes_alloc(size_t *k,size_t k_hull, s
     return_region_of_polytopes->number_of_polytopes = number_of_polytopes;
 
     return return_region_of_polytopes;
-}
+};
 
 /**
  * "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
@@ -110,10 +110,12 @@ int polytope_check_state(polytope *polytope, gsl_vector *x){
     gsl_vector * result = gsl_vector_alloc(polytope->G->size);
     gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
     for(size_t i = 0; i< polytope->G->size; i++){
-        if(gsl_vector_get(result, i) >= gsl_vector_get(polytope->G, i)){
+        if(gsl_vector_get(result, i) > gsl_vector_get(polytope->G, i)){
+            gsl_vector_free(result);
             return 0;
         }
     }
+    gsl_vector_free(result);
     return 1;
 };
 
@@ -121,20 +123,14 @@ void polytope_to_constraints(matrix_t *new, polytope *original){
     for(size_t i = 0; i<original->H->size1; i++){
         pkint_set_si(new->p[i][0], 1);
         double g_i_d = gsl_vector_get(original->G, i);
-//        int roundup =0;
-//        if(g_i_d != round(g_i_d)){
             g_i_d = g_i_d*1000;
             g_i_d = round(g_i_d);
-//            roundup = 1;
-//        }
         int g_i = (int) g_i_d;
         pkint_set_si(new->p[i][1], g_i);
         for (size_t j = 0; j < original->H->size2; j++) {
             double h_i_j_d = gsl_matrix_get(original->H, i, j);
-//            if(roundup == 1){
-                h_i_j_d = h_i_j_d*(-1000);
+                h_i_j_d = h_i_j_d*-1000;
                 h_i_j_d = round(h_i_j_d);
-//            }
             int h_i_j = (int) h_i_j_d;
             pkint_set_si(new->p[i][j+2], h_i_j);
         }
@@ -143,10 +139,24 @@ void polytope_to_constraints(matrix_t *new, polytope *original){
 
 void polytope_from_constraints(polytope *new, matrix_t *original){
     for(size_t i = 0; i<original->nbrows; i++){
-        double g_i = (double)(original->p[i][1].rep);
+        double norm = (double)(original->p[i][1].rep);
+        if(norm<0){
+            norm = norm*(-1);
+        }
+        double g_i;
+        if(norm!=0){
+             g_i = (double)(original->p[i][1].rep)/norm;
+        }else{
+            g_i = (double)(original->p[i][1].rep);
+        }
         gsl_vector_set(new->G,i, g_i);
         for (size_t j = 0; j < new->H->size2; ++j) {
-            double h_i_j = (double)(original->p[i][j+2].rep)*(-1);
+            double h_i_j;
+            if(norm!=0){
+                h_i_j = (double)(original->p[i][j+2].rep)/(-norm);
+            }else{
+                h_i_j = (double)(original->p[i][j+2].rep);
+            }
             gsl_matrix_set(new->H,i,j, h_i_j);
         }
     }
