@@ -27,14 +27,14 @@ disturbance_bound = 0.1
 
 # The system dynamics
 A = np.array([[1., 0, 2., 0], [0, 1., 0, 2], [0, 0, 0.5, 0], [0, 0, 0, 0.5]])
-B = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [5, -1, 0, 0], [0, 0, 5, -1]])
+B = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [5, -5, 0, 0], [0, 0, 5, -5]])
 E = np.array([[1., 0, 0, 0], [0, 1., 0, 0], [0, 0, 1., 0], [0, 0, 0, 1.]])
 # $x^+=Ax+Bu+E W$
 
 # Size of the sets
-X = box2poly([[0, 100.], [0, 100.], [0, 5.], [0, 5.]])
+X = box2poly([[0, 100.], [0, 100.], [-5, 5.], [-5, 5.]])
 U = box2poly(input_bound*np.array([[0, 1], [0, 1], [0, 1], [0, 1]]))
-W = box2poly(disturbance_bound*np.array([[0, 10], [0, 10], [0, 0.1], [0, 0.1]]))
+W = box2poly(disturbance_bound*np.array([[0, 10], [0, 10], [-0.1, 0.1], [-0.1, 0.1]]))
 print("----------------------------------\n Define system\n----------------------------------")
 # Intermezzo polytope tutorial
 #  https://github.com/tulip-control/polytope/blob/master/doc/tutorial.md
@@ -45,11 +45,11 @@ print(str(sys_dyn))
 print("----------------------------------\n Define labelling \n----------------------------------")
 
 cprops ={}
-cprops["inA"] = box2poly([[0, 10], [45, 55], [0, 0.1], [0, 0.1]])
-cprops["inB"] = box2poly([[90, 100], [45, 55], [0, 0.1], [0, 0.1]])
+cprops["inA"] = box2poly([[0, 10], [45, 55], [-0.1, 0.1], [-0.1, 0.1]])
+cprops["inB"] = box2poly([[90, 100], [45, 55], [-0.1, 0.1], [-0.1, 0.1]])
 
-cprops["inObj1"] = box2poly([[15, 35], [30, 70], [0, 5], [0, 5]])
-cprops["inObj2"] = box2poly([[65, 85], [30, 70], [0, 5], [0, 5]])
+cprops["inObj1"] = box2poly([[15, 35], [30, 70], [-5, 5], [-5, 5]])
+cprops["inObj2"] = box2poly([[65, 85], [30, 70], [-5, 5], [-5, 5]])
 
 
 cpartition = prop2part(X, cprops)
