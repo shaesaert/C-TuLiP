@@ -105,6 +105,7 @@ for n in range(2,4):  # number of floors (minimum =2)
     print("States = " + str(len(ctrl_red)) + ' + 1')
     print("Transitions = " + str(len(transitions)) + "\n")
 
+
     with open("excel.txt", "a+") as ww:
         ww.write(str(n) + "          ")
         ww.write(str(len(ctrl)) + "          ")

@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='C-TuLiP',
     version='0.1',
-    packages=['Interface'],
+    packages=['Interface', 'SymbolicReductions'],
     url='https://github.com/shaesaert/C-TuLiP.git',
     license='BSD-3',
     author='shaesaert',

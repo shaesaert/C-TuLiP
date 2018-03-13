@@ -1,0 +1,155 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Input Design &#8212; SpeX 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Modeling framework" href="../Modelling/model.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="input-design">
+<h1>Input Design<a class="headerlink" href="#input-design" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="module-Input.Input">
+<span id="generating-measure-from-trigonometric-moments"></span><h2>Generating measure from trigonometric moments<a class="headerlink" href="#module-Input.Input" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Input.Input.x2phi">
+<code class="descclassname">Input.Input.</code><code class="descname">x2phi</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Input/Input.html#x2phi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Input.Input.x2phi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a spectrum based on <a class="reference internal" href="../index.html#hildebrand2003siam" id="id1">[HG02]</a> given trigonometric moments x.
+The algorithm will follow the following steps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Solve a Generalized eigenvalue problem to find x_bd in Bd(M(n+1))</li>
+<li>Compute finite frequencies for x_bd</li>
+<li>Find convex combination of these frequencies to represent x</li>
+<li>Generate input signal based on finite frequencies</li>
+</ol>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> – element of moment space M(n+1)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(a,theta,psi) discrete power spectrum given as input sum a*cos(theta w+psi)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p><strong>1. Solve a Generalized eigenvalue problem to find x_bd in Bd(M(n+1))</strong>
+First we compute <img class="math" src="../_images/math/cc4a11c47cfb5151a1d780c8de0b7d4ed226eb70.png" alt="\tilde x^s(\pi)"/>. Then given <img class="math" src="../_images/math/cc4a11c47cfb5151a1d780c8de0b7d4ed226eb70.png" alt="\tilde x^s(\pi)"/>
+and  <img class="math" src="../_images/math/a59f68a4202623bb859a7093f0316bf466e6f75d.png" alt="x"/>, we search for  <img class="math" src="../_images/math/20f314726bf9ed235f74ef66d9f7641a18b6daa4.png" alt="x_{bd}"/> on the line through <img class="math" src="../_images/math/cc4a11c47cfb5151a1d780c8de0b7d4ed226eb70.png" alt="\tilde x^s(\pi)"/> and <img class="math" src="../_images/math/a59f68a4202623bb859a7093f0316bf466e6f75d.png" alt="x"/>.</p>
+<p>First we use the function  <a class="reference internal" href="../index.html#Input.Input.xs" title="Input.Input.xs"><code class="xref py py-func docutils literal"><span class="pre">xs()</span></code></a> to compute</p>
+<div class="math">
+<p><img src="../_images/math/aabc01e8dec6184245dd50a61f846327ab44dca0.png" alt="\tilde{x}_{i}^s = \frac{c}{\lambda_0|A(\omega)|^2}\cos{i\omega}."/></p>
+</div><p>The for this we can compute the Teoplitz matrix:</p>
+<div class="math">
+<p><img src="../_images/math/24537a3712827489f8f0ad017c3bef91b8342023.png" alt="T(\tilde x^s(\omega))  = \begin{bmatrix} x^s(\omega)_0 &amp; x^s(\omega)_1 &amp; \ldots&amp;x^s(\omega)_{n-1}\\ x^s(\omega)_1 &amp; x^s(\omega)_0 &amp; \ldots&amp;x^s(\omega)_{n-2}\\    \ldots &amp; \ldots&amp;\\  x^s(\omega)_{n-1}&amp;\ldots &amp;x^s(\omega)_1 &amp;  x^s(\omega)_0 \end{bmatrix}"/></p>
+</div><p>So we now want to find a <img class="math" src="../_images/math/b2ba90839dd98e45f3ec2e289570ae44eb2f405a.png" alt="a&gt;0"/> such that</p>
+<div class="math">
+<p><img src="../_images/math/e0b2f7818725d34c3c41ee317a9597819fe81382.png" alt="a (T(x) - T(\tilde x^s(\pi))) +T(\tilde x^s(\pi)) \succeq 0"/></p>
+</div><p>We solve this problem as a generalized eigenvalue problem.
+We then have that <img class="math" src="../_images/math/20f314726bf9ed235f74ef66d9f7641a18b6daa4.png" alt="x_{bd}"/> is equal to <img class="math" src="../_images/math/a8fd1f2c99a5e4cb20defe258a8144c127161365.png" alt="a(x-x_pi)+x_pi"/>.</p>
+<p><strong>2. Compute finite frequencies for boundary point</strong></p>
+<p>First we compute the supporting hyperplane for the set <img class="math" src="../_images/math/8bd6a6b7292985f89aa117416dcaf6c6aeaf5b12.png" alt="\mathcal M^{(n+1)}"/> through <img class="math" src="../_images/math/20f314726bf9ed235f74ef66d9f7641a18b6daa4.png" alt="x_{bd}"/>.
+See <cite>https://see.stanford.edu/materials/lsocoee364b/01-subgradients_notes.pdf</cite>, we first compute
+the eigenvector of <img class="math" src="../_images/math/8f8ec3d430cb59fde45d1a3bb2fcf80da6b8a674.png" alt="T(x_{bd})"/> associated to the eigenvalue equal to zero.</p>
+<div class="highlight-py"><div class="highlight"><pre><span></span>    <span class="n">e</span><span class="p">,</span><span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">toeplitz</span><span class="p">(</span><span class="n">x_bd</span><span class="p">))</span>
+    <span class="n">v_min</span> <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">e</span><span class="p">)]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="c1"># compute individual elements of toeplitz</span>
+    <span class="n">diag_x_bd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="c1"># compute the normal on the plane via the subgradients of min_v(v.t(T(x))v) for x = x_bd</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v_min</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">toeplitz</span><span class="p">(</span><span class="n">diag_x_bd</span><span class="p">[:,</span><span class="n">i</span><span class="p">]))</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v_min</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="p">)))))</span>
+</pre></div>
+</div>
+<p>Based on the hyperplane given as <img class="math" src="../_images/math/8eed7d1f842fa23476d752e3478ed1210fa10d91.png" alt="g(x-x_{bd}) = 0"/> the finite frequencies are computed using the function Input.Input._finit_w.</p>
+<p><strong>3.Find convex combination of these frequencies to represent x</strong></p>
+<div class="highlight-ruby"><div class="highlight"><pre><span></span><span class="n">lam</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span><span class="n">ra</span><span class="p">,</span><span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>4. Generate input signal based on finite frequencies</strong>
+Input signal becomes <img class="math" src="../_images/math/288a908cae6d0899cdb89013da5cc775bacea621.png" alt="\sum_{theta_i} a*cos(\theta_i t+psi_i)"/>.</p>
+<p>The implementation currently lacks <img class="math" src="../_images/math/e775869e03dff60107e7bd56141ebf37a57067ca.png" alt="A, c, \lambda_0"/>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../Modelling/model.html" title="previous chapter">Modeling framework</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Sofie  Haesaert.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="../_sources/InputDesign/inputdesign.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

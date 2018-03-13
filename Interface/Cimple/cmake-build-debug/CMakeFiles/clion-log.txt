@@ -1,4 +1,5 @@
-/opt/clion-2017.2/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/be107admin/C-TuLiP/Interface/Cimple
+/Applications/CLion.app/Contents/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple
 -- Configuring done
+WARNING: Target "Cimple" requests linking to directory "/anaconda/envs/Python27b/lib".  Targets may link only to libraries.  CMake is dropping the item.
 -- Generating done
--- Build files have been written to: /home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug
+-- Build files have been written to: /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug

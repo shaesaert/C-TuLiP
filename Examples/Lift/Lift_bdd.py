@@ -74,6 +74,9 @@ sys_vars |= {'bon'} # some button is on (AUX)
 sys_vars |= {'fup'} # moving up         (AUX)
 
 # \/i (f_i && f_i+1)
+sys_safe |= {' || '.join([' ( ' + f[i] + ' ) ' for i in range(n)])}
+
+
 sys_safe |= {'fup' + ' <-> (' + ' || '.join([' ( ' + f[i] + ' && X ' + f[i+1]+' ) ' for i in range(n-1)]) + ' ) '}
 sys_safe |= {'bon' + ' <-> (' + ' || '.join([b[i] for i in range(n)]) + ' ) '}
 
@@ -105,6 +108,7 @@ use_cudd=False
 
 spec=psi
 aut = omega_int._grspec_to_automaton(spec)
+
 sym.fill_blanks(aut)
 bdd = omega_int._init_bdd(use_cudd)
 aut.bdd = bdd
@@ -147,7 +151,7 @@ print((
     win=t1 - t0,
     sym=t2 - t1,
     enu=t3 - t2))
-bdd.dump('manager.p')
+bdd.dump('manager.pf')
 bdd2 = omega_int._init_bdd(use_cudd)
 _bdd.copy_vars(t.bdd,bdd2)
 n1=bdd.copy(z,bdd2)

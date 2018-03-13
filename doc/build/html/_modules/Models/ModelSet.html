@@ -1,0 +1,592 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Models.ModelSet &#8212; SpeX 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Models.ModelSet</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Routines for handeling linear time invariant systems.</span>
+
+<span class="sd">author S. Haesaert</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">operator</span> <span class="k">import</span> <span class="n">xor</span>
+<span class="kn">from</span> <span class="nn">numpy.polynomial.polynomial</span> <span class="k">import</span> <span class="n">Polynomial</span> <span class="k">as</span> <span class="n">poly</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">Input.Input</span> <span class="k">import</span> <span class="n">input_sig</span>
+<span class="kn">from</span> <span class="nn">Models.Transferfunctions</span> <span class="k">import</span> <span class="n">tf</span>
+<span class="kn">import</span> <span class="nn">control</span>
+<span class="kn">import</span> <span class="nn">Input.Input</span> <span class="k">as</span> <span class="nn">Input</span>
+
+
+<div class="viewcode-block" id="LinearParameterized"><a class="viewcode-back" href="../../index.html#Models.ModelSet.LinearParameterized">[docs]</a><span class="k">class</span> <span class="nc">LinearParameterized</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Define a discrete-time linear time invariant system&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">param_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create instance of a linearly parameterized model class. Dynamics of model M(par) are given as</span>
+<span class="sd">        x^+ = ax  +b u</span>
+<span class="sd">        y = par x + e</span>
+
+<span class="sd">        :param a: A matrix size nxn</span>
+<span class="sd">        :param b: B matrix (input matrix)</span>
+<span class="sd">        :param param_bounds: par in bounds</span>
+<span class="sd">        :param var: variance of noise e ~ N(0,var)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">param_bounds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Param_bounds</span><span class="p">(</span><span class="n">param_bounds</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">noise_var</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;Linearly Parameterized Model:&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="c1"># make array of data</span>
+        <span class="n">n</span><span class="p">,</span><span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+        <span class="c1"># height of x, =, u</span>
+        <span class="n">height_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span>
+        <span class="c1"># start filling matrix</span>
+        <span class="n">line</span> <span class="o">=</span><span class="s2">&quot; &quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="c1"># at given row indexed with i</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">height_x</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;x(t+1) = &quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;         &quot;</span>
+
+            <span class="n">line</span> <span class="o">+=</span>  <span class="n">np</span><span class="o">.</span><span class="n">array2string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,::])</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">height_x</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;x(t) + &quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;       &quot;</span>
+            <span class="n">line</span> <span class="o">+=</span>  <span class="n">np</span><span class="o">.</span><span class="n">array2string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,::])</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">height_x</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;u(t),&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;     &quot;</span>
+
+            <span class="n">string</span> <span class="o">+=</span> <span class="n">line</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;y(t)   = theta x(t) + e(t),</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;with x = state,</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> y = output,</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> u = input,</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> e = noise disturbance&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noise_var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot; with variance &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">noise_var</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;Parameterization theta in {&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">string</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array2string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">::])</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;x&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;}&quot;</span>
+
+
+        <span class="k">return</span> <span class="n">string</span>
+
+
+<div class="viewcode-block" id="LinearParameterized.Param_bounds"><a class="viewcode-back" href="../../index.html#Models.ModelSet.LinearParameterized.Param_bounds">[docs]</a>    <span class="k">def</span> <span class="nf">Param_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">box</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to set value of parameter bounds</span>
+
+<span class="sd">        :param box: np.array for each dimension n, nth row gives min,max</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param</span> <span class="o">=</span> <span class="n">box</span></div>
+
+<div class="viewcode-block" id="LinearParameterized.noise"><a class="viewcode-back" href="../../index.html#Models.ModelSet.LinearParameterized.noise">[docs]</a>    <span class="k">def</span> <span class="nf">noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">var</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to set value of noise variance</span>
+
+<span class="sd">        :param var:</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noise_var</span> <span class="o">=</span> <span class="n">var</span></div>
+
+
+
+    <span class="k">def</span> <span class="nf">Fish_span</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR: not implemented&quot;</span><span class="p">)</span></div>
+        <span class="c1"># % Simulations with information matrix alone</span>
+        <span class="c1"># % The average information matrix is spanned with</span>
+        <span class="c1"># % average information content</span>
+        <span class="c1"># M1=[1,0;0,1];</span>
+        <span class="c1"># M2=[0,1;1,0];</span>
+
+
+<div class="viewcode-block" id="ARX"><a class="viewcode-back" href="../../index.html#Models.ModelSet.ARX">[docs]</a><span class="k">class</span> <span class="nc">ARX</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">na</span><span class="p">,</span><span class="n">nb</span><span class="p">,</span><span class="n">nk</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">l_0</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ARX model set with</span>
+
+
+<span class="sd">        :param na: number of poles</span>
+<span class="sd">        :param nb: number of zeros + 1 (excluding pure delays)</span>
+<span class="sd">        :param nk: number of delays (&gt;= 1, otherwise system is not strictly proper)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check values</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="n">na</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">nb</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">nk</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">=</span> <span class="n">na</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">=</span> <span class="n">nb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nk</span> <span class="o">=</span> <span class="n">nk</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l_0</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># noise variance</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">a0</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b0</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot; ARX model: [na = &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; , nb = &quot;</span> \
+                 <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;, nk = &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span><span class="s2">&quot;] </span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="n">stringl</span> <span class="o">=</span> <span class="s2">&quot; y(t) + a0 y(t-1)&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">stringr</span> <span class="o">=</span> <span class="s2">&quot; = b0 u(t)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stringr</span> <span class="o">=</span> <span class="s2">&quot; = b0 u(t-&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">stringl</span> <span class="o">+=</span> <span class="s2">&quot; + a1 y(t-2)&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">na_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">-</span><span class="mi">1</span>
+            <span class="n">stringl</span> <span class="o">+=</span> <span class="s2">&quot; + ... + a&quot;</span> <span class="o">+</span> <span class="n">na_min</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; y(t-&quot;</span> <span class="o">+</span> <span class="n">na_min</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">tmin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span><span class="o">+</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">tmin</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">stringr</span> <span class="o">+=</span> <span class="s2">&quot; + b1 u(t)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stringr</span> <span class="o">+=</span> <span class="s2">&quot; + b1 u(t-&quot;</span> <span class="o">+</span> <span class="n">tmin</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+
+
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">nb_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">tmin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="o">-</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">tmin</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">stringr</span> <span class="o">+=</span> <span class="s2">&quot; + ... + a&quot;</span> <span class="o">+</span> <span class="n">nb_min</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; b(t)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stringr</span> <span class="o">+=</span> <span class="s2">&quot; + ... + a&quot;</span> <span class="o">+</span> <span class="n">nb_min</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; b(t-&quot;</span> <span class="o">+</span> <span class="n">tmin</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+
+        <span class="k">return</span> <span class="n">string</span> <span class="o">+</span> <span class="n">stringl</span> <span class="o">+</span> <span class="n">stringr</span> <span class="o">+</span> <span class="s2">&quot; + e(t)&quot;</span>
+
+<div class="viewcode-block" id="ARX.theta0"><a class="viewcode-back" href="../../index.html#Models.ModelSet.ARX.theta0">[docs]</a>    <span class="k">def</span> <span class="nf">theta0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a0</span><span class="p">,</span><span class="n">b0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a true values (or a guess thereof) such that a(z)b(z) gives a stable system</span>
+
+<span class="sd">        :param a: na length (give as a list with scalars)</span>
+<span class="sd">        :param b: nb length (give as a list with scalars)</span>
+<span class="sd">        :return: initiates values in object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check stability</span>
+        <span class="n">coef</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">a0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span>  <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roots</span><span class="p">(</span><span class="n">coef</span><span class="p">)))</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">a0</span> <span class="o">=</span> <span class="n">a0</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Set a&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unstable&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">a0</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b0</span> <span class="o">=</span> <span class="n">b0</span></div>
+
+
+    <span class="k">def</span> <span class="nf">AA</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">a0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No values for a0 given&quot;</span><span class="p">)</span>
+
+            <span class="k">assert</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">coef</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">a0</span>
+        <span class="n">Asqrt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">sum_a</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">-</span><span class="n">k</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">sum_a</span> <span class="o">+=</span><span class="n">coef</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">coef</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">Asqrt</span> <span class="o">+=</span> <span class="p">[</span><span class="n">sum_a</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">Asqrt</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">BB</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">b0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No values for b0 given&quot;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">Bsqrt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+            <span class="n">sum_b</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">k</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">sum_b</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b0</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">b0</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">Bsqrt</span> <span class="o">+=</span> <span class="p">[</span><span class="n">sum_b</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">Bsqrt</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">BA_m</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">a0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No values for a0 given&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">b0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No values for b0 given&quot;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">coef</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">a0</span>
+        <span class="n">BAsqrt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">):</span>
+            <span class="n">sum_ba</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="n">k</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">-</span> <span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">sum_ba</span> <span class="o">+=</span> <span class="o">-</span><span class="n">coef</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">b0</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">BAsqrt</span> <span class="o">+=</span> <span class="p">[</span><span class="n">sum_ba</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">BAsqrt</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ARX.mij"><a class="viewcode-back" href="../../index.html#Models.ModelSet.ARX.mij">[docs]</a>    <span class="k">def</span> <span class="nf">mij</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imax</span><span class="p">,</span> <span class="n">jmax</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param imax: value in bottom first column</span>
+<span class="sd">        :param jmax: value in top last column</span>
+<span class="sd">        :return: [[0 1 ... jmax]</span>
+<span class="sd">                  [-1 ...   jmax-1]</span>
+<span class="sd">                  ....</span>
+<span class="sd">                  [-imax ... jmax-imax]]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">imax</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">imax</span><span class="p">)</span>
+        <span class="n">jmax</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">jmax</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">i</span><span class="o">+</span><span class="n">jmax</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span></div>
+
+    <span class="k">def</span> <span class="nf">MB</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">mat_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mij</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">BB</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BB</span><span class="p">()</span>
+        <span class="n">l_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">u_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">([[</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="n">l_r</span><span class="o">+</span><span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="n">BB</span> <span class="o">+</span> <span class="p">(</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">u_r</span> <span class="o">-</span> <span class="n">j</span> <span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mat_ij</span><span class="p">])</span>
+
+
+    <span class="k">def</span> <span class="nf">MA</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">mat_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mij</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">AA</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AA</span><span class="p">()</span>
+        <span class="n">l_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">u_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">([[[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">l_r</span> <span class="o">+</span> <span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="n">AA</span> <span class="o">+</span> <span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">u_r</span> <span class="o">-</span> <span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mat_ij</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">MBA</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">mat_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mij</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">BA</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BA_m</span><span class="p">()</span>
+        <span class="n">l_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">u_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">([[[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">l_r</span> <span class="o">+</span> <span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="n">BA</span> <span class="o">+</span> <span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">u_r</span> <span class="o">-</span> <span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mat_ij</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">MAB</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">mat_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mij</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">BA</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">BA_m</span><span class="p">())</span>
+        <span class="c1"># compute conjugate of polynomial</span>
+
+        <span class="n">l_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">u_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">([[[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">l_r</span> <span class="o">+</span> <span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="n">BA</span> <span class="o">+</span> <span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">u_r</span> <span class="o">-</span> <span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mat_ij</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">conj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">AB</span><span class="p">,</span> <span class="n">rank</span><span class="p">):</span>
+        <span class="n">BA</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">AB</span><span class="p">))</span>
+        <span class="n">rank_r</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">([</span><span class="o">-</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rank</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">BA</span><span class="p">,</span> <span class="n">rank_r</span>
+
+    <span class="k">def</span> <span class="nf">Mu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">MB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MB</span><span class="p">()</span>
+        <span class="n">MA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">()</span>
+        <span class="n">MBA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MBA</span><span class="p">()</span>
+        <span class="n">MAB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAB</span><span class="p">()</span>
+        <span class="n">rowsb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span>
+        <span class="n">rowsa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">:</span>
+            <span class="n">Mu</span> <span class="o">=</span> <span class="p">[</span><span class="n">MA</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rowsa</span><span class="p">)]</span>
+        <span class="k">else</span> <span class="p">:</span>
+            <span class="n">Mu</span> <span class="o">=</span> <span class="p">[</span><span class="n">MB</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+</span> <span class="n">MBA</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rowsb</span><span class="p">)]</span>
+            <span class="n">Mu</span> <span class="o">+=</span> <span class="p">[</span><span class="n">MAB</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+</span> <span class="n">MA</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rowsa</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">Mu</span>
+
+<div class="viewcode-block" id="ARX.Me"><a class="viewcode-back" href="../../index.html#Models.ModelSet.ARX.Me">[docs]</a>    <span class="k">def</span> <span class="nf">Me</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Average fisher per frequency increase for the given parameterization based on noise.</span>
+<span class="sd">        Needs to be integrated as (2pi)**-1 int[-pi,pi] A**-2 Me</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">mat_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mij</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">BB</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">l_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">u_r</span> <span class="o">=</span> <span class="n">rank</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="p">([[</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="n">l_r</span><span class="o">+</span><span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="n">BB</span> <span class="o">+</span> <span class="p">(</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">u_r</span> <span class="o">-</span> <span class="n">j</span> <span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mat_ij</span><span class="p">])</span>
+        <span class="n">tf0</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">me</span> <span class="o">=</span> <span class="p">[</span><span class="n">block</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">tf0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">)]</span>
+        <span class="n">me</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">tf0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">me</span></div>
+
+<div class="viewcode-block" id="ARX.psi"><a class="viewcode-back" href="../../index.html#Models.ModelSet.ARX.psi">[docs]</a>    <span class="k">def</span> <span class="nf">psi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make transfer function psi</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">)</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">):</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="p">(</span><span class="n">list_min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b0</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">a0</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="s2">&quot;q_inv&quot;</span><span class="p">)</span>
+            <span class="n">num</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">num</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">den</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">den</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nk</span> <span class="o">+</span> <span class="n">j</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">[],</span> <span class="n">delay</span><span class="p">,</span> <span class="s2">&quot;q_inv&quot;</span><span class="p">)</span>
+            <span class="n">num</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">num</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">den</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">den</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">tf</span><span class="p">(</span><span class="n">num</span><span class="p">,</span><span class="n">den</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ARX.I_fish"><a class="viewcode-back" href="../../index.html#Models.ModelSet.ARX.I_fish">[docs]</a>    <span class="k">def</span> <span class="nf">I_fish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Numerical or empirical estimation of the average Fisher information matrix.</span>
+
+
+<span class="sd">        :param x: If not None (default) then u,N has to be None. Use x to compute the numerical</span>
+<span class="sd">        :param u: Compute numerical or empirical Fisher information matrix</span>
+<span class="sd">        :param N: If not None (default)  compute the empirical Fisher information matrix</span>
+<span class="sd">        :return: I = Fisher information matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">xor</span><span class="p">((</span><span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="n">u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)))</span>
+        <span class="k">assert</span> <span class="p">((</span><span class="n">u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">N</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">N</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Estimate average Fisher information matrix based on N = </span><span class="si">%d</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">N</span> <span class="o">+</span> <span class="s2">&quot; samples&quot;</span><span class="p">)</span>
+
+            <span class="c1"># given the assert we know that u is also not None</span>
+            <span class="n">u_seq</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">seq</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+            <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">xout</span> <span class="o">=</span> <span class="n">control</span><span class="o">.</span><span class="n">forced_response</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psi</span><span class="p">(),</span> <span class="n">U</span><span class="o">=</span><span class="n">u_seq</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">yout</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">yout</span><span class="p">)</span> <span class="o">/</span> <span class="n">N</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="n">c_x</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+                <span class="n">c_x</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">float</span><span class="p">((</span><span class="n">trig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">i</span><span class="p">)))]</span>
+
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Compute average Fisher information matrix based on Moments &quot;</span><span class="p">)</span>
+            <span class="c1"># get M_i matrices</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+                <span class="n">M</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Mz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Mu</span><span class="p">(),</span> <span class="n">i</span><span class="p">)]</span>
+
+            <span class="n">Mtot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+                <span class="n">Mi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">Mtot</span> <span class="o">+=</span> <span class="n">Mi</span> <span class="o">*</span> <span class="p">(</span><span class="n">c_x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="c1"># c_x  does not have to be divided by two even though the paper by Hildebrand claims different</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">Mtot</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Mi</span> <span class="o">+</span> <span class="n">Mi</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">c_x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="c1"># c_x  does not have to be divided by two even though the paper by Hildebrand claims different</span>
+
+            <span class="k">return</span> <span class="n">Mtot</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Compute average Fisher information matrix based on Moments &quot;</span><span class="p">)</span>
+            <span class="c1"># get M_i matrices</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+                <span class="n">M</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Mz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Mu</span><span class="p">(),</span> <span class="n">i</span><span class="p">)]</span>
+            <span class="n">Mtot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">na</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nb</span><span class="p">):</span>
+                <span class="n">Mi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">Mtot</span> <span class="o">+=</span> <span class="n">Mi</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="c1"># c_x  does not have to be divided by two even though the paper by Hildebrand claims different</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">Mtot</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Mi</span> <span class="o">+</span> <span class="n">Mi</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="c1"># c_x  does not have to be divided by two even though the paper by Hildebrand claims different</span>
+
+            <span class="k">return</span> <span class="n">Mtot</span></div>
+
+    <span class="k">def</span> <span class="nf">x2phi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">x_check</span> <span class="o">=</span> <span class="n">Input</span><span class="o">.</span><span class="n">x2phi</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">aa</span><span class="p">,</span><span class="n">power_aa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AA</span><span class="p">()</span>
+        <span class="c1"># aa = [1]</span>
+        <span class="c1"># power_aa =[0]</span>
+        <span class="n">amp</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">sum</span><span class="p">([</span><span class="n">aa</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">power_aa</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">thet</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">aa</span><span class="p">))])</span> <span class="k">for</span> <span class="n">thet</span> <span class="ow">in</span> <span class="n">theta</span><span class="p">]</span>
+        <span class="n">a_up</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">index</span><span class="p">:</span> <span class="n">a</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">*</span> <span class="n">amp</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">**</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">),</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">))))</span>
+
+        <span class="n">cosinus</span> <span class="o">=</span> <span class="p">(</span><span class="n">a_up</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">psi</span><span class="p">)</span>
+
+        <span class="n">u</span> <span class="o">=</span> <span class="n">input_sig</span><span class="p">(</span><span class="n">cosinus</span><span class="o">=</span><span class="n">cosinus</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">u</span></div>
+
+<span class="k">def</span> <span class="nf">Mz</span><span class="p">(</span><span class="n">Mat</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given 3D list, representing matrices with polynomials,</span>
+<span class="sd">    find for each power (=i) of the polynomial the associated matrix</span>
+
+<span class="sd">    :param Mat:</span>
+<span class="sd">    :param i: power M_i z**i</span>
+<span class="sd">    :return: M_i</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># check whether power is actually possible</span>
+    <span class="n">max_val</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Mat</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&lt;=</span>  <span class="n">max_val</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">max_val</span><span class="p">)</span> <span class="c1"># index in polynomial list of coeff</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="p">[[</span><span class="n">el</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">Mat</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">M</span>
+
+
+<span class="k">def</span> <span class="nf">list_min</span><span class="p">(</span><span class="n">lis</span><span class="p">):</span>
+
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="n">x</span><span class="p">,</span> <span class="n">lis</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">trig</span><span class="p">(</span><span class="n">arx</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute  k-th trigonometric moments of measure 1/pi int_[..]</span>
+
+<span class="sd">    :param arx:</span>
+<span class="sd">    :param u: input object</span>
+<span class="sd">    :param k: number of moments to compute</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">input_sig</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x w z t&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;Filter&quot;</span><span class="p">:</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">num</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">den</span>
+        <span class="c1"># for AA construct</span>
+        <span class="n">AA</span><span class="p">,</span><span class="n">indexing</span> <span class="o">=</span> <span class="n">arx</span><span class="o">.</span><span class="n">AA</span><span class="p">()</span>
+
+        <span class="n">num_pow</span> <span class="o">=</span> <span class="n">poly</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">num</span><span class="p">)))</span> <span class="o">*</span> <span class="n">poly</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="n">den_pow</span> <span class="o">=</span> <span class="n">poly</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">den</span><span class="p">)))</span> <span class="o">*</span> <span class="n">poly</span><span class="p">(</span><span class="n">den</span><span class="p">)</span> <span class="o">*</span> <span class="n">poly</span><span class="p">(</span><span class="n">AA</span><span class="p">)</span>
+
+        <span class="n">nn</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">num_pow</span><span class="o">.</span><span class="n">coef</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">nd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">den_pow</span><span class="o">.</span><span class="n">coef</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">denw</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">den_pow</span><span class="o">.</span><span class="n">coef</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="n">nd</span><span class="p">]</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">l</span><span class="o">*</span><span class="n">I</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="n">nd</span><span class="p">,</span><span class="n">nd</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+        <span class="n">numw</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">num_pow</span><span class="o">.</span><span class="n">coef</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="n">nn</span><span class="p">]</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">l</span><span class="o">*</span><span class="n">I</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="n">nn</span><span class="p">,</span> <span class="n">nn</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span>
+
+        <span class="n">f</span> <span class="o">=</span> <span class="n">arx</span><span class="o">.</span><span class="n">l_0</span><span class="o">**-</span><span class="mi">1</span><span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">denw</span><span class="o">**-</span><span class="mi">1</span> <span class="o">**</span> <span class="n">numw</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">N</span><span class="p">(</span><span class="n">pi</span><span class="o">**-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">Integral</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">pi</span><span class="p">))</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">re</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;Harmonic&quot;</span><span class="p">:</span>
+        <span class="c1"># (a,theta,psi) = cosinus</span>
+        <span class="c1"># self.cosinus = cosinus</span>
+        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">psi</span><span class="p">)</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">cosinus</span>
+        <span class="n">aa</span><span class="p">,</span> <span class="n">power_aa</span> <span class="o">=</span> <span class="n">arx</span><span class="o">.</span><span class="n">AA</span><span class="p">()</span>
+        <span class="c1"># aa = [1]</span>
+        <span class="c1"># power_aa =[0]</span>
+        <span class="n">aa_amp</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">sum</span><span class="p">([</span><span class="n">aa</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">power_aa</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">thet</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">aa</span><span class="p">))])</span> <span class="k">for</span> <span class="n">thet</span> <span class="ow">in</span> <span class="n">theta</span><span class="p">]</span>
+        <span class="n">amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">l</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span><span class="n">aa_amp</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">theta</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">}</span> <span class="k">else</span> <span class="nb">abs</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">l</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span><span class="n">aa_amp</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">**-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">theta</span><span class="p">))])</span>
+
+        <span class="n">cos_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">thet</span> <span class="o">*</span> <span class="n">k</span><span class="p">)]</span> <span class="k">for</span> <span class="n">thet</span> <span class="ow">in</span> <span class="n">theta</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">arx</span><span class="o">.</span><span class="n">l_0</span><span class="o">**-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">amp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cos_val</span><span class="p">)</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Sofie  Haesaert.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

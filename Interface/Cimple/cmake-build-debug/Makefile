@@ -39,19 +39,19 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /opt/clion-2017.2/bin/cmake/bin/cmake
+CMAKE_COMMAND = /Applications/CLion.app/Contents/bin/cmake/bin/cmake
 
 # The command to remove a file.
-RM = /opt/clion-2017.2/bin/cmake/bin/cmake -E remove -f
+RM = /Applications/CLion.app/Contents/bin/cmake/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/be107admin/C-TuLiP/Interface/Cimple
+CMAKE_SOURCE_DIR = /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug
+CMAKE_BINARY_DIR = /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -59,7 +59,7 @@ CMAKE_BINARY_DIR = /home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/opt/clion-2017.2/bin/cmake/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/Applications/CLion.app/Contents/bin/cmake/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -70,7 +70,7 @@ rebuild_cache/fast: rebuild_cache
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
-	/opt/clion-2017.2/bin/cmake/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+	/Applications/CLion.app/Contents/bin/cmake/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -80,9 +80,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/CMakeFiles /home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/CMakeFiles /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -123,32 +123,167 @@ Cimple/fast:
 	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/build
 .PHONY : Cimple/fast
 
-find_controller.o: find_controller.c.o
+act_impl.o: act_impl.c.o
 
-.PHONY : find_controller.o
+.PHONY : act_impl.o
 
 # target to build an object file
-find_controller.c.o:
-	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/find_controller.c.o
-.PHONY : find_controller.c.o
+act_impl.c.o:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/act_impl.c.o
+.PHONY : act_impl.c.o
 
-find_controller.i: find_controller.c.i
+act_impl.i: act_impl.c.i
 
-.PHONY : find_controller.i
+.PHONY : act_impl.i
 
 # target to preprocess a source file
-find_controller.c.i:
-	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/find_controller.c.i
-.PHONY : find_controller.c.i
+act_impl.c.i:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/act_impl.c.i
+.PHONY : act_impl.c.i
 
-find_controller.s: find_controller.c.s
+act_impl.s: act_impl.c.s
 
-.PHONY : find_controller.s
+.PHONY : act_impl.s
 
 # target to generate assembly for a file
-find_controller.c.s:
-	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/find_controller.c.s
-.PHONY : find_controller.c.s
+act_impl.c.s:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/act_impl.c.s
+.PHONY : act_impl.c.s
+
+cimple_c_from_py.o: cimple_c_from_py.c.o
+
+.PHONY : cimple_c_from_py.o
+
+# target to build an object file
+cimple_c_from_py.c.o:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_c_from_py.c.o
+.PHONY : cimple_c_from_py.c.o
+
+cimple_c_from_py.i: cimple_c_from_py.c.i
+
+.PHONY : cimple_c_from_py.i
+
+# target to preprocess a source file
+cimple_c_from_py.c.i:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_c_from_py.c.i
+.PHONY : cimple_c_from_py.c.i
+
+cimple_c_from_py.s: cimple_c_from_py.c.s
+
+.PHONY : cimple_c_from_py.s
+
+# target to generate assembly for a file
+cimple_c_from_py.c.s:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_c_from_py.c.s
+.PHONY : cimple_c_from_py.c.s
+
+cimple_controller.o: cimple_controller.c.o
+
+.PHONY : cimple_controller.o
+
+# target to build an object file
+cimple_controller.c.o:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_controller.c.o
+.PHONY : cimple_controller.c.o
+
+cimple_controller.i: cimple_controller.c.i
+
+.PHONY : cimple_controller.i
+
+# target to preprocess a source file
+cimple_controller.c.i:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_controller.c.i
+.PHONY : cimple_controller.c.i
+
+cimple_controller.s: cimple_controller.c.s
+
+.PHONY : cimple_controller.s
+
+# target to generate assembly for a file
+cimple_controller.c.s:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_controller.c.s
+.PHONY : cimple_controller.c.s
+
+cimple_gsl_library_extension.o: cimple_gsl_library_extension.c.o
+
+.PHONY : cimple_gsl_library_extension.o
+
+# target to build an object file
+cimple_gsl_library_extension.c.o:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_gsl_library_extension.c.o
+.PHONY : cimple_gsl_library_extension.c.o
+
+cimple_gsl_library_extension.i: cimple_gsl_library_extension.c.i
+
+.PHONY : cimple_gsl_library_extension.i
+
+# target to preprocess a source file
+cimple_gsl_library_extension.c.i:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_gsl_library_extension.c.i
+.PHONY : cimple_gsl_library_extension.c.i
+
+cimple_gsl_library_extension.s: cimple_gsl_library_extension.c.s
+
+.PHONY : cimple_gsl_library_extension.s
+
+# target to generate assembly for a file
+cimple_gsl_library_extension.c.s:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_gsl_library_extension.c.s
+.PHONY : cimple_gsl_library_extension.c.s
+
+cimple_polytope_library.o: cimple_polytope_library.c.o
+
+.PHONY : cimple_polytope_library.o
+
+# target to build an object file
+cimple_polytope_library.c.o:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_polytope_library.c.o
+.PHONY : cimple_polytope_library.c.o
+
+cimple_polytope_library.i: cimple_polytope_library.c.i
+
+.PHONY : cimple_polytope_library.i
+
+# target to preprocess a source file
+cimple_polytope_library.c.i:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_polytope_library.c.i
+.PHONY : cimple_polytope_library.c.i
+
+cimple_polytope_library.s: cimple_polytope_library.c.s
+
+.PHONY : cimple_polytope_library.s
+
+# target to generate assembly for a file
+cimple_polytope_library.c.s:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_polytope_library.c.s
+.PHONY : cimple_polytope_library.c.s
+
+cimple_system.o: cimple_system.c.o
+
+.PHONY : cimple_system.o
+
+# target to build an object file
+cimple_system.c.o:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_system.c.o
+.PHONY : cimple_system.c.o
+
+cimple_system.i: cimple_system.c.i
+
+.PHONY : cimple_system.i
+
+# target to preprocess a source file
+cimple_system.c.i:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_system.c.i
+.PHONY : cimple_system.c.i
+
+cimple_system.s: cimple_system.c.s
+
+.PHONY : cimple_system.s
+
+# target to generate assembly for a file
+cimple_system.c.s:
+	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/cimple_system.c.s
+.PHONY : cimple_system.c.s
 
 main.o: main.c.o
 
@@ -177,33 +312,6 @@ main.c.s:
 	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/main.c.s
 .PHONY : main.c.s
 
-system.o: system.c.o
-
-.PHONY : system.o
-
-# target to build an object file
-system.c.o:
-	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/system.c.o
-.PHONY : system.c.o
-
-system.i: system.c.i
-
-.PHONY : system.i
-
-# target to preprocess a source file
-system.c.i:
-	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/system.c.i
-.PHONY : system.c.i
-
-system.s: system.c.s
-
-.PHONY : system.s
-
-# target to generate assembly for a file
-system.c.s:
-	$(MAKE) -f CMakeFiles/Cimple.dir/build.make CMakeFiles/Cimple.dir/system.c.s
-.PHONY : system.c.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -213,15 +321,27 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... Cimple"
-	@echo "... find_controller.o"
-	@echo "... find_controller.i"
-	@echo "... find_controller.s"
+	@echo "... act_impl.o"
+	@echo "... act_impl.i"
+	@echo "... act_impl.s"
+	@echo "... cimple_c_from_py.o"
+	@echo "... cimple_c_from_py.i"
+	@echo "... cimple_c_from_py.s"
+	@echo "... cimple_controller.o"
+	@echo "... cimple_controller.i"
+	@echo "... cimple_controller.s"
+	@echo "... cimple_gsl_library_extension.o"
+	@echo "... cimple_gsl_library_extension.i"
+	@echo "... cimple_gsl_library_extension.s"
+	@echo "... cimple_polytope_library.o"
+	@echo "... cimple_polytope_library.i"
+	@echo "... cimple_polytope_library.s"
+	@echo "... cimple_system.o"
+	@echo "... cimple_system.i"
+	@echo "... cimple_system.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
-	@echo "... system.o"
-	@echo "... system.i"
-	@echo "... system.s"
 .PHONY : help
 
 

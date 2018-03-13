@@ -8,100 +8,134 @@
 		<Option virtualFolders="CMake Files\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
+				<Option working_dir="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="rebuild_cache">
-				<Option working_dir="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
+				<Option working_dir="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="edit_cache">
-				<Option working_dir="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
+				<Option working_dir="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="Cimple">
-				<Option output="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Cimple" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
+				<Option output="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Cimple" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
+					<Add directory="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/anaconda/envs/Python27/include/python2.7"/>
+					<Add directory="/anaconda/envs/Python27/lib"/>
+					<Add directory="/anaconda/envs/Python27/include/python2.7/site-packages"/>
+					<Add directory="/Users/shaesaert/Documents/GitHub/cvxopt_github/src/C"/>
+					<Add directory="/Users/shaesaert/Documents/GitHub/cvxopt_github/src/python"/>
+					<Add directory="/anaconda/envs/Python27/include"/>
 					<Add directory="/usr/include/python2.7"/>
-					<Add directory="/usr/include/c++/4.8"/>
-					<Add directory="/usr/include/x86_64-linux-gnu/c++/4.8"/>
-					<Add directory="/usr/include/c++/4.8/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"/>
 					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
 					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 Cimple"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 Cimple"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="Cimple/fast">
-				<Option output="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Cimple" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
+				<Option output="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Cimple" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
+					<Add directory="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/anaconda/envs/Python27/include/python2.7"/>
+					<Add directory="/anaconda/envs/Python27/lib"/>
+					<Add directory="/anaconda/envs/Python27/include/python2.7/site-packages"/>
+					<Add directory="/Users/shaesaert/Documents/GitHub/cvxopt_github/src/C"/>
+					<Add directory="/Users/shaesaert/Documents/GitHub/cvxopt_github/src/python"/>
+					<Add directory="/anaconda/envs/Python27/include"/>
 					<Add directory="/usr/include/python2.7"/>
-					<Add directory="/usr/include/c++/4.8"/>
-					<Add directory="/usr/include/x86_64-linux-gnu/c++/4.8"/>
-					<Add directory="/usr/include/c++/4.8/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"/>
 					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
 					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 Cimple/fast"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/be107admin/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 Cimple/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/be107admin/C-TuLiP/Interface/Cimple/find_controller.c">
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/act_impl.c">
 			<Option target="Cimple"/>
 		</Unit>
-		<Unit filename="/home/be107admin/C-TuLiP/Interface/Cimple/find_controller.h">
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/act_impl.h">
 			<Option target="Cimple"/>
 		</Unit>
-		<Unit filename="/home/be107admin/C-TuLiP/Interface/Cimple/main.c">
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_c_from_py.c">
 			<Option target="Cimple"/>
 		</Unit>
-		<Unit filename="/home/be107admin/C-TuLiP/Interface/Cimple/system.c">
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_c_from_py.h">
 			<Option target="Cimple"/>
 		</Unit>
-		<Unit filename="/home/be107admin/C-TuLiP/Interface/Cimple/system.h">
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_controller.c">
 			<Option target="Cimple"/>
 		</Unit>
-		<Unit filename="/home/be107admin/C-TuLiP/Interface/Cimple/CMakeLists.txt">
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_controller.h">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_gsl_library_extension.c">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_gsl_library_extension.h">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_polytope_library.c">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_polytope_library.h">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_system.c">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/cimple_system.h">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/main.c">
+			<Option target="Cimple"/>
+		</Unit>
+		<Unit filename="/Users/shaesaert/Documents/GitHub/C-TuLiP/Interface/Cimple/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 	</Project>
