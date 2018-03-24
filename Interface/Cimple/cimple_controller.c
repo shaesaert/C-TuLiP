@@ -323,9 +323,9 @@ void ACT(int target,
                 pthread_t main_computation_id;
                 next_safemode_computation_arguments *next_sm_arguments = next_sm_arguments_alloc(now, u_safemode, s_dyn, d_dyn->time_horizon, f_cost, polytope_list_safemode);
                 pthread_create(&next_safemode_id, NULL, next_safemode_computation, (void*)next_sm_arguments);
+                pthread_join(next_safemode_id, NULL);
                 control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
                 pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
-                pthread_join(next_safemode_id, NULL);
                 pthread_join(main_computation_id, NULL);
                 free(cc_arguments);
                 free(next_sm_arguments);
