@@ -299,10 +299,6 @@ void ACT(int target,
          discrete_dynamics * d_dyn,
          system_dynamics * s_dyn,
          cost_function * f_cost,
-         current_state * now2,
-         discrete_dynamics * d_dyn2,
-         system_dynamics * s_dyn2,
-         cost_function * f_cost2,
          double sec){
     printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
     fflush(stdout);
@@ -362,7 +358,7 @@ void ACT(int target,
                 total_safemode_computation_arguments *total_sm_arguments = sm_arguments_alloc(now, u_safemode, current, safe, s_dyn, d_dyn->time_horizon, f_cost, polytope_list_safemode);
                 pthread_create(&safe_mode_computation_id, NULL, total_safe_mode_computation, (void*)total_sm_arguments);
 
-                control_computation_arguments *cc_arguments = cc_arguments_alloc(now2, &u.matrix, s_dyn2, d_dyn2,f_cost2, current_time_horizon, target, polytope_list_backup);
+                control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
                 pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
                 pthread_join(safe_mode_computation_id, NULL);
 
@@ -376,9 +372,9 @@ void ACT(int target,
                 pthread_t main_computation_id;
                 next_safemode_computation_arguments *next_sm_arguments = next_sm_arguments_alloc(now, u_safemode, s_dyn, d_dyn->time_horizon, f_cost, polytope_list_safemode);
                 pthread_create(&next_safemode_id, NULL, next_safemode_computation, (void*)next_sm_arguments);
+                pthread_join(next_safemode_id, NULL);
                 control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
                 pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
-                pthread_join(next_safemode_id, NULL);
                 pthread_join(main_computation_id, NULL);
                 free(cc_arguments);
                 free(next_sm_arguments);

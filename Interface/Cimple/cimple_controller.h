@@ -69,10 +69,6 @@ void ACT(int target,
          discrete_dynamics * d_dyn,
          system_dynamics * s_dyn,
          cost_function * f_cost,
-         current_state * now2,
-         discrete_dynamics * d_dyn2,
-         system_dynamics * s_dyn2,
-         cost_function * f_cost2,
          double sec);
 /**
  * @brief Apply the calculated control to the current state using system dynamics
