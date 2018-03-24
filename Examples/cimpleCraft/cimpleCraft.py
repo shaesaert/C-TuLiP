@@ -63,9 +63,9 @@ if verbose == 1:
 
 print("---------------------------------\n System partition State Space \n----------------------------------")
 
-disc_dynamics = discretize(cpartition, sys_dyn, N=5, min_cell_volume=100, closed_loop=True, conservative=True)
+disc_dynamics = discretize(cpartition, sys_dyn, N=5, min_cell_volume=1, closed_loop=True, conservative=True)
 
-states=[state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'inA'}})]
+states=[state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'inG'}})]
 disc_dynamics.ts.states.initial|=states
 
 print("----------------------------------\n Define specification \n----------------------------------")

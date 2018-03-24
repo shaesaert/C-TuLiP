@@ -117,11 +117,11 @@ void search_better_path(gsl_matrix *low_u,
  * @param P2 last recursively calculated polytope
  * @param s_dyn system dynamics (including auxiliary matrices)
  */
-poly_t * solve_feasible_closed_loop(poly_t *p_universe,
-                                    polytope *P1,
-                                    polytope *P2,
-                                    system_dynamics *s_dyn,
-                                    matrix_t * constraints);
+void solve_feasible_closed_loop(polytope *P1,
+                                polytope *P2,
+                                system_dynamics *s_dyn,
+                                dd_PolyhedraPtr *constraints,
+                                dd_ErrorType *err);
 
 
 /**

@@ -13,47 +13,7 @@
 #include "cimple_polytope_library.h"
 #include <pthread.h>
 #include "cimple_mpc_computation.h"
-#include "cimple_system.h"
 
-/**
- *
- */
-typedef struct control_computation_arguments{
-
-    gsl_matrix *u;
-    current_state * now;
-    discrete_dynamics *d_dyn;
-    system_dynamics *s_dyn;
-    int target_cell;
-    cost_function * f_cost;
-    size_t current_time_horizon;
-    polytope **polytope_list_backup;
-
-}control_computation_arguments;
-
-typedef struct total_safemode_computation_arguments{
-
-    current_state *now;
-    gsl_matrix *u;
-    polytope *current;
-    polytope *safe;
-    system_dynamics *s_dyn;
-    size_t time_horizon;
-    cost_function *f_cost;
-    polytope **polytope_list_backup;
-
-}total_safemode_computation_arguments;
-
-typedef struct next_safemode_computation_arguments{
-
-    current_state *now;
-    gsl_matrix *u;
-    system_dynamics *s_dyn;
-    size_t time_horizon;
-    cost_function *f_cost;
-    polytope **polytope_list_backup;
-
-}next_safemode_computation_arguments;
 
 /**
  * @brief Action to get plant from current cell to target cell.
@@ -69,10 +29,6 @@ void ACT(int target,
          discrete_dynamics * d_dyn,
          system_dynamics * s_dyn,
          cost_function * f_cost,
-         current_state * now2,
-         discrete_dynamics * d_dyn2,
-         system_dynamics * s_dyn2,
-         cost_function * f_cost2,
          double sec);
 /**
  * @brief Apply the calculated control to the current state using system dynamics

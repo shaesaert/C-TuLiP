@@ -8,6 +8,8 @@
 #include "cimple_gsl_library_extension.h"
 #include <gurobi_c.h>
 #include <polka/poly.h>
+#include "setoper.h"
+#include <cdd.h>
 
 /**
  * H left side of polytope (sometimes noted A or L)
@@ -113,5 +115,10 @@ void polytope_from_constraints(polytope *new, matrix_t *original);
 
 int polytope_to_constraints_gurobi(polytope *constraints, GRBmodel *model, size_t N);
 
+void polytope_to_cdd_constraints(polytope *original, dd_PolyhedraPtr *new, dd_ErrorType *err);
+void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new);
+
+void cdd_projection(dd_PolyhedraPtr *original, dd_PolyhedraPtr *new, int n, dd_ErrorType *err);
+polytope * pontryagin_difference(polytope* A, polytope* B);
 
 #endif //CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H

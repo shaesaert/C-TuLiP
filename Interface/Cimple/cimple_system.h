@@ -258,4 +258,80 @@ struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size
  */
 void discrete_dynamics_free(discrete_dynamics *d_dyn);
 
+
+/**
+ *
+ */
+typedef struct control_computation_arguments{
+
+    gsl_matrix *u;
+    current_state * now;
+    discrete_dynamics *d_dyn;
+    system_dynamics *s_dyn;
+    int target_cell;
+    cost_function * f_cost;
+    size_t current_time_horizon;
+    polytope **polytope_list_backup;
+
+}control_computation_arguments;
+
+typedef struct total_safemode_computation_arguments{
+
+    current_state *now;
+    gsl_matrix *u;
+    polytope *current;
+    polytope *safe;
+    system_dynamics *s_dyn;
+    size_t time_horizon;
+    cost_function *f_cost;
+    polytope **polytope_list_backup;
+
+}total_safemode_computation_arguments;
+
+typedef struct next_safemode_computation_arguments{
+
+    current_state *now;
+    gsl_matrix *u;
+    system_dynamics *s_dyn;
+    size_t time_horizon;
+    cost_function *f_cost;
+    polytope **polytope_list_backup;
+
+}next_safemode_computation_arguments;
+
+/**
+ * "Constructor" Dynamically allocates the space for the get_input thread
+ */
+struct control_computation_arguments *cc_arguments_alloc(current_state *now,
+                                                         gsl_matrix* u,
+                                                         system_dynamics *s_dyn,
+                                                         discrete_dynamics *d_dyn,
+                                                         cost_function *f_cost,
+                                                         size_t current_time_horizon,
+                                                         int target_cell,
+                                                         polytope **polytope_list);
+
+/**
+ * "Constructor" Dynamically allocates the space for the arguments of the safemode computation thread
+ */
+struct total_safemode_computation_arguments *sm_arguments_alloc(current_state *now,
+                                                                gsl_matrix * u,
+                                                                polytope *current,
+                                                                polytope *safe,
+                                                                system_dynamics * s_dyn,
+                                                                size_t time_horizon,
+                                                                cost_function *f_cost,
+                                                                polytope **polytope_list_safemode);
+
+
+
+/**
+ * "Constructor" Dynamically allocates the space for the arguments of the next step towards safemode computation thread
+ */
+struct next_safemode_computation_arguments *next_sm_arguments_alloc(current_state *now,
+                                                                    gsl_matrix * u,
+                                                                    system_dynamics * s_dyn,
+                                                                    size_t time_horizon,
+                                                                    cost_function *f_cost,
+                                                                    polytope **polytope_list_safemode);
 #endif //CIMPLE_SYSTEM_H

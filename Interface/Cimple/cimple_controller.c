@@ -5,73 +5,13 @@
 
 #include <gsl/gsl_matrix.h>
 #include "cimple_controller.h"
+#include "setoper.h"
+#include <cdd.h>
 
 int main_computation_completed = 0;
 //pthread_mutex_t poly_mutex = PTHREAD_MUTEX_INITIALIZER;
-/**
- * "Constructor" Dynamically allocates the space for the get_input thread
- */
-struct control_computation_arguments *cc_arguments_alloc(current_state *now, gsl_matrix* u, system_dynamics *s_dyn, discrete_dynamics *d_dyn, cost_function *f_cost, size_t current_time_horizon, int target_cell, polytope **polytope_list){
-
-    struct control_computation_arguments *return_control_computation_arguments = malloc (sizeof (struct control_computation_arguments));
-
-    return_control_computation_arguments->current_time_horizon =current_time_horizon;
-
-    return_control_computation_arguments->target_cell = target_cell;
-
-    return_control_computation_arguments->d_dyn = d_dyn;
-
-    return_control_computation_arguments->f_cost = f_cost;
-
-    return_control_computation_arguments->s_dyn = s_dyn;
-
-    return_control_computation_arguments->now = now;
-
-    return_control_computation_arguments->u = u;
-
-    return_control_computation_arguments->polytope_list_backup = polytope_list;
-
-    return return_control_computation_arguments;
-};
-
-/**
- * "Constructor" Dynamically allocates the space for the arguments of the safemode computation thread
- */
-struct total_safemode_computation_arguments *sm_arguments_alloc(current_state *now, gsl_matrix * u, polytope *current, polytope *safe, system_dynamics * s_dyn, size_t time_horizon,cost_function *f_cost, polytope **polytope_list_safemode){
-
-    struct total_safemode_computation_arguments *return_sm_arguments = malloc (sizeof (struct total_safemode_computation_arguments));
-
-    return_sm_arguments->now = now;
-    return_sm_arguments->u = u;
-    return_sm_arguments->time_horizon = time_horizon;
-    return_sm_arguments->current = current;
-    return_sm_arguments->safe = safe;
-    return_sm_arguments->s_dyn = s_dyn;
-    return_sm_arguments->f_cost = f_cost;
-    return_sm_arguments->polytope_list_backup = polytope_list_safemode;
-
-    return return_sm_arguments;
-};
-
-/**
- * "Constructor" Dynamically allocates the space for the arguments of the next step towards safemode computation thread
- */
-struct next_safemode_computation_arguments *next_sm_arguments_alloc(current_state *now, gsl_matrix * u, system_dynamics * s_dyn, size_t time_horizon,cost_function *f_cost, polytope **polytope_list_safemode){
-
-    struct next_safemode_computation_arguments *return_sm_arguments = malloc (sizeof (struct next_safemode_computation_arguments));
-
-    return_sm_arguments->now = now;
-    return_sm_arguments->u = u;
-    return_sm_arguments->time_horizon = time_horizon;
-    return_sm_arguments->s_dyn = s_dyn;
-    return_sm_arguments->f_cost = f_cost;
-    return_sm_arguments->polytope_list_backup = polytope_list_safemode;
-
-    return return_sm_arguments;
-};
-
-double randn (double mu, double sigma)
-{
+double randn (double mu,
+              double sigma) {
     double U1, U2, W, mult;
     static double X1, X2;
     static int call = 0;
@@ -99,14 +39,21 @@ double randn (double mu, double sigma)
     return (mu + sigma * (double) X1);
 }
 
-void get_disturbance(gsl_vector *w, double mu, double sigma){
+void get_disturbance(gsl_vector *w,
+                     double mu,
+                     double sigma){
     for(size_t i = 0; i<w->size;i++){
         gsl_vector_set(w,i,randn(mu,sigma));
     }
 };
 
 
-void next_safemode_input(gsl_matrix *u, current_state *now, polytope *current, polytope *next, system_dynamics *s_dyn, cost_function *f_cost){
+void next_safemode_input(gsl_matrix *u,
+                         current_state *now,
+                         polytope *current,
+                         polytope *next,
+                         system_dynamics *s_dyn,
+                         cost_function *f_cost){
 
     size_t n = s_dyn->A->size1;
     size_t m = s_dyn->B->size2;
@@ -264,7 +211,11 @@ void *next_safemode_computation(void *arg){
     }
     pthread_exit(0);
 };
-int check_backup(gsl_vector *x_real, gsl_vector *u, gsl_matrix *A, gsl_matrix *B, polytope *check_polytope){
+int check_backup(gsl_vector *x_real,
+                 gsl_vector *u,
+                 gsl_matrix *A,
+                 gsl_matrix *B,
+                 polytope *check_polytope){
     gsl_vector *x_test = gsl_vector_alloc(x_real->size);
     gsl_vector_memcpy(x_test, x_real);
     gsl_vector *x_temp = gsl_vector_alloc(x_test->size);
@@ -299,10 +250,6 @@ void ACT(int target,
          discrete_dynamics * d_dyn,
          system_dynamics * s_dyn,
          cost_function * f_cost,
-         current_state * now2,
-         discrete_dynamics * d_dyn2,
-         system_dynamics * s_dyn2,
-         cost_function * f_cost2,
          double sec){
     printf("Computing control sequence to go from cell %d to cell %d...", (*now).current_cell, target);
     fflush(stdout);
@@ -362,7 +309,7 @@ void ACT(int target,
                 total_safemode_computation_arguments *total_sm_arguments = sm_arguments_alloc(now, u_safemode, current, safe, s_dyn, d_dyn->time_horizon, f_cost, polytope_list_safemode);
                 pthread_create(&safe_mode_computation_id, NULL, total_safe_mode_computation, (void*)total_sm_arguments);
 
-                control_computation_arguments *cc_arguments = cc_arguments_alloc(now2, &u.matrix, s_dyn2, d_dyn2,f_cost2, current_time_horizon, target, polytope_list_backup);
+                control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
                 pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
                 pthread_join(safe_mode_computation_id, NULL);
 
@@ -457,7 +404,13 @@ void ACT(int target,
 /**
  * Apply the calculated control to the current state using system dynamics
  */
-void apply_control(gsl_vector *x, gsl_vector *u, gsl_matrix *A, gsl_matrix *B,gsl_matrix *E, gsl_vector* w, size_t current_time) {
+void apply_control(gsl_vector *x,
+                   gsl_vector *u,
+                   gsl_matrix *A,
+                   gsl_matrix *B,
+                   gsl_matrix *E,
+                   gsl_vector* w,
+                   size_t current_time) {
     printf("apply_control time(%d) ", (int) current_time);
     gsl_vector_print(x, "x");
     fflush(stdout);

@@ -11,6 +11,6 @@ pkg_check_modules( gsl REQUIRED gsl )
 include_directories(${GUROBI_INCLUDE_DIRS})
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -Werror -O0 -g -m64 -pthread -DPOLKA_NUM=1")
 
-set(SOURCE_FILES main.c cimple_controller.c cimple_controller.h cimple_system.c cimple_system.h cimple_c_from_py.c cimple_c_from_py.h act_impl.c act_impl.h cimple_gsl_library_extension.c cimple_gsl_library_extension.h cimple_polytope_library.c cimple_polytope_library.h cimple_mpc_computation.c cimple_mpc_computation.h)
+set(SOURCE_FILES main.c cimple_controller.c cimple_controller.h cimple_system.c cimple_system.h cimple_c_from_py.c cimple_c_from_py.h act_impl.c act_impl.h cimple_gsl_library_extension.c cimple_gsl_library_extension.h cimple_polytope_library.c cimple_polytope_library.h cimple_mpc_computation.c cimple_mpc_computation.h cimple_safe_mode.c cimple_safe_mode.h)
 add_executable(Cimple ${SOURCE_FILES})
-target_link_libraries( Cimple ${gsl_LIBRARIES} ${GUROBI_LIBRARIES} -lpolkai -lgurobi75 -lm)
+target_link_libraries( Cimple ${gsl_LIBRARIES} ${GUROBI_LIBRARIES} -lcdd -lpolkai -lgurobi75 -lm)

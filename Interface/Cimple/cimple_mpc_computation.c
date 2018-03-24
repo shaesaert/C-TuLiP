@@ -6,7 +6,14 @@
 #include <gsl/gsl_vector_double.h>
 #include "cimple_mpc_computation.h"
 
-polytope * set_cost_function(gsl_matrix *P, gsl_vector *q, gsl_matrix *L, gsl_vector *M, current_state *now, system_dynamics *s_dyn, cost_function *f_cost, size_t time_horizon){
+polytope * set_cost_function(gsl_matrix *P,
+                             gsl_vector *q,
+                             gsl_matrix *L,
+                             gsl_vector *M,
+                             current_state *now,
+                             system_dynamics *s_dyn,
+                             cost_function *f_cost,
+                             size_t time_horizon){
 
     size_t N = time_horizon;
     size_t n = s_dyn->A->size1;
@@ -95,29 +102,43 @@ polytope * set_cost_function(gsl_matrix *P, gsl_vector *q, gsl_matrix *L, gsl_ve
 //        gsl_matrix_print(&L_u.matrix, "L_u");
 //        gsl_vector_print(&M_view.vector, "M_view");
 
-    //Initialization
-    poly_t *p_universe, *minimized_polytope;
-    p_universe = poly_universe((int)N);
-    matrix_t* min_constraints = matrix_alloc((int)L->size1, (int)L->size2+2,false);
+//    //Initialization
+//    poly_t *p_universe, *minimized_polytope;
+//    p_universe = poly_universe((int)N);
+//    matrix_t* min_constraints = matrix_alloc((int)L->size1, (int)L->size2+2,false);
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr  minimized_polytope;
+    dd_MatrixPtr min_constraints;
+    //Minimizing
+//    polytope * constraints_polytope = polytope_alloc(L->size1, L->size2);
+//    gsl_matrix_memcpy(constraints_polytope->H,L);
+//    gsl_vector_memcpy(constraints_polytope->G,M);
+//    polytope_to_constraints(min_constraints, constraints_polytope);
+//    minimized_polytope = poly_add_constraints(p_universe,min_constraints);
+//    polytope_free(constraints_polytope);
+//    poly_minimize(minimized_polytope);
+//    poly_print(minimized_polytope);
 
     //Minimizing
     polytope * constraints_polytope = polytope_alloc(L->size1, L->size2);
     gsl_matrix_memcpy(constraints_polytope->H,L);
     gsl_vector_memcpy(constraints_polytope->G,M);
-    polytope_to_constraints(min_constraints, constraints_polytope);
-    minimized_polytope = poly_add_constraints(p_universe,min_constraints);
+    polytope_to_cdd_constraints(constraints_polytope, &minimized_polytope, &err);
     polytope_free(constraints_polytope);
-    poly_minimize(minimized_polytope);
-    poly_print(minimized_polytope);
 
+    min_constraints = dd_CopyInequalities(minimized_polytope);
+    dd_rowset redset,impl_linset;
+    dd_rowindex newpos;
+    dd_MatrixCanonicalize(&min_constraints,&impl_linset,&redset,&newpos,&err);
+
+    minimized_polytope = dd_DDMatrix2Poly(min_constraints, &err);
     //back to gsl polytope
-    polytope *opt_constraints = polytope_alloc((size_t)minimized_polytope->C->nbrows,N);
-    polytope_from_constraints(opt_constraints, minimized_polytope->C);
+    polytope *opt_constraints = polytope_alloc((size_t)min_constraints->rowsize,((size_t)min_constraints->rowsize-1));
+    cdd_constraints_to_polytope(&minimized_polytope, opt_constraints);
 
     //Clean up
-    matrix_free(min_constraints);
-    poly_free(minimized_polytope);
-    poly_free(p_universe);
+    dd_FreeMatrix(min_constraints);
+    dd_FreePolyhedra(minimized_polytope);
 
 //
 //        polytope *opt_constraints = polytope_alloc(10,N);
@@ -189,7 +210,13 @@ polytope * set_cost_function(gsl_matrix *P, gsl_vector *q, gsl_matrix *L, gsl_ve
     return opt_constraints;
 }
 
-void compute_optimal_control_qp(gsl_matrix *low_u, double *low_cost, gsl_matrix *P, gsl_vector* q, polytope *opt_constraints, size_t time_horizon, size_t n){
+void compute_optimal_control_qp(gsl_matrix *low_u,
+                                double *low_cost,
+                                gsl_matrix *P,
+                                gsl_vector* q,
+                                polytope *opt_constraints,
+                                size_t time_horizon,
+                                size_t n){
 
 
     //Initialization for qp in gurobi
@@ -295,7 +322,11 @@ void compute_optimal_control_qp(gsl_matrix *low_u, double *low_cost, gsl_matrix 
     GRBfreeenv(env);
 }
 
-void safe_mode_polytopes(system_dynamics *s_dyn, polytope *current_polytope, polytope *safe_polytope, size_t time_horizon, polytope **polytope_list_safemode){
+void safe_mode_polytopes(system_dynamics *s_dyn,
+                         polytope *current_polytope,
+                         polytope *safe_polytope,
+                         size_t time_horizon,
+                         polytope **polytope_list_safemode){
 
     //Auxiliary variables
     size_t N = time_horizon;
@@ -315,28 +346,57 @@ void safe_mode_polytopes(system_dynamics *s_dyn, polytope *current_polytope, pol
     //check partition system is in after i time steps
     for (size_t i = N; i > 1; i--){
 
-        poly_t *p_universe, *new_polytope, *reduced_polytope;
-        p_universe = poly_universe((int)n+(int)m);
+//        poly_t *p_universe, *new_polytope, *reduced_polytope;
+//
+//        p_universe = poly_universe((int)n+(int)m);
+//        //TODO: check if target polytope full dim
+//        matrix_t* constraints = matrix_alloc((int)P1->H->size1+(int)polytope_list[i]->H->size1+(int)s_dyn->U_set->H->size1, (int)n+(int)m+2,false);
+//        new_polytope = solve_feasible_closed_loop(p_universe, P1, polytope_list[i], s_dyn, constraints);
+//        // Project precedent polytope onto lower dim
+//        reduced_polytope = poly_remove_dimensions(new_polytope, (int)m);
+//        poly_free(new_polytope);
+//        matrix_free(constraints);
+//        poly_minimize(reduced_polytope);
+//
+//        polytope_list[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
+//        polytope_from_constraints(polytope_list[i-1], reduced_polytope->C);
+//        poly_free(reduced_polytope);
+//        poly_free(p_universe);
+        dd_PolyhedraPtr new_polytope, reduced_polytope;
+        dd_ErrorType err = dd_NoError;
         //TODO: check if target polytope full dim
-        matrix_t* constraints = matrix_alloc((int)current_polytope->H->size1+(int)polytope_list_safemode[i]->H->size1+(int)s_dyn->U_set->H->size1, (int)n+(int)m+2,false);
-        new_polytope = solve_feasible_closed_loop(p_universe, current_polytope, polytope_list_safemode[i], s_dyn, constraints);
+        solve_feasible_closed_loop(current_polytope, polytope_list_safemode[i], s_dyn, &new_polytope, &err);
         // Project precedent polytope onto lower dim
-        reduced_polytope = poly_remove_dimensions(new_polytope, (int)m);
-        poly_free(new_polytope);
-        matrix_free(constraints);
-        poly_minimize(reduced_polytope);
+        cdd_projection(&new_polytope, &reduced_polytope, (int)n, &err);
 
-        polytope_list_safemode[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
-        polytope_from_constraints(polytope_list_safemode[i-1], reduced_polytope->C);
-        poly_free(reduced_polytope);
-        poly_free(p_universe);
+        dd_MatrixPtr reduced_constraints;
+        reduced_constraints = dd_CopyInequalities(reduced_polytope);
+        dd_rowset redset,impl_linset;
+        dd_rowindex newpos;
+        dd_MatrixCanonicalize(&reduced_constraints,&impl_linset,&redset,&newpos,&err);
+
+        reduced_polytope = dd_DDMatrix2Poly(reduced_constraints, &err);
+
+        polytope_list_safemode[i-1] = polytope_alloc((size_t)reduced_constraints->rowsize,n);
+        dd_FreeMatrix(reduced_constraints);
+        cdd_constraints_to_polytope(&reduced_polytope, polytope_list_safemode[i-1]);
+        dd_FreePolyhedra(reduced_polytope);
+        dd_FreePolyhedra(new_polytope);
+
     }
 
 }
 /**
  * Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
  */
-void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_dyn, system_dynamics * s_dyn, int target_cell, cost_function * f_cost,size_t current_time_horizon, polytope **polytope_list_backup) {
+void get_input (gsl_matrix * low_u,
+                current_state * now,
+                discrete_dynamics * d_dyn,
+                system_dynamics * s_dyn,
+                int target_cell,
+                cost_function * f_cost,
+                size_t current_time_horizon,
+                polytope **polytope_list_backup) {
 
     //Set input back to zero (safety precaution)
     gsl_matrix_set_zero(low_u);
@@ -420,7 +480,18 @@ void get_input (gsl_matrix * low_u, current_state * now, discrete_dynamics * d_d
 /**
  * Calculates (optimal) input to reach desired state (P3) from current state (now) through convex optimization
  */
-void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *s_dyn, polytope *P1, polytope *P3, int ord , int closed_loop, size_t time_horizon, cost_function * f_cost, double *low_cost, polytope **polytope_list_backup, size_t total_time){
+void search_better_path(gsl_matrix *low_u,
+                        current_state *now,
+                        system_dynamics *s_dyn,
+                        polytope *P1,
+                        polytope *P3,
+                        int ord ,
+                        int closed_loop,
+                        size_t time_horizon,
+                        cost_function * f_cost,
+                        double *low_cost,
+                        polytope **polytope_list_backup,
+                        size_t total_time){
 
     //Auxiliary variables
     size_t N = time_horizon;
@@ -440,23 +511,43 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
         gsl_vector_memcpy(polytope_list[N]->G, P3->G);
         //check partition system is in after i time steps
         for (size_t i = N; i > 1; i--){
-            poly_t *p_universe, *new_polytope, *reduced_polytope;
+//            poly_t *p_universe, *new_polytope, *reduced_polytope;
+//
+//            p_universe = poly_universe((int)n+(int)m);
+//            //TODO: check if target polytope full dim
+//            matrix_t* constraints = matrix_alloc((int)P1->H->size1+(int)polytope_list[i]->H->size1+(int)s_dyn->U_set->H->size1, (int)n+(int)m+2,false);
+//            new_polytope = solve_feasible_closed_loop(p_universe, P1, polytope_list[i], s_dyn, constraints);
+//            // Project precedent polytope onto lower dim
+//            reduced_polytope = poly_remove_dimensions(new_polytope, (int)m);
+//            poly_free(new_polytope);
+//            matrix_free(constraints);
+//            poly_minimize(reduced_polytope);
+//
+//            polytope_list[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
+//            polytope_from_constraints(polytope_list[i-1], reduced_polytope->C);
+//            poly_free(reduced_polytope);
+//            poly_free(p_universe);
 
-            p_universe = poly_universe((int)n+(int)m);
+            dd_PolyhedraPtr new_polytope, reduced_polytope;
+            dd_ErrorType err = dd_NoError;
             //TODO: check if target polytope full dim
-            matrix_t* constraints = matrix_alloc((int)P1->H->size1+(int)polytope_list[i]->H->size1+(int)s_dyn->U_set->H->size1, (int)n+(int)m+2,false);
-            new_polytope = solve_feasible_closed_loop(p_universe, P1, polytope_list[i], s_dyn, constraints);
+            solve_feasible_closed_loop(P1, polytope_list[i], s_dyn, &new_polytope, &err);
             // Project precedent polytope onto lower dim
-            reduced_polytope = poly_remove_dimensions(new_polytope, (int)m);
-            poly_free(new_polytope);
-            matrix_free(constraints);
-            poly_minimize(reduced_polytope);
-            gsl_vector_print(f_cost->r,"haha");
+            cdd_projection(&new_polytope, &reduced_polytope, (int)n, &err);
 
-            polytope_list[i-1] = polytope_alloc((size_t)reduced_polytope->C->nbrows,n);
-            polytope_from_constraints(polytope_list[i-1], reduced_polytope->C);
-            poly_free(reduced_polytope);
-            poly_free(p_universe);
+            dd_MatrixPtr reduced_constraints;
+            reduced_constraints = dd_CopyInequalities(reduced_polytope);
+            dd_rowset redset,impl_linset;
+            dd_rowindex newpos;
+            dd_MatrixCanonicalize(&reduced_constraints,&impl_linset,&redset,&newpos,&err);
+
+            reduced_polytope = dd_DDMatrix2Poly(reduced_constraints, &err);
+
+            polytope_list[i-1] = polytope_alloc((size_t)reduced_constraints->rowsize,n);
+            dd_FreeMatrix(reduced_constraints);
+            cdd_constraints_to_polytope(&reduced_polytope, polytope_list[i-1]);
+            dd_FreePolyhedra(reduced_polytope);
+            dd_FreePolyhedra(new_polytope);
         }
     }else {
         for (int i = 1; i < N; i++) {
@@ -543,7 +634,11 @@ void search_better_path(gsl_matrix *low_u, current_state *now, system_dynamics *
 /**
  * Compute a polytope that constraints the system over the next N time steps to fullfill the GR(1) specifications
  */
-void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics * s_dyn, polytope **list_polytopes, size_t N){
+void set_path_constraints(gsl_matrix *L_full,
+                          gsl_vector *M_full,
+                          system_dynamics * s_dyn,
+                          polytope **list_polytopes,
+                          size_t N){
     //Disturbance assumed at every step
     //Also ... TODO: NO DEFAULT IF E NOT FULL DIMENSION OF s_dyn.Wset >> Will lead to problems when multiplying Gk.D
 
@@ -655,7 +750,11 @@ void set_path_constraints(gsl_matrix *L_full,gsl_vector *M_full, system_dynamics
 /**
  * Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step
  */
-poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *P2, system_dynamics *s_dyn, matrix_t * constraints){
+void solve_feasible_closed_loop(polytope *P1,
+                                polytope *P2,
+                                system_dynamics *s_dyn,
+                                dd_PolyhedraPtr *constraints,
+                                dd_ErrorType *err){
     // one step backwards in time
 
     size_t n = s_dyn->A->size2;  // State space dimension;
@@ -751,112 +850,6 @@ poly_t * solve_feasible_closed_loop(poly_t *p_universe, polytope *P1, polytope *
     //Clean up!
     gsl_vector_free(D_hat);
 
-    polytope_to_constraints(constraints, precedent_polytope);
+    polytope_to_cdd_constraints(precedent_polytope, constraints, &err);
     polytope_free(precedent_polytope);
-    return poly_add_constraints(p_universe, constraints);
 };
-
-
-/**
- * Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step
- */
-matrix_t* solve_feasible_closed_loop2(polytope *P1, polytope *P2, system_dynamics *s_dyn, matrix_t * constraints){
-    // one step backwards in time
-
-    size_t n = s_dyn->A->size2;  // State space dimension;
-    size_t m = s_dyn->B->size2;  // Input space dimension;
-    size_t p = s_dyn->E->size2;  // Disturbance space dimension;
-
-
-    size_t sum_dim = P1->H->size1+P2->H->size1;
-
-    polytope *precedent_polytope = polytope_alloc(sum_dim+s_dyn->U_set->H->size1, n+m);
-
-    // FOR precedent_polytope G
-    /*
-     *     |   P1_G      |
-     * G = |P2_G - P2_H.K|
-     *     |     0       |
-     */
-    gsl_vector_set_zero(precedent_polytope->G);
-    gsl_vector_view G_P1 = gsl_vector_subvector(precedent_polytope->G, 0, P1->G->size);
-    gsl_vector_memcpy(&G_P1.vector, P1->G);
-    gsl_vector_view G_P2 = gsl_vector_subvector(precedent_polytope->G, P1->G->size,P2->G->size);
-    gsl_vector_memcpy(&G_P2.vector, P2->G);
-    gsl_vector * P2_HdotK = gsl_vector_alloc(P2->G->size);
-    gsl_blas_dgemv(CblasNoTrans,1.0, P2->H, s_dyn->K, 0.0, P2_HdotK);
-    gsl_vector_sub(&G_P2.vector, P2_HdotK);
-    //Clean up!
-    gsl_vector_free(P2_HdotK);
-
-    // FOR Dist
-    /*
-     *         |  0   |
-     * Dist =  |P2_H.E|
-     *         |  0   |
-     */
-    gsl_matrix *Dist = gsl_matrix_alloc(sum_dim+s_dyn->U_set->H->size1, p);
-    gsl_matrix_set_zero(Dist);
-    gsl_matrix_view Dist_P2 = gsl_matrix_submatrix(Dist, P1->H->size1, 0, P2->H->size1, Dist->size2);
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->E, 0.0, &Dist_P2.matrix);
-
-    // FOR precedent_polytope H
-    /*
-     *  H = |H1   0 |
-     *      |H2A H2B|
-     *      |  HU   |
-     */
-    gsl_matrix_set_zero(precedent_polytope->H);
-
-    gsl_matrix_view H_P1 = gsl_matrix_submatrix(precedent_polytope->H, 0, 0, P1->H->size1, n);
-    gsl_matrix_memcpy(&H_P1.matrix, P1->H);
-    gsl_matrix_view H_P2_1 = gsl_matrix_submatrix(precedent_polytope->H, P1->H->size1, 0, P2->H->size1, n);
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->A, 0.0, &H_P2_1.matrix);
-    gsl_matrix_view H_P2_2 = gsl_matrix_submatrix(precedent_polytope->H, P1->H->size1, n, P2->H->size1, m);
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->B, 0.0, &H_P2_2.matrix);
-
-    if (s_dyn->U_set->H->size2 == m){
-        gsl_matrix_view HU = gsl_matrix_submatrix(precedent_polytope->H,sum_dim, n, s_dyn->U_set->H->size1,m);
-        gsl_matrix_memcpy(&HU.matrix,s_dyn->U_set->H);
-    } else if (s_dyn->U_set->H->size2 == m+n){
-        // transforms U_set.H from |constraints_ input constraints_state| to |constraints_state constraints_input|
-        /*
-         * |m m m m n n n|    |n n n m m m m|
-         * |m m m m n n n| => |n n n m m m m|
-         * |m m m m n n n|    |n n n m m m m|
-         */
-        gsl_matrix_view HU = gsl_matrix_submatrix(precedent_polytope->H,sum_dim, n, s_dyn->U_set->H->size1,m);
-        gsl_matrix * exchange_matrix = gsl_matrix_alloc(n+m,n+m);
-        gsl_matrix_set_zero(exchange_matrix);
-        gsl_matrix_view eye_m = gsl_matrix_submatrix(exchange_matrix, 0, n, m, m);
-        gsl_matrix_set_identity(&eye_m.matrix);
-        gsl_matrix_view eye_n = gsl_matrix_submatrix(exchange_matrix, m, 0, n, n);
-        gsl_matrix_set_identity(&eye_n.matrix);
-        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, s_dyn->U_set->H,exchange_matrix, 0.0, &HU.matrix);
-    }
-
-    // Get disturbance sets
-    gsl_vector * D_hat = gsl_vector_alloc(precedent_polytope->G->size);
-    gsl_vector_set_zero(D_hat);
-    if (!(gsl_matrix_isnull(Dist))){
-        gsl_matrix * maxima = gsl_matrix_alloc(Dist->size1, s_dyn->aux_matrices->D_one_step->size2);
-        //Calculate Dist.Dextremes (extremum of each dimension of each polytope)
-        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Dist, s_dyn->aux_matrices->D_one_step,0.0, maxima);
-        //find the maximum for each dimension of each polytope
-        for(size_t i = 0; i < sum_dim; i++){
-            gsl_vector_view max_row = gsl_matrix_row(maxima, i);
-            gsl_vector_set(D_hat, i, gsl_vector_max(&max_row.vector));
-        }
-        gsl_matrix_free(maxima);
-    } else{
-        gsl_vector_set_zero(D_hat);
-    }
-    gsl_matrix_free(Dist);
-    gsl_vector_sub(precedent_polytope->G, D_hat);
-    //Clean up!
-    gsl_vector_free(D_hat);
-
-    polytope_to_constraints(constraints, precedent_polytope);
-    polytope_free(precedent_polytope);
-    return constraints;
-    };

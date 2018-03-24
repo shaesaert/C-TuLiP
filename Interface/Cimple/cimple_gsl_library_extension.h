@@ -40,7 +40,7 @@ void gsl_matrix_print(gsl_matrix *matrix, char *name);
 ////////////////////////////////////////////////////////////////////////////////
 void gsl_vector_print(gsl_vector *vector, char *name);
 
-gsl_matrix * gsl_matrix_diag_from_vector(gsl_vector * X);
+gsl_matrix * gsl_matrix_diag_from_vector(gsl_vector * X, double rest);
 
 int gsl_matrix_to_qpterm_gurobi(gsl_matrix *P, GRBmodel *model, size_t N);
 
