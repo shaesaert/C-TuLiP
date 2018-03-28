@@ -12,12 +12,45 @@
 #include <gsl/gsl_blas.h>
 #include "cimple_polytope_library.h"
 
-matrix_t* solve_feasible_closed_loop2(polytope *P1, polytope *P2, system_dynamics *s_dyn, matrix_t * constraints);
-polytope *set_cost_function(gsl_matrix *P, gsl_vector *q, gsl_matrix *L, gsl_vector *M, current_state *now, system_dynamics *s_dyn, cost_function *f_cost, size_t time_horizon);
+/**
+ * @brief Set up weight matrices for the quadratic problem
+ * @param P
+ * @param q
+ * @param L
+ * @param M
+ * @param now
+ * @param s_dyn
+ * @param f_cost
+ * @param time_horizon
+ * @return
+ */
+polytope *set_cost_function(gsl_matrix *P,
+                            gsl_vector *q,
+                            gsl_matrix *L,
+                            gsl_vector *M,
+                            current_state *now,
+                            system_dynamics *s_dyn,
+                            cost_function *f_cost,
+                            size_t time_horizon);
 
-void compute_optimal_control_qp(gsl_matrix *low_u, double *low_cost, gsl_matrix *P, gsl_vector* q, polytope *opt_constraints, size_t time_horizon, size_t n);
+/**
+ * @brief Set up GUROBI environment and solve qp
+ * @param low_u
+ * @param low_cost
+ * @param P
+ * @param q
+ * @param opt_constraints
+ * @param time_horizon
+ * @param n
+ */
+void compute_optimal_control_qp(gsl_matrix *low_u,
+                                double *low_cost,
+                                gsl_matrix *P,
+                                gsl_vector* q,
+                                polytope *opt_constraints,
+                                size_t time_horizon,
+                                size_t n);
 
-void safe_mode_polytopes(system_dynamics *s_dyn, polytope *current_polytope, polytope *safe_polytope, size_t time_horizon, polytope **polytope_list_safemode);
 /**
  * @brief Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
  *
@@ -92,7 +125,6 @@ void get_input (gsl_matrix *u,
  * @param P1 current polytope (or hull of region) the system is in
  * @param P3 a polytope from the target region
  * @param ord ordinance of the norm that should be minimized ord in {1, 2, INFINITY} (currently only '2' is possible)
- * @param closed_loop if 'true' only u[0] will actually be applied all other inputs will be discarded
  * @param time_horizon
  * @param f_cost predefined cost functions |Rx|_{ord} + |Qu|_{ord} + r'x + mid_weight * |xc - x(N)|_{ord}
  * @param low_cost cost associate to low_u
@@ -103,26 +135,11 @@ void search_better_path(gsl_matrix *low_u,
                         polytope *P1,
                         polytope *P3,
                         int ord,
-                        int closed_loop,
                         size_t time_horizon,
                         cost_function * f_cost,
                         double* low_cost,
                         polytope **polytope_list_backup,
                         size_t total_time);
-
-/**
- * @brief Calculate recursively polytope (return_polytope) system needs to be in, to reach P2 in one time step
- * @param return_polytope empty polytope
- * @param P1 polytope in which the system is currently (at time [0]) might be several time steps away from P2
- * @param P2 last recursively calculated polytope
- * @param s_dyn system dynamics (including auxiliary matrices)
- */
-void solve_feasible_closed_loop(polytope *P1,
-                                polytope *P2,
-                                system_dynamics *s_dyn,
-                                dd_PolyhedraPtr *constraints,
-                                dd_ErrorType *err);
-
 
 /**
  * @brief Compute a polytope that constraints the system over the next N time steps to fullfill the GR(1) specifications

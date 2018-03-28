@@ -13,6 +13,7 @@
 #include "cimple_polytope_library.h"
 #include <pthread.h>
 #include "cimple_mpc_computation.h"
+#include "cimple_system.h"
 
 
 /**
@@ -58,8 +59,13 @@ double randn (double mu,
  * Fill a vector with gaussian distributed noise
  * @param w
  */
-void get_disturbance(gsl_vector *w,
+void simulate_disturbance(gsl_vector *w,
                      double mu,
                      double sigma);
+
+void * timer(void * arg);
+
+void * main_computation(void *arg);
+
 
 #endif //CIMPLE_CIMPLE_CONTROLLER_H
