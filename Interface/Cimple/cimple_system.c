@@ -358,5 +358,3 @@ void discrete_dynamics_free(discrete_dynamics *d_dyn){
     free(d_dyn->original_regions);
     free(d_dyn);
 }
-
-
