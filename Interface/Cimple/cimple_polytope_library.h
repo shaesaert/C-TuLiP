@@ -118,7 +118,16 @@ int polytope_to_constraints_gurobi(polytope *constraints, GRBmodel *model, size_
 void polytope_to_cdd_constraints(polytope *original, dd_PolyhedraPtr *new, dd_ErrorType *err);
 void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new);
 
-void cdd_projection(dd_PolyhedraPtr *original, dd_PolyhedraPtr *new, int n, dd_ErrorType *err);
+void cdd_projection(dd_PolyhedraPtr *original,
+                    dd_PolyhedraPtr *new,
+                    size_t n,
+                    dd_ErrorType *err);
+void polytope_projection(polytope * original,
+                         polytope * new,
+                         size_t n);
+
+void cdd_minimize(dd_PolyhedraPtr *original, dd_PolyhedraPtr *minimized);
+polytope * polytope_minimize(polytope *original);
 polytope * pontryagin_difference(polytope* A, polytope* B);
 
 #endif //CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H

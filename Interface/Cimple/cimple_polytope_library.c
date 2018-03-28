@@ -1,6 +1,7 @@
 //
 // Created by be107admin on 9/25/17.
 //
+
 #include <math.h>
 #include <gsl/gsl_vector_double.h>
 #include <gsl/gsl_matrix.h>
@@ -149,14 +150,14 @@ void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new){
 
     dd_MatrixPtr constraints;
     constraints = dd_CopyInequalities(*original);
-    for (size_t k = 0; k < (constraints->colsize); k++) {
+    for (size_t k = 0; k < (constraints->rowsize); k++) {
         double value = dd_get_d(constraints->matrix[k][0]);
         gsl_vector_set(new->G, k, value);
     }
-    for(size_t i = 0; i<constraints->colsize; i++){
-        for (size_t j = 0; j < (constraints->rowsize-1); j++) {
+    for(size_t i = 0; i<constraints->rowsize; i++){
+        for (size_t j = 0; j < (constraints->colsize-1); j++) {
             double value = dd_get_d(constraints->matrix[i][j+1]);
-            gsl_matrix_set(new->H,i,j,value);
+            gsl_matrix_set(new->H,i,j,-value);
         }
     }
     dd_FreeMatrix(constraints);
@@ -236,7 +237,7 @@ int polytope_to_constraints_gurobi(polytope *constraints,
  */
 void cdd_projection(dd_PolyhedraPtr *original,
                     dd_PolyhedraPtr *new,
-                    int n,
+                    size_t n,
                     dd_ErrorType *err){
     dd_MatrixPtr full=NULL,projected=NULL;
     full = dd_CopyInequalities(*original);
@@ -247,9 +248,8 @@ void cdd_projection(dd_PolyhedraPtr *original,
 
     d=full->colsize;
     set_initialize(&delset, d);
-
-    for (j=d; j>n; j--){
-        set_addelem(delset, j-1);
+    for (j=n+1; j<d; j++){
+        set_addelem(delset, j+1);
     }
 
     projected=dd_BlockElimination(full, delset, err);
@@ -271,12 +271,59 @@ void cdd_projection(dd_PolyhedraPtr *original,
  */
 void polytope_projection(polytope * original,
                          polytope * new,
-                         int n){
+                         size_t n){
     dd_PolyhedraPtr orig_cdd,new_cdd = NULL;
     dd_ErrorType err;
     polytope_to_cdd_constraints(original, &orig_cdd, &err);
     cdd_projection(&orig_cdd, &new_cdd, n, &err);
     cdd_constraints_to_polytope(&new_cdd, new);
+
+};
+
+void cdd_minimize(dd_PolyhedraPtr *original, dd_PolyhedraPtr *minimized){
+
+    dd_MatrixPtr orig_matrix = dd_CopyInequalities(*original);
+    dd_MatrixPtr min_matrix=NULL;
+    dd_ErrorType err=dd_NoError;
+    dd_rowset redrows,linrows;
+
+    redrows=dd_RedundantRows(orig_matrix, &err);
+
+    min_matrix=dd_MatrixSubmatrix(orig_matrix, redrows);
+
+    linrows=dd_ImplicitLinearityRows(min_matrix, &err);
+
+    set_card(linrows);
+    set_uni(min_matrix->linset, min_matrix->linset, linrows);
+    /* add the implicit linrows to the given linearity rows */
+
+    dd_WriteMatrix(stdout, min_matrix);
+
+    *minimized = dd_DDMatrix2Poly(min_matrix, &err);
+    dd_FreeMatrix(orig_matrix);
+    dd_FreeMatrix(min_matrix);
+
+};
+
+polytope * polytope_minimize(polytope *original){
+
+
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr cdd_original = NULL, cdd_minimized = NULL;
+    dd_MatrixPtr min_matrix;
+
+    polytope_to_cdd_constraints(original, &cdd_original, &err);
+
+    cdd_minimize(&cdd_original, &cdd_minimized);
+    min_matrix = dd_CopyInequalities(cdd_minimized);
+
+    polytope * minimized = polytope_alloc((size_t)min_matrix->rowsize,((size_t)min_matrix->colsize-1));
+    cdd_constraints_to_polytope(&cdd_minimized, minimized);
+    dd_FreeMatrix(min_matrix);
+    dd_FreePolyhedra(cdd_original);
+    dd_FreePolyhedra(cdd_minimized);
+
+    return minimized;
 
 };
 ///*
