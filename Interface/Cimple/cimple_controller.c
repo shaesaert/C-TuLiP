@@ -3,12 +3,11 @@
 //
 
 
-#include <gsl/gsl_matrix.h>
 #include "cimple_controller.h"
 
 int main_computation_completed = 0;
 /**
- * Action to get plant from current cell to target cell.
+ * Action to get plant from current abstract state to target abstract state.
  */
 void ACT(int target,
          current_state * now,
@@ -16,14 +15,14 @@ void ACT(int target,
          system_dynamics * s_dyn,
          cost_function * f_cost,
          double sec){
-    printf("\nComputing control sequence to go from cell %d to cell %d...\n", (*now).current_cell, target);
+    printf("\nComputing control sequence to go from abstract state %d to abstract state %d...\n", (*now).current_abs_state, target);
     fflush(stdout);
     //Setup threads and start timer
 
     gsl_matrix * u_backup = gsl_matrix_alloc(s_dyn->B->size2, d_dyn->time_horizon);
     gsl_matrix_set_zero(u_backup);
     polytope **polytope_list_backup = malloc(sizeof(polytope)*(d_dyn->time_horizon+1));
-    polytope **polytope_list_safemode = malloc(sizeof(polytope)*(d_dyn->time_horizon+1));
+//    polytope **polytope_list_safemode = malloc(sizeof(polytope)*(d_dyn->time_horizon+1));
     for(size_t i=0; i<d_dyn->time_horizon;i++){
 
         //Create timer thread
@@ -51,23 +50,23 @@ void ACT(int target,
             if(i==0){
                 pthread_t main_computation_id;
 //                pthread_t safe_mode_computation_id;
-                polytope *current = polytope_alloc(d_dyn->regions[now->current_cell]->polytopes[0]->H->size1,d_dyn->regions[now->current_cell]->polytopes[0]->H->size2);
-                gsl_matrix_memcpy(current->H, d_dyn->regions[now->current_cell]->polytopes[0]->H);
-                gsl_vector_memcpy(current->G,d_dyn->regions[now->current_cell]->polytopes[0]->G);
+                polytope *current = polytope_alloc(d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size1,d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size2);
+                gsl_matrix_memcpy(current->H, d_dyn->regions[now->current_abs_state]->polytopes[0]->H);
+                gsl_vector_memcpy(current->G,d_dyn->regions[now->current_abs_state]->polytopes[0]->G);
 
-                polytope *safe = polytope_alloc(d_dyn->regions[now->current_cell]->polytopes[0]->H->size1,d_dyn->regions[now->current_cell]->polytopes[0]->H->size2);
-                gsl_matrix_memcpy(safe->H, d_dyn->regions[now->current_cell]->polytopes[0]->H);
-                gsl_vector_memcpy(safe->G,d_dyn->regions[now->current_cell]->polytopes[0]->G);
-//                for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
-//                    if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)){
+                polytope *safe = polytope_alloc(d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size1,d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size2);
+                gsl_matrix_memcpy(safe->H, d_dyn->regions[now->current_abs_state]->polytopes[0]->H);
+                gsl_vector_memcpy(safe->G,d_dyn->regions[now->current_abs_state]->polytopes[0]->G);
+//                for (int j = 0; j < d_dyn->regions[now->current_abs_state]->cells_count; j++) {
+//                    if (polytope_check_state(d_dyn->regions[now->current_abs_state]->polytopes[j], now->x)){
 //
-//                        polytope *current = polytope_alloc(d_dyn->regions[now->current_cell]->polytopes[0]->H->size1,d_dyn->regions[now->current_cell]->polytopes[0]->H->size2);
-//                        gsl_matrix_memcpy(current->H, d_dyn->regions[now->current_cell]->polytopes[0]->H);
-//                        gsl_vector_memcpy(current->G,d_dyn->regions[now->current_cell]->polytopes[0]->G);
+//                        polytope *current = polytope_alloc(d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size1,d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size2);
+//                        gsl_matrix_memcpy(current->H, d_dyn->regions[now->current_abs_state]->polytopes[0]->H);
+//                        gsl_vector_memcpy(current->G,d_dyn->regions[now->current_abs_state]->polytopes[0]->G);
 //
-//                        polytope *safe = polytope_alloc(d_dyn->regions[now->current_cell]->polytopes[0]->H->size1,d_dyn->regions[now->current_cell]->polytopes[0]->H->size2);
-//                        gsl_matrix_memcpy(safe->H, d_dyn->regions[now->current_cell]->polytopes[0]->H);
-//                        gsl_vector_memcpy(safe->G,d_dyn->regions[now->current_cell]->polytopes[0]->G);
+//                        polytope *safe = polytope_alloc(d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size1,d_dyn->regions[now->current_abs_state]->polytopes[0]->H->size2);
+//                        gsl_matrix_memcpy(safe->H, d_dyn->regions[now->current_abs_state]->polytopes[0]->H);
+//                        gsl_vector_memcpy(safe->G,d_dyn->regions[now->current_abs_state]->polytopes[0]->G);
 //                        break;
 //                    }
 //                }
@@ -123,26 +122,26 @@ void ACT(int target,
         }
 
         int new_cell_found = 0;
-        for (int j = 0; j < d_dyn->regions[now->current_cell]->number_of_polytopes; j++) {
-            if (polytope_check_state(d_dyn->regions[now->current_cell]->polytopes[j], now->x)){
+        for (int j = 0; j < d_dyn->regions[now->current_abs_state]->cells_count; j++) {
+            if (polytope_check_state(d_dyn->regions[now->current_abs_state]->polytopes[j], now->x)){
                 new_cell_found = 1;
                 break;
             }
         }
         if(!new_cell_found){
-            for (int j = 0; j < d_dyn->regions[target]->number_of_polytopes; j++) {
+            for (int j = 0; j < d_dyn->regions[target]->cells_count; j++) {
                 if (polytope_check_state(d_dyn->regions[target]->polytopes[j], now->x)){
                     new_cell_found = 1;
-                    now->current_cell=target;
+                    now->current_abs_state=target;
                     break;
                 }
             }
         }
         if(!new_cell_found){
-            for(int k=0; k<d_dyn->number_of_regions;k++){
-                for (int j = 0; j < d_dyn->regions[k]->number_of_polytopes; j++) {
+            for(int k=0; k<d_dyn->abstract_states_count;k++){
+                for (int j = 0; j < d_dyn->regions[k]->cells_count; j++) {
                     if (polytope_check_state(d_dyn->regions[k]->polytopes[j], now->x)){
-                        now->current_cell=k;
+                        now->current_abs_state=k;
                         break;
                     }
                 }
@@ -151,16 +150,16 @@ void ACT(int target,
         gsl_vector_free(w);
         printf("\nNew state:");
         gsl_vector_print(now->x, "now->");
-        printf("\nNew Cell: %d\n", now->current_cell);
+        printf("\nNew abstract state: %d\n", now->current_abs_state);
         fflush(stdout);
         gsl_matrix_free(u_safemode);
     }
     gsl_matrix_free(u_backup);
 
-    for(int i = 0; i< d_dyn->time_horizon+1; i++){
-        polytope_free(polytope_list_safemode[i]);
-    }
-    free(polytope_list_safemode);
+//    for(int i = 0; i< d_dyn->time_horizon+1; i++){
+//        polytope_free(polytope_list_safemode[i]);
+//    }
+//    free(polytope_list_safemode);
     for(int i = 0; i< d_dyn->time_horizon+1; i++){
         polytope_free(polytope_list_backup[i]);
     }
@@ -210,41 +209,6 @@ void apply_control(gsl_vector *x,
 };
 
 /**
- * @brief Generate gaussian distributed random variable
- * @param mu
- * @param sigma
- * @return
- */
-double randn (double mu,
-              double sigma) {
-    double U1, U2, W, mult;
-    static double X1, X2;
-    static int call = 0;
-
-    if (call == 1)
-    {
-        call = !call;
-        return (mu + sigma * (double) X2);
-    }
-
-    do
-    {
-        U1 = -1 + ((double) rand () / RAND_MAX) * 2;
-        U2 = -1 + ((double) rand () / RAND_MAX) * 2;
-        W = pow (U1, 2) + pow (U2, 2);
-    }
-    while (W >= 1 || W == 0);
-
-    mult = sqrt ((-2 * log (W)) / W);
-    X1 = U1 * mult;
-    X2 = U2 * mult;
-
-    call = !call;
-
-    return (mu + sigma * (double) X1);
-};
-
-/**
  * @brief Simulate disturbance by filling p-dimensional vector with gaussian random variables
  * @param w Vector to be filled
  * @param mu Mean of distribution
@@ -258,24 +222,6 @@ void simulate_disturbance(gsl_vector *w,
     }
 };
 
-/**
- * @brief Timer simulating one time step in discrete control
- * @param arg
- * @return
- */
-void * timer(void * arg){
-    struct timeval sec;
-    double* total_time_p = (double*)arg;
-    double total_time = *total_time_p;
-    int seconds = (int)floor(total_time);
-    int u_seconds;
-    u_seconds = (int)floor(total_time * pow(10,6) - seconds * pow(10,6));
-    sec.tv_sec = seconds;
-    sec.tv_usec = u_seconds;
-    printf("\nTime runs: %d.%d\n", (int)sec.tv_sec, (int)sec.tv_usec);
-    select(0,NULL,NULL,NULL,&sec);
-    pthread_exit(0);
-};
 
 /**
  * @brief Computation of control towards target given by ACT()
@@ -291,7 +237,7 @@ void * main_computation(void *arg){
         j=j+1;
     }
 
-    get_input(cc_arguments->u, cc_arguments->now, cc_arguments->d_dyn, cc_arguments->s_dyn, cc_arguments->target_cell, cc_arguments->f_cost, cc_arguments->current_time_horizon, cc_arguments->polytope_list_backup);
+    get_input(cc_arguments->u, cc_arguments->now, cc_arguments->d_dyn, cc_arguments->s_dyn, cc_arguments->target_abs_state, cc_arguments->f_cost, cc_arguments->current_time_horizon, cc_arguments->polytope_list_backup);
 
     main_computation_completed = 1;
 

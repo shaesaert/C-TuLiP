@@ -13,11 +13,10 @@
 #include "cimple_polytope_library.h"
 #include <pthread.h>
 #include "cimple_mpc_computation.h"
-#include "cimple_system.h"
 
 
 /**
- * @brief Action to get plant from current cell to target cell.
+ * @brief Action to get plant from current abstract state to target_abs_state.
  *
  * @param target target region the plant is supposed to reach
  * @param now current state of the plant
@@ -47,15 +46,6 @@ void apply_control(gsl_vector *x,
                    size_t current_time);
 
 /**
- * @brief Generates random numbers with normal distribution
- * @param mu
- * @param sigma
- * @return
- */
-double randn (double mu,
-              double sigma);
-
-/**
  * Fill a vector with gaussian distributed noise
  * @param w
  */
@@ -63,7 +53,6 @@ void simulate_disturbance(gsl_vector *w,
                      double mu,
                      double sigma);
 
-void * timer(void * arg);
 
 void * main_computation(void *arg);
 
