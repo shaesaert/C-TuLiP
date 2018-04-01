@@ -220,6 +220,9 @@ void compute_optimal_control_qp(gsl_matrix *low_u,
 
     error = GRBloadenv(&env, "qp.log");
     if (error) goto QUIT;
+    error = GRBsetintparam(env, GRB_INT_PAR_OUTPUTFLAG, 0);
+    if (error) goto QUIT;
+
 
     /* Create an empty model */
 
@@ -302,8 +305,11 @@ void compute_optimal_control_qp(gsl_matrix *low_u,
     }
 
     /* Free model */
-
-    GRBfreemodel(model);
+    error = GRBfreemodel(model);
+    if (error) {
+        printf("ERROR: %s\n", GRBgeterrormsg(env));
+        exit(1);
+    }
 
     /* Free environment */
 
@@ -311,13 +317,13 @@ void compute_optimal_control_qp(gsl_matrix *low_u,
 }
 
 /**
- * Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
+ * Calculate (optimal) input that will be applied to take plant from current state (now) to target_abs_state.
  */
 void get_input (gsl_matrix * low_u,
                 current_state * now,
                 discrete_dynamics * d_dyn,
                 system_dynamics * s_dyn,
-                int target_cell,
+                int target_abs_state,
                 cost_function * f_cost,
                 size_t current_time_horizon,
                 polytope **polytope_list_backup) {
@@ -336,25 +342,25 @@ void get_input (gsl_matrix * low_u,
     //Set start region (depends on conservative path or not)
     polytope *P1;
 
-    int start = now->current_cell;
+    int start = now->current_abs_state;
 
     if (d_dyn->conservative == 1){
         // Take convex hull or polytope as starting polytope P1
 
-        // if hull_of_region != NULL => hull was computed => several polytopes in that region
-        if (d_dyn->regions[start]->hull_of_region->H != NULL){
-            P1 = d_dyn->regions[start]->hull_of_region;
+        // if hull_over_polytopes != NULL => hull was computed => several polytopes in that region
+        if (d_dyn->regions[start]->hull_over_polytopes->H != NULL){
+            P1 = d_dyn->regions[start]->hull_over_polytopes;
         } else{
             P1 = d_dyn->regions[start]->polytopes[0];
         }
     } else{
-        // Take original proposition preserving cell as constraint
+        // Take original proposition preserving abstract state as constraint
         // must be single polytope (ensuring convex)
 
-        if (d_dyn->original_regions[start]->number_of_polytopes == 1){
+        if (d_dyn->original_regions[start]->cells_count == 1){
             P1 = d_dyn->original_regions[start]->polytopes[0];
         } else {
-            fprintf(stderr, "\nIn Region of polytopes(%d): `conservative = False` arg requires that original regions be convex\n", now->current_cell);
+            fprintf(stderr, "\nIn Region of polytopes(%d): `conservative = False` arg requires that original regions be convex\n", now->current_abs_state);
             exit(EXIT_FAILURE);
         }
     }
@@ -364,8 +370,8 @@ void get_input (gsl_matrix * low_u,
     //by finding polytope that is easiest to reach in target region
 
     // for each polytope in target region
-    for (int i = 0; i < d_dyn->regions[target_cell]->number_of_polytopes; i++){
-        polytope *P3 = d_dyn->regions[target_cell]->polytopes[i];
+    for (int i = 0; i < d_dyn->regions[target_abs_state]->cells_count; i++){
+        polytope *P3 = d_dyn->regions[target_abs_state]->polytopes[i];
 
         //Finding a path to target region
         if (err_weight > 0){
@@ -592,7 +598,11 @@ void set_path_constraints(gsl_matrix *L_full,
 
     /*Find maxima of Gk.Dextremes*/
     //TODO: if Gk non zero else...
-    gsl_matrix_view D_vertices_view = gsl_matrix_submatrix(s_dyn->aux_matrices->D_vertices,s_dyn->aux_matrices->D_vertices->size1-(N+1),0,(N+1),s_dyn->aux_matrices->D_vertices->size2);
+    gsl_matrix_view D_vertices_view = gsl_matrix_submatrix(s_dyn->aux_matrices->D_vertices,
+                                                           s_dyn->aux_matrices->D_vertices->size1-(N+1),
+                                                           0,
+                                                           (N+1),
+                                                           s_dyn->aux_matrices->D_vertices->size2);
     gsl_matrix * maxima = gsl_matrix_alloc(Gk->size1, D_vertices_view.matrix.size2);
     //Calculate Gk.Dextremes (extremum of each dimension of each polytope)
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Gk, &D_vertices_view.matrix,0.0, maxima);

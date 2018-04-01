@@ -52,20 +52,20 @@ void compute_optimal_control_qp(gsl_matrix *low_u,
                                 size_t n);
 
 /**
- * @brief Calculate (optimal) input that will be applied to take plant from current state (now) to target_cell.
+ * @brief Calculate (optimal) input that will be applied to take plant from current state (now) to target_abs_state.
  *
  * Global function to compute continuous control input for discrete transition.
  *
  * Computes continuous control input sequence which takes the plant:
  *
  *      - from now
- *      - to (chebyshev center of) target_cell
+ *      - to (chebyshev center of) target_abs_state
  *      => partitions given by discrete dynamics (d_dyn)
  *
  * Control input is calculated such that it minimizes:
  *
  *      f(x, u) = |Rx|_{ord} + |Qu|_{ord} + r'x + distance_error_weight * |xc - x(N)|_{ord}
- *      with xc == chebyshev center of target_cell
+ *      with xc == chebyshev center of target_abs_state
  *
  *    Notes
  *    =====
@@ -93,14 +93,14 @@ void compute_optimal_control_qp(gsl_matrix *low_u,
  * @param now initial continuous state
  * @param d_dyn discrete abstraction of system
  * @param s_dyn system dynamics (including auxiliary matrices)
- * @param target_cell index of target region in discrete dynamics (d_dyn)
+ * @param target_abs_state index of target region in discrete dynamics (d_dyn)
  * @param f_cost cost func matrices: f(x, u) = |Rx|_{ord} + |Qu|_{ord} + r'x + distance_error_weight *|xc - x(N)|_{ord}
  */
 void get_input (gsl_matrix *u,
                 current_state * now,
                 discrete_dynamics *d_dyn,
                 system_dynamics *s_dyn,
-                int target_cell,
+                int target_abs_state,
                 cost_function * f_cost,
                 size_t current_time_horizon,
                 polytope **polytope_list_backup);

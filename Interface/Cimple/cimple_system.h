@@ -114,10 +114,10 @@ typedef struct cost_function{
  */
 typedef struct discrete_dynamics{
 
-    int number_of_regions;
+    int abstract_states_count;
     int number_of_original_regions;
-    region_of_polytopes **regions;
-    region_of_polytopes **original_regions;
+    abstract_state **regions;
+    abstract_state **original_regions;
     int closed_loop;
     int conservative;
     int ord;
@@ -151,11 +151,11 @@ typedef struct system_dynamics{
 /**
  * State plant is in at the beginning of the calculation
  *
- * current_cell starting region
+ * current_abs_state starting region
  */
 typedef struct current_state{
 
-    int current_cell;
+    int current_abs_state;
     gsl_vector *x;
 
 } current_state;
@@ -206,10 +206,10 @@ void system_dynamics_free(system_dynamics * system_dynamics);
 /**
  * @brief "Constructor" Dynamically allocates the memory for the state of the plant
  * @param n
- * @param cell
+ * @param abstract_state
  * @return
  */
-struct current_state *state_alloc(size_t n, int cell);
+struct current_state *state_alloc(size_t n, int abstract_state);
 
 /**
  * @brief "Destructor" Deallocates the dynamically allocated memory of the state of the plant
@@ -242,7 +242,7 @@ void cost_function_free(cost_function *cost_function);
  * @param orig_polytope_sizes
  * @param orig_hull_sizes
  * @param n
- * @param number_of_regions
+ * @param abstract_states_count
  * @param number_of_original_regions
  * @param closed_loop
  * @param conservative
@@ -250,7 +250,7 @@ void cost_function_free(cost_function *cost_function);
  * @param time_horizon
  * @return
  */
-struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size_t *polytope_sizes, size_t *hull_sizes, int *orig_polytopes_in_region, size_t *orig_polytope_sizes, size_t *orig_hull_sizes, size_t n, int number_of_regions, int number_of_original_regions, int closed_loop, int conservative, int ord, size_t time_horizon);
+struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size_t *polytope_sizes, size_t *hull_sizes, int *orig_polytopes_in_region, size_t *orig_polytope_sizes, size_t *orig_hull_sizes, size_t n, int abstract_states_count, int number_of_original_regions, int closed_loop, int conservative, int ord, size_t time_horizon);
 
 /**
  * @brief "Destructor" Deallocates the dynamically allocated memory of the discrete dynamics
@@ -268,7 +268,7 @@ typedef struct control_computation_arguments{
     current_state * now;
     discrete_dynamics *d_dyn;
     system_dynamics *s_dyn;
-    int target_cell;
+    int target_abs_state;
     cost_function * f_cost;
     size_t current_time_horizon;
     polytope **polytope_list_backup;
@@ -308,7 +308,7 @@ struct control_computation_arguments *cc_arguments_alloc(current_state *now,
                                                          discrete_dynamics *d_dyn,
                                                          cost_function *f_cost,
                                                          size_t current_time_horizon,
-                                                         int target_cell,
+                                                         int target_abs_state,
                                                          polytope **polytope_list);
 
 /**
