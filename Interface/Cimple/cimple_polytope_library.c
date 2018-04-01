@@ -101,21 +101,6 @@ struct abstract_state *abstract_state_alloc(size_t *k,
         }
     }
 
-    return_abstract_state->polytopes = malloc(sizeof(polytope)*cells_count);
-    if (return_abstract_state->polytopes == NULL) {
-        free (return_abstract_state);
-        return NULL;
-    }
-
-    for(int i = 0; i < cells_count; i++){
-        return_abstract_state->polytopes[i] = polytope_alloc(*(k+i), n);
-        if (return_abstract_state->polytopes[i] == NULL) {
-            free (return_abstract_state);
-            return NULL;
-        }
-    }
-
-
     return_abstract_state->transitions_in = malloc(sizeof(int) * trans_in_count);
     if (return_abstract_state->transitions_in == NULL) {
         free (return_abstract_state);
@@ -131,7 +116,7 @@ struct abstract_state *abstract_state_alloc(size_t *k,
     return_abstract_state->cells_count = cells_count;
 
     return_abstract_state->hull_over_polytopes = polytope_alloc(k_hull, n);
-    if (return_abstract_state->polytopes == NULL) {
+    if (return_abstract_state->hull_over_polytopes == NULL) {
         free (return_abstract_state);
         return NULL;
     }
@@ -147,13 +132,9 @@ void abstract_state_free(abstract_state * abstract_state){
     for(int i = 0; i< abstract_state->cells_count; i++){
         cell_free(abstract_state->cells[i]);
     }
-    for(int i = 0; i< abstract_state->cells_count; i++){
-        polytope_free(abstract_state->polytopes[i]);
-    }
     free(abstract_state->transitions_out);
     free(abstract_state->transitions_in);
     free(abstract_state->cells);
-    free(abstract_state->polytopes);
     free(abstract_state);
 
 };

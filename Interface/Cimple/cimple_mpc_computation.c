@@ -351,14 +351,14 @@ void get_input (gsl_matrix * low_u,
         if (d_dyn->regions[start]->hull_over_polytopes->H != NULL){
             P1 = d_dyn->regions[start]->hull_over_polytopes;
         } else{
-            P1 = d_dyn->regions[start]->polytopes[0];
+            P1 = d_dyn->regions[start]->cells[0]->polytope_description;
         }
     } else{
         // Take original proposition preserving abstract state as constraint
         // must be single polytope (ensuring convex)
 
         if (d_dyn->original_regions[start]->cells_count == 1){
-            P1 = d_dyn->original_regions[start]->polytopes[0];
+            P1 = d_dyn->original_regions[start]->cells[0]->polytope_description;
         } else {
             fprintf(stderr, "\nIn Region of polytopes(%d): `conservative = False` arg requires that original regions be convex\n", now->current_abs_state);
             exit(EXIT_FAILURE);
@@ -371,7 +371,7 @@ void get_input (gsl_matrix * low_u,
 
     // for each polytope in target region
     for (int i = 0; i < d_dyn->regions[target_abs_state]->cells_count; i++){
-        polytope *P3 = d_dyn->regions[target_abs_state]->polytopes[i];
+        polytope *P3 = d_dyn->regions[target_abs_state]->cells[i]->polytope_description;
 
         //Finding a path to target region
         if (err_weight > 0){

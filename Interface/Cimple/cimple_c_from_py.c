@@ -277,7 +277,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     int polytope_count = 0;
     for(int i = 0; i< abstract_states_count; i++){
         for(int j = 0; j< d_dyn->regions[i]->cells_count; j++){
-            polytope_from_arrays(d_dyn->regions[i]->polytopes[j],left_side[j+polytope_count],right_side[j+polytope_count], cheby[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
+            polytope_from_arrays(d_dyn->regions[i]->cells[j]->polytope_description,left_side[j+polytope_count],right_side[j+polytope_count], cheby[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
         }
         polytope_count +=d_dyn->regions[i]->cells_count;
         polytope_from_arrays(d_dyn->regions[i]->hull_over_polytopes,hulls_left_side[i],hulls_right_side[i], hull_cheby[i], "d_dyn->regions[i]->hull_over_polytopes" );
@@ -287,7 +287,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     int original_polytope_count = 0;
     for(int i = 0; i< number_of_original_regions; i++){
         for(int j = 0; j< d_dyn->original_regions[i]->cells_count; j++){
-            polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j] ,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], original_cheby[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
+            polytope_from_arrays(d_dyn->original_regions[i]->cells[j]->polytope_description ,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], original_cheby[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
         }
         original_polytope_count +=d_dyn->original_regions[i]->cells_count;
         polytope_from_arrays(d_dyn->original_regions[i]->hull_over_polytopes, original_hulls_left_side[i],original_hulls_right_side[i], original_hull_cheby[i],"d_dyn->original_regions[i]->hull_over_polytopes" );

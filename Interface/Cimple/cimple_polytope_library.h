@@ -86,7 +86,6 @@ typedef struct abstract_state{
     int* transitions_in;
     int* transitions_out;
     cell **cells;
-    polytope **polytopes;
     polytope *hull_over_polytopes;
 
 }abstract_state;
