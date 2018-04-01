@@ -10,7 +10,7 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     //Set help variables
 
     size_t time_horizon = 5;
-    int number_of_regions= 4;
+    int abstract_states_count= 4;
     int number_of_original_regions= 4;
     int closed_loop = 1;
     int conservative = 0;
@@ -26,14 +26,14 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     size_t w_set_size =2;
     double distance_weight =10;
 
-    int default_cell = 3;
+    int default_abs_state = 3;
     size_t total_number_polytopes = 4;
     int polytopes_in_region[4] = {1,1,1,1};
     size_t original_total_number_polytopes = 4;
     int orig_polytopes_in_region[4] = {1,1,1,1};
 
     size_t *polytope_sizes= malloc(total_number_polytopes * sizeof(size_t));
-    size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
+    size_t *hull_sizes= malloc(abstract_states_count * sizeof(size_t));
     size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
     size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));
     memcpy(polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(polytope_sizes[0]));
@@ -41,10 +41,10 @@ void system_alloc(current_state **now, system_dynamics **s_dyn, cost_function **
     memcpy(original_polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(original_polytope_sizes[0]));
     memcpy(original_hull_sizes, ((size_t []){2,2,2,2}),4* sizeof(original_hull_sizes[0]));
 
-    *now = state_alloc(n,default_cell);
+    *now = state_alloc(n,default_abs_state);
     *s_dyn = system_dynamics_alloc(n, m, p, w_set_size, u_set_size, time_horizon, d_ext_i, d_ext_j, d_one_i, d_one_j);
     *f_cost = cost_function_alloc(n, m, time_horizon, distance_weight);
-    *d_dyn = discrete_dynamics_alloc(polytopes_in_region, polytope_sizes,  hull_sizes, orig_polytopes_in_region, original_polytope_sizes, original_hull_sizes, n, number_of_regions, number_of_original_regions, closed_loop, conservative, ord, time_horizon);
+    *d_dyn = discrete_dynamics_alloc(polytopes_in_region, polytope_sizes,  hull_sizes, orig_polytopes_in_region, original_polytope_sizes, original_hull_sizes, n, abstract_states_count, number_of_original_regions, closed_loop, conservative, ord, time_horizon);
 
     free(polytope_sizes);
     free(hull_sizes);
@@ -57,7 +57,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     //Set help variables
 
     size_t time_horizon = 5;
-    int number_of_regions= 4;
+    int abstract_states_count= 4;
     int number_of_original_regions= 4;
     size_t n =1;
     size_t m =1;
@@ -181,7 +181,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     size_t original_total_number_polytopes = 4;
 
     size_t *polytope_sizes= malloc(total_number_polytopes * sizeof(size_t));
-    size_t *hull_sizes= malloc(number_of_regions * sizeof(size_t));
+    size_t *hull_sizes= malloc(abstract_states_count * sizeof(size_t));
     size_t *original_polytope_sizes= malloc(original_total_number_polytopes * sizeof(size_t));
     size_t *original_hull_sizes= malloc(number_of_original_regions * sizeof(size_t));
     memcpy(polytope_sizes, ((size_t []){2,2,2,2}),4* sizeof(polytope_sizes[0]));
@@ -191,16 +191,16 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
 
     double **left_side = malloc(total_number_polytopes* sizeof(double*));
     double **right_side = malloc(total_number_polytopes* sizeof(double*));
-    double **hulls_left_side = malloc(number_of_regions*sizeof(double*));
-    double **hulls_right_side = malloc(number_of_regions*sizeof(double*));
+    double **hulls_left_side = malloc(abstract_states_count*sizeof(double*));
+    double **hulls_right_side = malloc(abstract_states_count*sizeof(double*));
     double **cheby = malloc(total_number_polytopes * sizeof(double*));
-    double **hull_cheby = malloc(number_of_regions*sizeof(double*));
+    double **hull_cheby = malloc(abstract_states_count*sizeof(double*));
     for (int i = 0; i < total_number_polytopes; i++) {
         left_side[i] = malloc(polytope_sizes[i]* n * sizeof(double));
         right_side[i] = malloc(polytope_sizes[i] * sizeof(double));
         cheby[i] = malloc(n*sizeof(double));
     }
-    for (int i = 0; i < number_of_regions; i++) {
+    for (int i = 0; i < abstract_states_count; i++) {
         hulls_left_side[i] = malloc(hull_sizes[i]* n * sizeof(double));
         hulls_right_side[i] = malloc(hull_sizes[i] * sizeof(double));
         hull_cheby[i] = malloc(n*sizeof(double));
@@ -275,22 +275,22 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
     memcpy(original_hull_cheby[3], ((double []){2.5}),1* sizeof(double));
 
     int polytope_count = 0;
-    for(int i = 0; i< number_of_regions; i++){
-        for(int j = 0; j< d_dyn->regions[i]->number_of_polytopes; j++){
+    for(int i = 0; i< abstract_states_count; i++){
+        for(int j = 0; j< d_dyn->regions[i]->cells_count; j++){
             polytope_from_arrays(d_dyn->regions[i]->polytopes[j],left_side[j+polytope_count],right_side[j+polytope_count], cheby[j+polytope_count],"d_dyn->regions[i]->polytopes[j]");
         }
-        polytope_count +=d_dyn->regions[i]->number_of_polytopes;
-        polytope_from_arrays(d_dyn->regions[i]->hull_of_region,hulls_left_side[i],hulls_right_side[i], hull_cheby[i], "d_dyn->regions[i]->hull_of_region" );
+        polytope_count +=d_dyn->regions[i]->cells_count;
+        polytope_from_arrays(d_dyn->regions[i]->hull_over_polytopes,hulls_left_side[i],hulls_right_side[i], hull_cheby[i], "d_dyn->regions[i]->hull_over_polytopes" );
     }
 
 
     int original_polytope_count = 0;
     for(int i = 0; i< number_of_original_regions; i++){
-        for(int j = 0; j< d_dyn->original_regions[i]->number_of_polytopes; j++){
+        for(int j = 0; j< d_dyn->original_regions[i]->cells_count; j++){
             polytope_from_arrays(d_dyn->original_regions[i]->polytopes[j] ,original_left_side[j+original_polytope_count],original_right_side[j+original_polytope_count], original_cheby[j+original_polytope_count], "d_dyn->original_regions[i]->polytopes[j]");
         }
-        original_polytope_count +=d_dyn->original_regions[i]->number_of_polytopes;
-        polytope_from_arrays(d_dyn->original_regions[i]->hull_of_region, original_hulls_left_side[i],original_hulls_right_side[i], original_hull_cheby[i],"d_dyn->original_regions[i]->hull_of_region" );
+        original_polytope_count +=d_dyn->original_regions[i]->cells_count;
+        polytope_from_arrays(d_dyn->original_regions[i]->hull_over_polytopes, original_hulls_left_side[i],original_hulls_right_side[i], original_hull_cheby[i],"d_dyn->original_regions[i]->hull_over_polytopes" );
     }
     //Clean up!
     for (int i = 0; i < total_number_polytopes; i++) {
@@ -298,7 +298,7 @@ void system_init(current_state *now, system_dynamics *s_dyn,cost_function *f_cos
         free(right_side[i]);
         free(cheby[i]);
     }
-    for (int i = 0; i < number_of_regions; i++) {
+    for (int i = 0; i < abstract_states_count; i++) {
         free(hulls_left_side[i]);
         free(hulls_right_side[i]);
         free(hull_cheby[i]);
