@@ -2,9 +2,6 @@
 // Created by be107admin on 9/25/17.
 //
 
-#include <math.h>
-#include <gsl/gsl_vector_double.h>
-#include <gsl/gsl_matrix.h>
 #include "cimple_polytope_library.h"
 
 /**
@@ -45,47 +42,119 @@ void polytope_free(polytope *polytope){
     free(polytope->chebyshev_center);
     free(polytope);
 };
-
 /**
- * "Constructor" Dynamically allocates the space a region of polytope needs
+ * "Constructor" Dynamically allocates the space a polytope needs
  */
-struct region_of_polytopes *region_of_polytopes_alloc(size_t *k,
-                                                      size_t k_hull,
-                                                      size_t n,
-                                                      int number_of_polytopes){
+struct cell *cell_alloc(size_t k,
+                        size_t n,
+                        int time_horizon){
 
-    struct region_of_polytopes *return_region_of_polytopes = malloc (sizeof (struct region_of_polytopes));
+    struct cell *return_cell = malloc (sizeof (struct cell));
 
-    return_region_of_polytopes->polytopes = malloc(sizeof(polytope)*number_of_polytopes);
-    for(int i = 0; i < number_of_polytopes; i++){
-        return_region_of_polytopes->polytopes[i] = polytope_alloc(*(k+i), n);
-    }
-    if (return_region_of_polytopes->polytopes == NULL) {
-        free (return_region_of_polytopes);
+    return_cell->safe_mode = malloc(sizeof(polytope)*time_horizon);
+    if (return_cell->safe_mode == NULL) {
+        free (return_cell);
         return NULL;
     }
 
-    return_region_of_polytopes->hull_of_region = polytope_alloc(k_hull, n);
-    if (return_region_of_polytopes->polytopes == NULL) {
-        free (return_region_of_polytopes);
+    return_cell->polytope_description = polytope_alloc(k,n);
+    if (return_cell->polytope_description == NULL) {
+        free (return_cell);
         return NULL;
     }
-
-    return_region_of_polytopes->number_of_polytopes = number_of_polytopes;
-
-    return return_region_of_polytopes;
+    return return_cell;
 };
 
 /**
  * "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
  */
-void region_of_polytopes_free(region_of_polytopes * region_of_polytopes){
-    polytope_free(region_of_polytopes->hull_of_region);
-    for(int i = 0; i< region_of_polytopes->number_of_polytopes; i++){
-        polytope_free(region_of_polytopes->polytopes[i]);
+void cell_free(cell *cell){
+    polytope_free(cell->polytope_description);
+    free(cell->safe_mode);
+    free(cell);
+
+};
+/**
+ * "Constructor" Dynamically allocates the space a region of polytope needs
+ */
+struct abstract_state *abstract_state_alloc(size_t *k,
+                                            size_t k_hull,
+                                            size_t n,
+                                            int trans_in_count,
+                                            int trans_out_count,
+                                            int cells_count,
+                                            int time_horizon){
+
+    struct abstract_state *return_abstract_state = malloc (sizeof (struct abstract_state));
+
+    return_abstract_state->cells = malloc(sizeof(cell)*cells_count);
+    if (return_abstract_state->cells == NULL) {
+        free (return_abstract_state);
+        return NULL;
     }
-    free(region_of_polytopes->polytopes);
-    free(region_of_polytopes);
+
+    for(int i = 0; i < cells_count; i++){
+        return_abstract_state->cells[i] = cell_alloc(*(k+i), n, time_horizon);
+        if (return_abstract_state->cells[i] == NULL) {
+            free (return_abstract_state);
+            return NULL;
+        }
+    }
+
+    return_abstract_state->polytopes = malloc(sizeof(polytope)*cells_count);
+    if (return_abstract_state->polytopes == NULL) {
+        free (return_abstract_state);
+        return NULL;
+    }
+
+    for(int i = 0; i < cells_count; i++){
+        return_abstract_state->polytopes[i] = polytope_alloc(*(k+i), n);
+        if (return_abstract_state->polytopes[i] == NULL) {
+            free (return_abstract_state);
+            return NULL;
+        }
+    }
+
+
+    return_abstract_state->transitions_in = malloc(sizeof(int) * trans_in_count);
+    if (return_abstract_state->transitions_in == NULL) {
+        free (return_abstract_state);
+        return NULL;
+    }
+
+    return_abstract_state->transitions_out = malloc(sizeof(int) * trans_out_count);
+    if (return_abstract_state->transitions_out == NULL) {
+        free (return_abstract_state);
+        return NULL;
+    }
+
+    return_abstract_state->cells_count = cells_count;
+
+    return_abstract_state->hull_over_polytopes = polytope_alloc(k_hull, n);
+    if (return_abstract_state->polytopes == NULL) {
+        free (return_abstract_state);
+        return NULL;
+    }
+
+    return return_abstract_state;
+};
+
+/**
+ * "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
+ */
+void abstract_state_free(abstract_state * abstract_state){
+    polytope_free(abstract_state->hull_over_polytopes);
+    for(int i = 0; i< abstract_state->cells_count; i++){
+        cell_free(abstract_state->cells[i]);
+    }
+    for(int i = 0; i< abstract_state->cells_count; i++){
+        polytope_free(abstract_state->polytopes[i]);
+    }
+    free(abstract_state->transitions_out);
+    free(abstract_state->transitions_in);
+    free(abstract_state->cells);
+    free(abstract_state->polytopes);
+    free(abstract_state);
 
 };
 
@@ -291,10 +360,12 @@ void cdd_minimize(dd_PolyhedraPtr *original, dd_PolyhedraPtr *minimized){
 
     min_matrix=dd_MatrixSubmatrix(orig_matrix, redrows);
 
+    set_free(redrows);
     linrows=dd_ImplicitLinearityRows(min_matrix, &err);
 
     set_card(linrows);
     set_uni(min_matrix->linset, min_matrix->linset, linrows);
+    set_free(linrows);
     /* add the implicit linrows to the given linearity rows */
 
     dd_WriteMatrix(stdout, min_matrix);

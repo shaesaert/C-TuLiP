@@ -5,11 +5,16 @@
 #ifndef CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H
 #define CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H
 
+#include <math.h>
+#include <gsl/gsl_vector_double.h>
+#include <gsl/gsl_matrix.h>
 #include "cimple_gsl_library_extension.h"
 #include <gurobi_c.h>
 #include <polka/poly.h>
 #include "setoper.h"
 #include <cdd.h>
+#include "cimple_auxiliary_functions.h"
+
 
 /**
  * H left side of polytope (sometimes noted A or L)
@@ -27,16 +32,6 @@ typedef struct polytope{
 
 }polytope;
 
-/**
- * list of vectors
- *
- * Idea: list of matrix row views, to build an easily changeable (reduced) matrix/polytope
- */
-typedef struct polytope_list{
-    gsl_vector *vector;
-    double value;
-    struct polytope_list* node;
-}polytope_list;
 
 /**
  * @brief "Constructor" Dynamically allocates the space a polytope needs
@@ -52,37 +47,74 @@ struct polytope *polytope_alloc(size_t k, size_t n);
  */
 void polytope_free(polytope *polytope);
 
+
 /**
- * Convex region of several (number_of_polytopes) polytopes (array of polytopes**)
- * hull_of_region is the convex hull of polytopes in that region
+ * Subdivision of abstract state containing additionally to the polytope also safe mode instructions
+ * The array of polytopes "polytope **safe_mode" contains N polytopes the system has to go through to reach the invariant set
+ */
+typedef struct cell{
+
+    polytope **safe_mode;
+    polytope *polytope_description;
+
+}cell;
+
+/**
+ * @brief "Constructor" Dynamically allocates the space a cell needs
+ * @param k cell.polytope.H.size1 == G.size
+ * @param n cell.polytope.HH.size2
+ * @return
+ */
+struct cell *cell_alloc(size_t k,
+                        size_t n,
+                        int time_horizon);
+
+/**
+ * @brief "Destructor" Deallocates the dynamically allocated memory of the cell
+ * @param cell
+ */
+void cell_free(cell *cell);
+
+/**
+ * Convex region of several (cells_count) polytopes (array of polytopes**)
+ * hull_over_polytopes is the convex hull of polytopes in that abstract state
  * hull.A = NULL if only one polytope exists in that region
  */
-typedef struct region_of_polytopes{
+typedef struct abstract_state{
 
-    int number_of_polytopes;
+    int cells_count;
+    int* transitions_in;
+    int* transitions_out;
+    cell **cells;
     polytope **polytopes;
-    polytope *hull_of_region;
+    polytope *hull_over_polytopes;
 
-}region_of_polytopes;
+}abstract_state;
 
 /**
  * @brief "Constructor" Dynamically allocates the space a region of polytope needs
  *
- * Allocates memory space according to the number_of_polytopes and their respective sizes
+ * Allocates memory space according to the cells_count and their respective sizes
  *
- * @param k Array with the number of rows of each polytope dim([number_of_polytopes])
+ * @param k Array with the number of rows of each polytope dim([cells_count])
  * @param k_hull number of rows of convex hull polytope of the region
  * @param n system_dynamics size (e.g. s_dyn.A.size1)
- * @param number_of_polytopes
+ * @param cells_count
  * @return
  */
-struct region_of_polytopes *region_of_polytopes_alloc(size_t k[],size_t k_hull, size_t n, int number_of_polytopes);
+struct abstract_state *abstract_state_alloc(size_t *k,
+                                            size_t k_hull,
+                                            size_t n,
+                                            int trans_in_count,
+                                            int trans_out_count,
+                                            int cells_count,
+                                            int time_horizon);
 
 /**
  * @brief "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
- * @param region_of_polytopes
+ * @param abstract_state
  */
-void region_of_polytopes_free(region_of_polytopes * region_of_polytopes);
+void abstract_state_free(abstract_state * abstract_state);
 
 /**
  * @brief Converts two C arrays to a polytope consistent of a left side matrix (i.e. H) and right side vector (i.e. G)
