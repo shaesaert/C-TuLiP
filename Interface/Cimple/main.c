@@ -1,10 +1,9 @@
 #include "cimple_c_from_py.h"
 #include "setoper.h"
 #include <cdd.h>
+#include <gsl/gsl_matrix.h>
 
 int main(){
-
-    polka_initialize(false,5,100);
 
     dd_set_global_constants();
     // Initialize state:
@@ -15,6 +14,7 @@ int main(){
 
     system_alloc(&now, &s_dyn, &f_cost, &d_dyn);
     system_init(now, s_dyn, f_cost, d_dyn);
+
 
     double sec = 2;
     ACT(3, now, d_dyn, s_dyn, f_cost, sec);
