@@ -10,7 +10,6 @@
 #include <gsl/gsl_matrix.h>
 #include "cimple_gsl_library_extension.h"
 #include <gurobi_c.h>
-#include <polka/poly.h>
 #include "setoper.h"
 #include <cdd.h>
 #include "cimple_auxiliary_functions.h"
@@ -133,16 +132,6 @@ void polytope_from_arrays(polytope *polytope, double *left_side, double *right_s
  * @return 0 if state is not in polytope or 1 if it is
  */
 int polytope_check_state(polytope *polytope, gsl_vector *x);
-
-/**
- * @brief Transforms a polytope from gsl format to a polka constraints matrix
- * @param new empty polka matrix
- * @param original filled cimple polytope
- */
-void polytope_to_constraints(matrix_t *new, polytope *original);
-
-
-void polytope_from_constraints(polytope *new, matrix_t *original);
 
 int polytope_to_constraints_gurobi(polytope *constraints, GRBmodel *model, size_t N);
 

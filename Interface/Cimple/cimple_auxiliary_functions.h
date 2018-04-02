@@ -1,7 +1,3 @@
-//
-// Created by be107admin on 3/30/18.
-//
-
 #ifndef CIMPLE_CIMPLE_AUXILIARY_FUNCTIONS_H
 #define CIMPLE_CIMPLE_AUXILIARY_FUNCTIONS_H
 
@@ -14,6 +10,8 @@
  */
 #define N_ELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 
+#include <stdio.h>
+#include <string.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <math.h>

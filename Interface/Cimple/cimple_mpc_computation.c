@@ -1,7 +1,3 @@
-//
-// Created by jonathan on 1/5/18.
-//
-
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector_double.h>
 #include "cimple_mpc_computation.h"

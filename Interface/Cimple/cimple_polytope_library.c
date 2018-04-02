@@ -213,50 +213,6 @@ void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new){
     dd_FreeMatrix(constraints);
 
 };
-void polytope_to_constraints(matrix_t *new,
-                             polytope *original){
-    for(size_t i = 0; i<original->H->size1; i++){
-        pkint_set_si(new->p[i][0], 1);
-        double g_i_d = gsl_vector_get(original->G, i);
-            g_i_d = g_i_d*1000;
-            g_i_d = round(g_i_d);
-        int g_i = (int) g_i_d;
-        pkint_set_si(new->p[i][1], g_i);
-        for (size_t j = 0; j < original->H->size2; j++) {
-            double h_i_j_d = gsl_matrix_get(original->H, i, j);
-                h_i_j_d = h_i_j_d*-1000;
-                h_i_j_d = round(h_i_j_d);
-            int h_i_j = (int) h_i_j_d;
-            pkint_set_si(new->p[i][j+2], h_i_j);
-        }
-    }
-};
-
-void polytope_from_constraints(polytope *new,
-                               matrix_t *original){
-    for(size_t i = 0; i<original->nbrows; i++){
-        double norm = (double)(original->p[i][1].rep);
-        if(norm<0){
-            norm = norm*(-1);
-        }
-        double g_i;
-        if(norm!=0){
-             g_i = (double)(original->p[i][1].rep)/norm;
-        }else{
-            g_i = (double)(original->p[i][1].rep);
-        }
-        gsl_vector_set(new->G,i, g_i);
-        for (size_t j = 0; j < new->H->size2; ++j) {
-            double h_i_j;
-            if(norm!=0){
-                h_i_j = (double)(original->p[i][j+2].rep)/(-norm);
-            }else{
-                h_i_j = (double)(original->p[i][j+2].rep);
-            }
-            gsl_matrix_set(new->H,i,j, h_i_j);
-        }
-    }
-};
 
 int polytope_to_constraints_gurobi(polytope *constraints,
                                    GRBmodel *model,
