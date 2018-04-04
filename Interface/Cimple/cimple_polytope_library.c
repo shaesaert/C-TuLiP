@@ -80,12 +80,22 @@ void cell_free(cell *cell){
 struct abstract_state *abstract_state_alloc(size_t *k,
                                             size_t k_hull,
                                             size_t n,
-                                            int trans_in_count,
-                                            int trans_out_count,
+                                            int transitions_in_count,
+                                            int transitions_out_count,
                                             int cells_count,
                                             int time_horizon){
 
     struct abstract_state *return_abstract_state = malloc (sizeof (struct abstract_state));
+
+    /*
+     * Default values: at initialization safe mode is not yet computed.
+     * Thus it is assumed that the state does not contain an invariant set => invariant_set = NULL
+     * next_state (next state the system has to transition to reach an invariant set) is unknown at initialization.
+     */
+
+    return_abstract_state->next_state = NULL;
+    return_abstract_state->invariant_set = NULL;
+    return_abstract_state->distance_invariant_set = NULL;
 
     return_abstract_state->cells = malloc(sizeof(cell)*cells_count);
     if (return_abstract_state->cells == NULL) {
@@ -101,19 +111,23 @@ struct abstract_state *abstract_state_alloc(size_t *k,
         }
     }
 
-    return_abstract_state->transitions_in = malloc(sizeof(int) * trans_in_count);
+    return_abstract_state->cells_count = cells_count;
+
+    return_abstract_state->transitions_in = malloc(sizeof(struct abstract_state) * transitions_in_count);
     if (return_abstract_state->transitions_in == NULL) {
         free (return_abstract_state);
         return NULL;
     }
 
-    return_abstract_state->transitions_out = malloc(sizeof(int) * trans_out_count);
+    return_abstract_state->transitions_in_count = transitions_in_count;
+
+    return_abstract_state->transitions_out = malloc(sizeof(struct abstract_state) * transitions_out_count);
     if (return_abstract_state->transitions_out == NULL) {
         free (return_abstract_state);
         return NULL;
     }
 
-    return_abstract_state->cells_count = cells_count;
+    return_abstract_state->transitions_out_count = transitions_out_count;
 
     return_abstract_state->hull_over_polytopes = polytope_alloc(k_hull, n);
     if (return_abstract_state->hull_over_polytopes == NULL) {

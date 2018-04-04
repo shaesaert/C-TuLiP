@@ -6,8 +6,14 @@
 #define CIMPLE_CIMPLE_SAFE_MODE_H
 
 #include "cimple_controller.h"
+#include "cimple_auxiliary_functions.h"
+typedef struct burn_graph_node {
+    abstract_state *state;
+    struct burn_graph_node * next;
+} burn_graph_node;
 
-
+abstract_state* fastest_burn(abstract_state **transitions,
+                             int transitions_count);
 int check_backup(gsl_vector *x_real,
                  gsl_vector *u,
                  gsl_matrix *A,

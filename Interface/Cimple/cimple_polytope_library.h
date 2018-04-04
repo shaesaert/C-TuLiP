@@ -74,6 +74,7 @@ struct cell *cell_alloc(size_t k,
  */
 void cell_free(cell *cell);
 
+
 /**
  * Convex region of several (cells_count) polytopes (array of polytopes**)
  * hull_over_polytopes is the convex hull of polytopes in that abstract state
@@ -81,11 +82,20 @@ void cell_free(cell *cell);
  */
 typedef struct abstract_state{
 
-    int cells_count;
-    int* transitions_in;
-    int* transitions_out;
-    cell **cells;
     polytope *hull_over_polytopes;
+
+    int cells_count;
+    cell **cells;
+
+    int transitions_in_count;
+    struct abstract_state** transitions_in;
+    int transitions_out_count;
+    struct abstract_state** transitions_out;
+
+    int distance_invariant_set;
+    struct abstract_state * next_state;
+    cell *invariant_set;
+
 
 }abstract_state;
 
@@ -103,8 +113,8 @@ typedef struct abstract_state{
 struct abstract_state *abstract_state_alloc(size_t *k,
                                             size_t k_hull,
                                             size_t n,
-                                            int trans_in_count,
-                                            int trans_out_count,
+                                            int transitions_in_count,
+                                            int transitions_out_count,
                                             int cells_count,
                                             int time_horizon);
 

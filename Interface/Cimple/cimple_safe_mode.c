@@ -1,114 +1,284 @@
-////
-//// Created by be107admin on 3/22/18.
-////
-//
-//#include "cimple_safe_mode.h"
-//
-//polytope * compute_invariant_set(){
-//
-//    polytope *Y;
-//    return Y;
-//
-//};
-//
-//int set_invariant_set(polytope* X){
-//
-//    polytope *Y;
-//    X.safemode = compute_safe_mode();
-//    Y = compute_invariant_set();
-//
-//    if(Y == NULL){
-//        return 0;
-//    }
-//    return 1;
-//};
-//
-//polytope ** find_invariant_sets(discrete_dynamics *d_dyn){
-//
-//    polytope ** sm_polytopes;
-//
-//    for(int i = 0; i< d_dyn->abstract_states_count; i++){
-//        for(int j=0; j<d_dyn->regions[i]->cells_count; j++){
-//
-//            int found = 0;
-//            found = set_invariant_set(d_dyn->regions[i]->polytopes[j]);
-//            if(found ==1){
-//                //append to sm_polytopes
-//            }
-//
-//        }
-//    }
-//    return sm_polytopes;
-//
-//};
-//
-//void burning_method(discrete_dynamics *d_dyn, int* seeds, int seed_count) {
-//
-//    //foreach seed in seeds
-//    for(int i=0; i<seed_count; i++){
-//        abstract_state *seed = d_dyn->regions[seeds[i]];
-//        for(int j = 0; seed->cells_count; j++){
-//
-//        }
-//    }
-//    //    forall (seed in seeds){
-//    int transtion_count = 0;
-////    forall (transition in seed.transitions){
-////      transition_count ++;
-////      if(transition.poly_origin.safemode == NULL){
-////          transition.poly_origin.safemode = previous_step();
-////          oute_layers[seed].append(poly_origin);
-////      }
-////    }
-////    if(transition_count == 0){
-////      seed_burnt[seed] = true;
-////    }
-////    }
-//
-//    bool graph_burnt = false;
-//
-//    while(!graph_burnt){
-//        forall( tree in trees){
-//            int transitions_count = 0;
-//            forall(polytope in tree){
-//                if(polytope.safemode == NULL){
-//                    compute_safe_mode();
-//                }
-//
-//                forall(transition in polytope.transitions){
-//                    if(transition.origin.safemode ==NULL){
-//                        insert_in_tree();
-//                        transitions_count++;
-//                    }
-//                }
-//                remove_from_tree();
-//            }
-//            if(transitions_count == 0){
-//                tree_burnt[tree] = true;
-//            }
-//         }
-//
-//        forall( tree in trees){
-//            if(tree_burnt[tree] == false){
-//                graph_burnt = true;
-//                break;
-//            }
-//         }
-//
-//    }
-//}
-//
-//void compute_safe_mode(discrete_dynamics *d_dyn){
-//
-//    polytope** sm_polytopes = find_invariant_sets(d_dyn);
-//
-//    burning_method(sm_polytopes);
-//
-//};
-//
-//void apply_safe_mode(current_state *now, polytope* current_polytope){
-//
-//};
+#include "cimple_safe_mode.h"
+
+/**
+ * Adds a node to the beginnin of the list
+ */
+void push_burn_node(burn_graph_node ** head, abstract_state *state) {
+    burn_graph_node * new_node;
+    new_node = malloc(sizeof(burn_graph_node));
+
+    new_node->state = state;
+    new_node->next = *head;
+    *head = new_node;
+};
+
+/**
+ * Given a set of abstract states (associated with the transitions going out from a state, where the function was called)
+ * it finds the shortest distance to a state with an invariant set.
+ */
+abstract_state* fastest_burn(abstract_state **transitions,
+                             int transitions_count){
+    abstract_state* fastest = transitions[0];
+    int distance = transitions[0]->distance_invariant_set;
+    for(int i = 1; i<transitions_count; i++){
+        if(transitions[i]->distance_invariant_set<distance){
+            distance = transitions[i]->distance_invariant_set;
+            fastest = transitions[i];
+        }
+    }
+    return fastest;
+};
+
+/**
+ * Given two polytopes, computes one step backwards from second polytope towards first polytope.
+ */
+polytope* previous_polytope(polytope *P1,
+                            polytope *P2,
+                            system_dynamics *s_dyn){
+    // one step backwards in time
+
+    size_t n = s_dyn->A->size2;  // State space dimension;
+    size_t m = s_dyn->B->size2;  // Input space dimension;
+    size_t p = s_dyn->E->size2;  // Disturbance space dimension;
+
+
+    size_t sum_dim = P1->H->size1+P2->H->size1;
+
+    polytope *precedent_polytope = polytope_alloc(sum_dim+s_dyn->U_set->H->size1, n+m);
+
+    // FOR precedent_polytope G
+    /*
+     *     |   P1_G      |
+     * G = |P2_G - P2_H.K|
+     *     |     0       |
+     */
+    gsl_vector_set_zero(precedent_polytope->G);
+    gsl_vector_view G_P1 = gsl_vector_subvector(precedent_polytope->G, 0, P1->G->size);
+    gsl_vector_memcpy(&G_P1.vector, P1->G);
+    gsl_vector_view G_P2 = gsl_vector_subvector(precedent_polytope->G, P1->G->size,P2->G->size);
+    gsl_vector_memcpy(&G_P2.vector, P2->G);
+    gsl_vector * P2_HdotK = gsl_vector_alloc(P2->G->size);
+    gsl_blas_dgemv(CblasNoTrans,1.0, P2->H, s_dyn->K, 0.0, P2_HdotK);
+    gsl_vector_sub(&G_P2.vector, P2_HdotK);
+    //Clean up!
+    gsl_vector_free(P2_HdotK);
+
+    // FOR Dist
+    /*
+     *         |  0   |
+     * Dist =  |P2_H.E|
+     *         |  0   |
+     */
+    gsl_matrix *Dist = gsl_matrix_alloc(sum_dim+s_dyn->U_set->H->size1, p);
+    gsl_matrix_set_zero(Dist);
+    gsl_matrix_view Dist_P2 = gsl_matrix_submatrix(Dist, P1->H->size1, 0, P2->H->size1, Dist->size2);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->E, 0.0, &Dist_P2.matrix);
+
+    // FOR precedent_polytope H
+    /*
+     *  H = |H1   0 |
+     *      |H2A H2B|
+     *      |  HU   |
+     */
+    gsl_matrix_set_zero(precedent_polytope->H);
+
+    gsl_matrix_view H_P1 = gsl_matrix_submatrix(precedent_polytope->H, 0, 0, P1->H->size1, n);
+    gsl_matrix_memcpy(&H_P1.matrix, P1->H);
+    gsl_matrix_view H_P2_1 = gsl_matrix_submatrix(precedent_polytope->H, P1->H->size1, 0, P2->H->size1, n);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->A, 0.0, &H_P2_1.matrix);
+    gsl_matrix_view H_P2_2 = gsl_matrix_submatrix(precedent_polytope->H, P1->H->size1, n, P2->H->size1, m);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->B, 0.0, &H_P2_2.matrix);
+
+    if (s_dyn->U_set->H->size2 == m){
+        gsl_matrix_view HU = gsl_matrix_submatrix(precedent_polytope->H,sum_dim, n, s_dyn->U_set->H->size1,m);
+        gsl_matrix_memcpy(&HU.matrix,s_dyn->U_set->H);
+    } else if (s_dyn->U_set->H->size2 == m+n){
+        // transforms U_set.H from |constraints_ input constraints_state| to |constraints_state constraints_input|
+        /*
+         * |m m m m n n n|    |n n n m m m m|
+         * |m m m m n n n| => |n n n m m m m|
+         * |m m m m n n n|    |n n n m m m m|
+         */
+        gsl_matrix_view HU = gsl_matrix_submatrix(precedent_polytope->H,sum_dim, n, s_dyn->U_set->H->size1,m);
+        gsl_matrix * exchange_matrix = gsl_matrix_alloc(n+m,n+m);
+        gsl_matrix_set_zero(exchange_matrix);
+        gsl_matrix_view eye_m = gsl_matrix_submatrix(exchange_matrix, 0, n, m, m);
+        gsl_matrix_set_identity(&eye_m.matrix);
+        gsl_matrix_view eye_n = gsl_matrix_submatrix(exchange_matrix, m, 0, n, n);
+        gsl_matrix_set_identity(&eye_n.matrix);
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, s_dyn->U_set->H,exchange_matrix, 0.0, &HU.matrix);
+    }
+
+    // Get disturbance sets
+    gsl_vector * D_hat = gsl_vector_alloc(precedent_polytope->G->size);
+    gsl_vector_set_zero(D_hat);
+    if (!(gsl_matrix_isnull(Dist))){
+        gsl_matrix * maxima = gsl_matrix_alloc(Dist->size1, s_dyn->aux_matrices->D_one_step->size2);
+        //Calculate Dist.Dextremes (extremum of each dimension of each polytope)
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Dist, s_dyn->aux_matrices->D_one_step,0.0, maxima);
+        //find the maximum for each dimension of each polytope
+        for(size_t i = 0; i < sum_dim; i++){
+            gsl_vector_view max_row = gsl_matrix_row(maxima, i);
+            gsl_vector_set(D_hat, i, gsl_vector_max(&max_row.vector));
+        }
+        gsl_matrix_free(maxima);
+    } else{
+        gsl_vector_set_zero(D_hat);
+    }
+    gsl_matrix_free(Dist);
+    gsl_vector_sub(precedent_polytope->G, D_hat);
+    //Clean up!
+    gsl_vector_free(D_hat);
+
+    return precedent_polytope;
+};
+
+/**
+ * Computes N-1 polytopes the system has to transition to go from origin to target in N time steps
+ */
+polytope ** compute_path(polytope *origin,
+                         polytope *target,
+                         system_dynamics *s_dyn,
+                         int N){
+
+    polytope **path = malloc(sizeof(polytope) * N);
+
+    path[N] = target;
+    path[0] = origin;
+    for(int j = N-1; j>0;j--){
+        path[j]=previous_polytope(origin, path[j+1], s_dyn);
+    }
+
+    return path;
+};
+
+polytope * compute_invariant_set(polytope* X){
+
+    polytope *Y = NULL;
+    return Y;
+
+};
+
+/**
+ * 1) Runs through all abstract states,
+ * 2) checks if invariant set is contained
+ * 3) sets path for all cells in those states containing an invariant set if possible
+ */
+burn_graph_node *set_invariant_sets(discrete_dynamics *d_dyn, system_dynamics *s_dyn){
+
+    int N = (int)d_dyn->time_horizon;
+
+    burn_graph_node * head_node = NULL;
+    head_node = malloc(sizeof(burn_graph_node));
+    head_node->state = NULL;
+    head_node->next = NULL;
+
+    for(int i = 0; i< d_dyn->abstract_states_count; i++){
+        bool found_set = false;
+        for(int j=0; j<d_dyn->regions[i]->cells_count; j++){
+            polytope *invariant_set = compute_invariant_set(d_dyn->regions[i]->cells[j]->polytope_description);
+            if(invariant_set != NULL){
+                found_set = true;
+                d_dyn->regions[i]->invariant_set = d_dyn->regions[i]->cells[j];
+                d_dyn->regions[i]->cells[j]->safe_mode = compute_path(d_dyn->regions[i]->cells[j]->polytope_description,
+                                                                      invariant_set,
+                                                                      s_dyn,
+                                                                      N);
+            }else{
+                d_dyn->regions[i]->cells[j]->safe_mode = NULL;
+            }
+        }
+        if(found_set){
+            if(d_dyn->regions[i]->next_state == d_dyn->regions[i]){
+                for(int j = 0; j < d_dyn->regions[i]->cells_count; j++){
+                    if(d_dyn->regions[i]->cells[j]->safe_mode == NULL){
+                        d_dyn->regions[i]->cells[j]->safe_mode = compute_path(d_dyn->regions[i]->cells[j]->polytope_description,
+                                                                              d_dyn->regions[i]->invariant_set->polytope_description,
+                                                                              s_dyn,
+                                                                              N);
+                    }
+                }
+            }
+            if (head_node->state == NULL) {
+                head_node->state = d_dyn->regions[i];
+            }else{
+                push_burn_node(&head_node,d_dyn->regions[i]);
+            }
+        }
+    }
+    return head_node;
+
+};
+
+/**
+ * Gets list of states containing invariant sets.
+ * Burns through transition system, setting all other safe mode paths.
+ */
+void burning_method(burn_graph_node *seeds, discrete_dynamics *d_dyn, system_dynamics *s_dyn) {
+
+    bool graph_burnt = false;
+    int N = (int)d_dyn->time_horizon;
+    burn_graph_node *current_burning = seeds;
+    int burning_round = 0;
+    while(!graph_burnt){
+        burning_round +=1;
+        burn_graph_node *next_burning = current_burning;
+        while (current_burning != NULL) {
+            if(current_burning->state->distance_invariant_set == NULL){
+                for(int i = 0; i<current_burning->state->cells_count;i++){
+                    if(current_burning->state->cells[i]->safe_mode == NULL){
+                        current_burning->state->cells[i]->safe_mode = compute_path(current_burning->state->cells[i]->polytope_description,
+                                                                                             current_burning->state->next_state->hull_over_polytopes,
+                                                                                             s_dyn,
+                                                                                             N);
+                    }
+
+                }
+                current_burning->state->distance_invariant_set = burning_round;
+            }
+            current_burning = current_burning->next;
+        }
+        while(next_burning != NULL){
+            for(int i = 0;i<next_burning->state->transitions_in_count;i++){
+                if(next_burning->state->transitions_in[i]->distance_invariant_set == NULL){
+                    push_burn_node(&current_burning,next_burning->state->transitions_in[i]);
+                }
+            }
+            next_burning = next_burning->next;
+        }
+        if(current_burning == NULL){
+            graph_burnt = true;
+        }
+    }
+    while (seeds !=NULL){
+        if(seeds->state->next_state != seeds->state){
+            abstract_state* fastest = fastest_burn(seeds->state->transitions_out,seeds->state->transitions_out_count);
+            for(int i = 0; i< seeds->state->cells_count; i++){
+                if(seeds->state->cells[i]->safe_mode == NULL){
+                    seeds->state->cells[i]->safe_mode = compute_path(seeds->state->cells[i]->polytope_description, fastest->hull_over_polytopes,s_dyn,N);
+                }
+            }
+        }
+        seeds = seeds->next;
+    }
+}
+
+/**
+ * Set the safe_mode path for every cell in every abstract_state:
+ * 1) Compute invariant sets
+ * 2) Find path towards invariant sets for other abstract_states
+ */
+void compute_safe_mode(discrete_dynamics *d_dyn, system_dynamics *s_dyn){
+
+    burn_graph_node * invariant_sets = set_invariant_sets(d_dyn, s_dyn);
+    burning_method(invariant_sets, d_dyn, s_dyn);
+    free(invariant_sets);
+};
+
+
+void apply_safe_mode(current_state *now, polytope* current_polytope){
+
+};
 //int check_backup(gsl_vector *x_real,
 //                 gsl_vector *u,
 //                 gsl_matrix *A,
@@ -139,107 +309,6 @@
 //        return 0;
 //    }
 //
-//};
-//
-//polytope* previous_polytope(polytope *P1,
-//                            polytope *P2,
-//                            system_dynamics *s_dyn){
-//    // one step backwards in time
-//
-//    size_t n = s_dyn->A->size2;  // State space dimension;
-//    size_t m = s_dyn->B->size2;  // Input space dimension;
-//    size_t p = s_dyn->E->size2;  // Disturbance space dimension;
-//
-//
-//    size_t sum_dim = P1->H->size1+P2->H->size1;
-//
-//    polytope *precedent_polytope = polytope_alloc(sum_dim+s_dyn->U_set->H->size1, n+m);
-//
-//    // FOR precedent_polytope G
-//    /*
-//     *     |   P1_G      |
-//     * G = |P2_G - P2_H.K|
-//     *     |     0       |
-//     */
-//    gsl_vector_set_zero(precedent_polytope->G);
-//    gsl_vector_view G_P1 = gsl_vector_subvector(precedent_polytope->G, 0, P1->G->size);
-//    gsl_vector_memcpy(&G_P1.vector, P1->G);
-//    gsl_vector_view G_P2 = gsl_vector_subvector(precedent_polytope->G, P1->G->size,P2->G->size);
-//    gsl_vector_memcpy(&G_P2.vector, P2->G);
-//    gsl_vector * P2_HdotK = gsl_vector_alloc(P2->G->size);
-//    gsl_blas_dgemv(CblasNoTrans,1.0, P2->H, s_dyn->K, 0.0, P2_HdotK);
-//    gsl_vector_sub(&G_P2.vector, P2_HdotK);
-//    //Clean up!
-//    gsl_vector_free(P2_HdotK);
-//
-//    // FOR Dist
-//    /*
-//     *         |  0   |
-//     * Dist =  |P2_H.E|
-//     *         |  0   |
-//     */
-//    gsl_matrix *Dist = gsl_matrix_alloc(sum_dim+s_dyn->U_set->H->size1, p);
-//    gsl_matrix_set_zero(Dist);
-//    gsl_matrix_view Dist_P2 = gsl_matrix_submatrix(Dist, P1->H->size1, 0, P2->H->size1, Dist->size2);
-//    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->E, 0.0, &Dist_P2.matrix);
-//
-//    // FOR precedent_polytope H
-//    /*
-//     *  H = |H1   0 |
-//     *      |H2A H2B|
-//     *      |  HU   |
-//     */
-//    gsl_matrix_set_zero(precedent_polytope->H);
-//
-//    gsl_matrix_view H_P1 = gsl_matrix_submatrix(precedent_polytope->H, 0, 0, P1->H->size1, n);
-//    gsl_matrix_memcpy(&H_P1.matrix, P1->H);
-//    gsl_matrix_view H_P2_1 = gsl_matrix_submatrix(precedent_polytope->H, P1->H->size1, 0, P2->H->size1, n);
-//    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->A, 0.0, &H_P2_1.matrix);
-//    gsl_matrix_view H_P2_2 = gsl_matrix_submatrix(precedent_polytope->H, P1->H->size1, n, P2->H->size1, m);
-//    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, P2->H, s_dyn->B, 0.0, &H_P2_2.matrix);
-//
-//    if (s_dyn->U_set->H->size2 == m){
-//        gsl_matrix_view HU = gsl_matrix_submatrix(precedent_polytope->H,sum_dim, n, s_dyn->U_set->H->size1,m);
-//        gsl_matrix_memcpy(&HU.matrix,s_dyn->U_set->H);
-//    } else if (s_dyn->U_set->H->size2 == m+n){
-//        // transforms U_set.H from |constraints_ input constraints_state| to |constraints_state constraints_input|
-//        /*
-//         * |m m m m n n n|    |n n n m m m m|
-//         * |m m m m n n n| => |n n n m m m m|
-//         * |m m m m n n n|    |n n n m m m m|
-//         */
-//        gsl_matrix_view HU = gsl_matrix_submatrix(precedent_polytope->H,sum_dim, n, s_dyn->U_set->H->size1,m);
-//        gsl_matrix * exchange_matrix = gsl_matrix_alloc(n+m,n+m);
-//        gsl_matrix_set_zero(exchange_matrix);
-//        gsl_matrix_view eye_m = gsl_matrix_submatrix(exchange_matrix, 0, n, m, m);
-//        gsl_matrix_set_identity(&eye_m.matrix);
-//        gsl_matrix_view eye_n = gsl_matrix_submatrix(exchange_matrix, m, 0, n, n);
-//        gsl_matrix_set_identity(&eye_n.matrix);
-//        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, s_dyn->U_set->H,exchange_matrix, 0.0, &HU.matrix);
-//    }
-//
-//    // Get disturbance sets
-//    gsl_vector * D_hat = gsl_vector_alloc(precedent_polytope->G->size);
-//    gsl_vector_set_zero(D_hat);
-//    if (!(gsl_matrix_isnull(Dist))){
-//        gsl_matrix * maxima = gsl_matrix_alloc(Dist->size1, s_dyn->aux_matrices->D_one_step->size2);
-//        //Calculate Dist.Dextremes (extremum of each dimension of each polytope)
-//        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Dist, s_dyn->aux_matrices->D_one_step,0.0, maxima);
-//        //find the maximum for each dimension of each polytope
-//        for(size_t i = 0; i < sum_dim; i++){
-//            gsl_vector_view max_row = gsl_matrix_row(maxima, i);
-//            gsl_vector_set(D_hat, i, gsl_vector_max(&max_row.vector));
-//        }
-//        gsl_matrix_free(maxima);
-//    } else{
-//        gsl_vector_set_zero(D_hat);
-//    }
-//    gsl_matrix_free(Dist);
-//    gsl_vector_sub(precedent_polytope->G, D_hat);
-//    //Clean up!
-//    gsl_vector_free(D_hat);
-//
-//    return precedent_polytope;
 //};
 //
 //void safe_mode_polytopes(system_dynamics *s_dyn,

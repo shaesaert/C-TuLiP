@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <stddef.h>
 #include <math.h>
+#include <stdbool.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 
