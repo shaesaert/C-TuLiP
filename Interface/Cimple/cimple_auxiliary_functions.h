@@ -35,4 +35,11 @@ double randn (double mu,
  * @return
  */
 void * timer(void * arg);
+
+/**
+ * @brief Breaks infinte loop in a pthread
+ * @param mtx
+ * @return
+ */
+int needQuit(pthread_mutex_t *mtx)
 #endif //CIMPLE_CIMPLE_AUXILIARY_FUNCTIONS_H

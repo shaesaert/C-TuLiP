@@ -133,7 +133,36 @@ void abstract_state_free(abstract_state * abstract_state);
  * @param right_side C array to be converted to right side vector
  * @param name name of polytope, will be displayed to user terminal to inform about successfull initialization
  */
-void polytope_from_arrays(polytope *polytope, double *left_side, double *right_side, double *cheby, char*name);
+void polytope_from_arrays(polytope *polytope,
+                          double *left_side,
+                          double *right_side,
+                          double *cheby,
+                          char*name);
+
+/**
+ * @brief Converts a polytope in gsl form to cdd constraint form
+ * @param original
+ * @param err
+ * @return
+ */
+dd_PolyhedraPtr polytope_to_cdd(polytope *original,
+                                dd_ErrorType *err);
+
+/**
+ * @brief Converts a polytope in cdd constraint form to gsl form
+ * @param original
+ * @return
+ */
+polytope* cdd_to_polytope(dd_PolyhedraPtr *original);
+
+/**
+ * @brief Generate a polytope representing a scaled unit cube
+ * @param scale
+ * @param dimensions
+ * @return gsl polytope
+ */
+polytope * polytope_scaled_unit_cube(double scale,
+                                     int dimensions);
 
 /**
  * @brief Checks whether a state is in a certain polytope
@@ -141,23 +170,101 @@ void polytope_from_arrays(polytope *polytope, double *left_side, double *right_s
  * @param x state to be checked
  * @return 0 if state is not in polytope or 1 if it is
  */
-int polytope_check_state(polytope *polytope, gsl_vector *x);
+bool polytope_check_state(polytope *polytope, gsl_vector *x);
 
-int polytope_to_constraints_gurobi(polytope *constraints, GRBmodel *model, size_t N);
+/**
+ * @brief Check whether P1 \ subset P2
+ * @param P1
+ * @param P2
+ * @return
+ */
+bool polytope_is_subset(polytope *P1,
+                        polytope *P2);
 
-void polytope_to_cdd_constraints(polytope *original, dd_PolyhedraPtr *new, dd_ErrorType *err);
-void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new);
+/**
+ * @brief Unite inequalities of P1 and P2 in new polytope and remove redundancies
+ * @param P1
+ * @param P2
+ * @return
+ */
+polytope * polytope_unite_inequalities(polytope *P1,
+                                       polytope *P2);
 
+
+/**
+ * @brief Project gsl polytope of n+ dimensions to the first n dimensions
+ * @param original
+ * @param n
+ * @return gsl polytope
+ */
+polytope* polytope_projection(polytope * original,
+                              size_t n);
+
+/**
+ * @brief Remove redundancies from gsl polytope inequalities
+ * @param original
+ * @return
+ */
+polytope * polytope_minimize(polytope *original);
+
+/**
+ * @brief Compute Minkowski sum of two polytopes
+ * @param P1
+ * @param P2
+ * @return
+ */
+polytope * polytope_minkowski(polytope *P1,
+                              polytope *P2);
+
+/**
+ * @brief Compute Pontryagin difference of two polytopes C=A-B s.t.:
+ * A-B = {c \in A-B| c+b \in A, \forall b \in B}
+ * @param P1
+ * @param P2
+ * @return
+ */
+polytope * polytope_pontryagin(polytope* P1,
+                               polytope* P2);
+
+/**
+ * @brief Set up constraints in quadratic problem for GUROBI
+ * @param constraints
+ * @param model
+ * @param N
+ * @return
+ */
+int polytope_to_constraints_gurobi(polytope *constraints,
+                                   GRBmodel *model,
+                                   size_t N);
+
+/**
+ * @brief Generate a polytope representing a scaled unit cube
+ * @param scale
+ * @param dimensions
+ * @return cdd polytope
+ */
+dd_PolyhedraPtr cdd_scaled_unit_cube(double scale,
+                                     int dimensions);
+
+
+/**
+ * @brief Project cdd polytope of n+ dimensions to the first n dimensions
+ * @param original
+ * @param n
+ * @return cdd polytope
+ */
 void cdd_projection(dd_PolyhedraPtr *original,
                     dd_PolyhedraPtr *new,
                     size_t n,
                     dd_ErrorType *err);
-void polytope_projection(polytope * original,
-                         polytope * new,
-                         size_t n);
 
-void cdd_minimize(dd_PolyhedraPtr *original, dd_PolyhedraPtr *minimized);
-polytope * polytope_minimize(polytope *original);
-polytope * pontryagin_difference(polytope* A, polytope* B);
+/**
+ * @brief Remove redundancies from cdd polytope inequalities
+ * @param original
+ * @return cdd polytope
+ */
+dd_PolyhedraPtr cdd_minimize(dd_PolyhedraPtr *original,
+                             dd_ErrorType *err);
+
 
 #endif //CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H

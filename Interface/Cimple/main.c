@@ -16,9 +16,8 @@ int main(){
     system_init(now, s_dyn, f_cost, d_dyn);
 
 
-    double sec = 2;
-    ACT(3, now, d_dyn, s_dyn, f_cost, sec);
-
+//    double sec = 2;
+//    ACT(3, now, d_dyn, s_dyn, f_cost, sec);
 
     system_dynamics_free(s_dyn);
     discrete_dynamics_free(d_dyn);

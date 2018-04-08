@@ -2,13 +2,16 @@
 // Created by be107admin on 9/25/17.
 //
 
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
 #include "cimple_polytope_library.h"
 
 /**
  * "Constructor" Dynamically allocates the space a polytope needs
  */
 struct polytope *polytope_alloc(size_t k,
-                                size_t n){
+                                size_t n)
+{
 
     struct polytope *return_polytope = malloc (sizeof (struct polytope));
 
@@ -36,18 +39,21 @@ struct polytope *polytope_alloc(size_t k,
 /**
  * "Destructor" Deallocates the dynamically allocated memory of the polytope
  */
-void polytope_free(polytope *polytope){
+void polytope_free(polytope *polytope)
+{
     gsl_matrix_free(polytope->H);
     gsl_vector_free(polytope->G);
     free(polytope->chebyshev_center);
     free(polytope);
 };
+
 /**
  * "Constructor" Dynamically allocates the space a polytope needs
  */
 struct cell *cell_alloc(size_t k,
                         size_t n,
-                        int time_horizon){
+                        int time_horizon)
+{
 
     struct cell *return_cell = malloc (sizeof (struct cell));
 
@@ -68,12 +74,14 @@ struct cell *cell_alloc(size_t k,
 /**
  * "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
  */
-void cell_free(cell *cell){
+void cell_free(cell *cell)
+{
     polytope_free(cell->polytope_description);
     free(cell->safe_mode);
     free(cell);
 
 };
+
 /**
  * "Constructor" Dynamically allocates the space a region of polytope needs
  */
@@ -83,7 +91,8 @@ struct abstract_state *abstract_state_alloc(size_t *k,
                                             int transitions_in_count,
                                             int transitions_out_count,
                                             int cells_count,
-                                            int time_horizon){
+                                            int time_horizon)
+{
 
     struct abstract_state *return_abstract_state = malloc (sizeof (struct abstract_state));
 
@@ -160,7 +169,8 @@ void polytope_from_arrays(polytope *polytope,
                           double *left_side,
                           double *right_side,
                           double *cheby,
-                          char*name){
+                          char*name)
+{
 
     gsl_matrix_from_array(polytope->H, left_side, name);
     gsl_vector_from_array(polytope->G, right_side, name);
@@ -170,26 +180,12 @@ void polytope_from_arrays(polytope *polytope,
 };
 
 /**
- * Checks whether a state is in a certain polytope
- */
-int polytope_check_state(polytope *polytope,
-                         gsl_vector *x){
-    gsl_vector * result = gsl_vector_alloc(polytope->G->size);
-    gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
-    for(size_t i = 0; i< polytope->G->size; i++){
-        if(gsl_vector_get(result, i) > gsl_vector_get(polytope->G, i)){
-            gsl_vector_free(result);
-            return 0;
-        }
-    }
-    gsl_vector_free(result);
-    return 1;
-};
-
-/*
  * Converts a polytope in gsl form to cdd constraint form
  */
-void polytope_to_cdd_constraints(polytope *original, dd_PolyhedraPtr *new, dd_ErrorType *err){
+dd_PolyhedraPtr polytope_to_cdd(polytope *original,
+                                dd_ErrorType *err)
+{
+    dd_PolyhedraPtr new;
     dd_MatrixPtr constraints;
     constraints = dd_CreateMatrix(original->H->size1, (original->H->size2+1));
     for (size_t k = 0; k < (original->H->size1); k++) {
@@ -205,15 +201,18 @@ void polytope_to_cdd_constraints(polytope *original, dd_PolyhedraPtr *new, dd_Er
     constraints->representation=dd_Inequality;
     *new = dd_DDMatrix2Poly(constraints, err);
     dd_FreeMatrix(constraints);
+    return new;
 };
 
-/*
+/**
  * Converts a polytope in cdd constraint form to gsl form
  */
-void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new){
+polytope * cdd_to_polytope(dd_PolyhedraPtr *original)
+{
 
     dd_MatrixPtr constraints;
     constraints = dd_CopyInequalities(*original);
+    polytope *new = polytope_alloc(constraints->rowsize, constraints->colsize-1);
     for (size_t k = 0; k < (constraints->rowsize); k++) {
         double value = dd_get_d(constraints->matrix[k][0]);
         gsl_vector_set(new->G, k, value);
@@ -225,12 +224,235 @@ void cdd_constraints_to_polytope(dd_PolyhedraPtr *original, polytope * new){
         }
     }
     dd_FreeMatrix(constraints);
+    return new;
 
 };
 
+/**
+ * Generate a polytope representing a scaled unit cube
+ */
+polytope * polytope_scaled_unit_cube(double scale,
+                                     int dimensions)
+{
+
+    dd_PolyhedraPtr cube = cdd_scaled_unit_cube(scale, dimensions);
+    polytope * return_cube = cdd_to_polytope(&cube);
+    dd_FreePolyhedra(cube);
+
+    return return_cube;
+};
+
+/**
+ * Checks whether a state is in a certain polytope
+ */
+bool polytope_check_state(polytope *polytope,
+                         gsl_vector *x)
+{
+    gsl_vector * result = gsl_vector_alloc(polytope->G->size);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, polytope->H, x, 0.0, result);
+    for(size_t i = 0; i< polytope->G->size; i++){
+        if(gsl_vector_get(result, i) > gsl_vector_get(polytope->G, i)){
+            gsl_vector_free(result);
+            return false;
+        }
+    }
+    gsl_vector_free(result);
+    return true;
+};
+
+/**
+ * Checks whether polytope P1 \ issubset P2
+ */
+bool polytope_is_subset(polytope *P1,
+                        polytope *P2)
+{
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr first = polytope_to_cdd(P1, &err);
+    dd_MatrixPtr verticesFirst = dd_CopyGenerators(first);
+    gsl_vector *vertex = gsl_vector_alloc(P1->H->size2);
+    gsl_vector_set_zero(vertex);
+    int is_included;
+    bool is_subset = true;
+    for(int i = 0; i<verticesFirst->rowsize;i++){
+        double valueFirst0 = dd_get_d(verticesFirst->matrix[i][0]);
+        if(valueFirst0 == 1){
+            for(int j = 0; j<vertex->size; j++){
+                double valueFirstj = dd_get_d(verticesFirst->matrix[i][j+1])
+                gsl_vector_set(vertex,(size_t)j, valueFirstj);
+            }
+            is_included = polytope_check_state(P2,vertex);
+            if(!is_included){
+                is_subset = false;
+                break;
+            }
+        }
+    }
+    gsl_vector_free(vertex);
+    dd_FreePolyhedra(first);
+    dd_FreeMatrix(verticesFirst);
+    return is_subset;
+};
+
+/**
+ * Unite inequalities of P1 and P2 in new polytope and remove redundancies
+ */
+polytope * polytope_unite_inequalities(polytope *P1,
+                                       polytope *P2)
+{
+    polytope *united = polytope_alloc(P1->H->size1+P2->H->size1,P1->H->size2);
+    //Unite H
+    gsl_matrix_set_zero(united->H);
+    gsl_matrix_view H_P1 = gsl_matrix_submatrix(united->H, 0, 0, P1->H->size1, P1->H->size2);
+    gsl_matrix_memcpy(&H_P1.matrix, P1->H);
+    gsl_matrix_view H_P2 = gsl_matrix_submatrix(united->H, P1->H->size1, 0, P2->H->size1, P2->H->size2);
+    gsl_matrix_memcpy(&H_P2.matrix, P2->H);
+
+    //Unite G
+    gsl_vector_set_zero(united->G);
+    gsl_vector_view G_P1 = gsl_vector_subvector(united->G, 0, P1->G->size);
+    gsl_vector_memcpy(&G_P1.vector, P1->G);
+    gsl_vector_view G_P2 = gsl_vector_subvector(united->G, P1->G->size,P2->G->size);
+    gsl_vector_memcpy(&G_P2.vector, P2->G);
+    polytope * return_polytope = polytope_minimize(united);
+
+    polytope_free(united);
+
+    return return_polytope;
+
+};
+
+/**
+ * Project original polytope (in cdd format) to the first n dimensions
+ */
+polytope * polytope_projection(polytope * original,
+                               size_t n)
+{
+
+    dd_ErrorType err;
+    dd_PolyhedraPtr orig_cdd = polytope_to_cdd(original, &err);
+    dd_PolyhedraPtr new_cdd = NULL;
+
+    cdd_projection(&orig_cdd, &new_cdd, n, &err);
+    polytope * new = cdd_to_polytope(&new_cdd);
+    dd_FreePolyhedra(orig_cdd);
+    dd_FreePolyhedra(new_cdd);
+
+    return new;
+
+};
+
+/**
+ * Remove redundancies from gsl polytope inequalities
+ */
+polytope * polytope_minimize(polytope *original)
+{
+
+
+    dd_ErrorType err = dd_NoError;
+    dd_MatrixPtr min_matrix;
+
+    dd_PolyhedraPtr cdd_original = polytope_to_cdd(original, &err);
+
+    dd_PolyhedraPtr cdd_minimized = cdd_minimize(&cdd_original, &err);
+    min_matrix = dd_CopyInequalities(cdd_minimized);
+
+    polytope * minimized = cdd_to_polytope(&cdd_minimized);
+    dd_FreeMatrix(min_matrix);
+    dd_FreePolyhedra(cdd_original);
+    dd_FreePolyhedra(cdd_minimized);
+
+    return minimized;
+
+};
+
+/**
+ * Compute Minkowski sum of two polytopes
+ */
+polytope * polytope_minkowski(polytope *P1,
+                              polytope *P2)
+{
+
+    return P2;
+};
+
+/**
+ * Compute Pontryagin difference C = A-B s.t.:
+ * A-B = {c \in A-B| c+b \in A, \forall b \in B}
+ */
+polytope * polytope_pontryagin(polytope* A,
+                               polytope* B)
+{
+
+    dd_ErrorType err;
+    dd_MatrixPtr verticesA, verticesB;
+    //create cddPoly A,B
+    dd_PolyhedraPtr cddA = polytope_to_cdd(A, &err);
+
+    dd_PolyhedraPtr cddB = polytope_to_cdd(B, &err);
+
+    polytope *C = NULL;
+
+    verticesA = dd_CopyGenerators(cddA);
+    verticesB = dd_CopyGenerators(cddB);
+    for(int i = 0; i<verticesB->rowsize; i++){
+        //Check whether row represents ray or vertex
+        double value_B0 = dd_get_d(verticesB->matrix[i][0]);
+        if(value_B0 == 1){
+            dd_MatrixPtr tempA;
+            //A-b (where b is the vertex)
+            tempA = dd_CreateMatrix(verticesA->rowsize,verticesA->colsize);
+            //each vertex of A displaced by b
+            for(int j = 0; j<verticesA->rowsize; j++){
+                double value_A0 = dd_get_d(verticesA->matrix[j][0]);
+                if(verticesA->matrix[j][0] == 1){
+                    dd_set_d(tempA->matrix[j][0], 1);
+                    for(int k = 1; k<verticesA->colsize; k++){
+                        double value_Ak = dd_get_d(verticesA->matrix[j][k]);
+                        double value_Bk = dd_get_d(verticesB->matrix[i][k]);
+                        dd_set_d(tempA->matrix[j][k],(value_Ak-value_Bk));
+                    }
+                }else{
+                    dd_set_d(tempA->matrix[j][0], 0);
+                    for(int k = 1; k<verticesA->colsize; k++){
+                        double value_Ak = dd_get_d(verticesA->matrix[j][k]);
+                        dd_set_d(tempA->matrix[j][k],(value_Ak));
+                    }
+                }
+            }
+            dd_PolyhedraPtr cdd_temp;
+            tempA->representation = dd_Inequality;
+            cdd_temp = dd_DDMatrix2Poly(tempA, &err);
+            polytope *tempC = cdd_to_polytope(&cdd_temp);
+            dd_FreePolyhedra(cdd_temp);
+            if(C == NULL){
+                C = polytope_alloc(tempC->H->size1,tempC->H->size2);
+                gsl_matrix_memcpy(C->H,tempC->H);
+                gsl_vector_memcpy(C->G,tempC->G);
+                polytope_free(tempC);
+            }else{
+                polytope *copyC = C;
+                C = polytope_unite_inequalities(copyC, tempC);
+                polytope_free(tempC);
+                polytope_free(copyC);
+            }
+            dd_FreeMatrix(tempA);
+        }
+    }
+
+    dd_FreeMatrix(verticesA);
+    dd_FreeMatrix(verticesB);
+    dd_FreePolyhedra(cddA);
+    dd_FreePolyhedra(cddB);
+    return C;
+};
+
+/**
+ * Set up constraints in quadratic problem for GUROBI
+ */
 int polytope_to_constraints_gurobi(polytope *constraints,
                                    GRBmodel *model,
-                                   size_t N){
+                                   size_t N)
+{
 
     int error = 0;
     double constraint_val[N];
@@ -252,13 +474,40 @@ int polytope_to_constraints_gurobi(polytope *constraints,
     return error;
 };
 
-/*
+/**
+ * Generate a polytope representing a scaled unit cube
+ */
+dd_PolyhedraPtr cdd_scaled_unit_cube(double scale,
+                                     int dimensions)
+{
+
+    dd_MatrixPtr constraints;
+    dd_PolyhedraPtr cube = NULL;
+    dd_ErrorType err = dd_NoError;
+    constraints = dd_CreateMatrix(dimensions*2,dimensions+1);
+    for(int i = 0; i<(dimensions); i++){
+
+            dd_set_d(constraints->matrix[2*i][0],-(scale*0.5));
+            dd_set_d(constraints->matrix[2*i][i+1],1);
+            dd_set_d(constraints->matrix[2*i+1][0],(scale*0.5));
+            dd_set_d(constraints->matrix[2*i][i+1],-1);
+    }
+    constraints->representation=dd_Inequality;
+    cube = dd_DDMatrix2Poly(constraints, &err);
+    dd_FreeMatrix(constraints);
+
+    return cube;
+};
+
+
+/**
  * Project original polytope (in cdd format) to the first n dimensions
  */
 void cdd_projection(dd_PolyhedraPtr *original,
                     dd_PolyhedraPtr *new,
                     size_t n,
-                    dd_ErrorType *err){
+                    dd_ErrorType *err)
+{
     dd_MatrixPtr full=NULL,projected=NULL;
     full = dd_CopyInequalities(*original);
     dd_colrange j,d;
@@ -286,89 +535,26 @@ void cdd_projection(dd_PolyhedraPtr *original,
     free(newpos);
 
 };
-/*
- * Project original polytope (in cdd format) to the first n dimensions
+
+/**
+ * Remove redundancies from cdd polytope inequalities
  */
-void polytope_projection(polytope * original,
-                         polytope * new,
-                         size_t n){
-    dd_PolyhedraPtr orig_cdd,new_cdd = NULL;
-    dd_ErrorType err;
-    polytope_to_cdd_constraints(original, &orig_cdd, &err);
-    cdd_projection(&orig_cdd, &new_cdd, n, &err);
-    cdd_constraints_to_polytope(&new_cdd, new);
+dd_PolyhedraPtr cdd_minimize(dd_PolyhedraPtr *original,
+                             dd_ErrorType *err)
+{
+
+    dd_rowset redset,impl_linset;
+    dd_rowindex newpos;
+    dd_MatrixPtr full=NULL;
+    full = dd_CopyInequalities(*original);
+    dd_MatrixCanonicalize(&full,&impl_linset,&redset,&newpos,err);
+
+    full->representation = dd_Inequality;
+    dd_PolyhedraPtr new = dd_DDMatrix2Poly(full, err);
+    dd_FreeMatrix(full);
+    set_free(redset);
+    set_free(impl_linset);
+    free(newpos);
+    return new;
 
 };
-
-void cdd_minimize(dd_PolyhedraPtr *original, dd_PolyhedraPtr *minimized){
-
-    dd_MatrixPtr orig_matrix = dd_CopyInequalities(*original);
-    dd_MatrixPtr min_matrix=NULL;
-    dd_ErrorType err=dd_NoError;
-    dd_rowset redrows,linrows;
-
-    redrows=dd_RedundantRows(orig_matrix, &err);
-
-    min_matrix=dd_MatrixSubmatrix(orig_matrix, redrows);
-
-    set_free(redrows);
-    linrows=dd_ImplicitLinearityRows(min_matrix, &err);
-
-    set_card(linrows);
-    set_uni(min_matrix->linset, min_matrix->linset, linrows);
-    set_free(linrows);
-    /* add the implicit linrows to the given linearity rows */
-
-    dd_WriteMatrix(stdout, min_matrix);
-
-    *minimized = dd_DDMatrix2Poly(min_matrix, &err);
-    dd_FreeMatrix(orig_matrix);
-    dd_FreeMatrix(min_matrix);
-
-};
-
-polytope * polytope_minimize(polytope *original){
-
-
-    dd_ErrorType err = dd_NoError;
-    dd_PolyhedraPtr cdd_original = NULL, cdd_minimized = NULL;
-    dd_MatrixPtr min_matrix;
-
-    polytope_to_cdd_constraints(original, &cdd_original, &err);
-
-    cdd_minimize(&cdd_original, &cdd_minimized);
-    min_matrix = dd_CopyInequalities(cdd_minimized);
-
-    polytope * minimized = polytope_alloc((size_t)min_matrix->rowsize,((size_t)min_matrix->colsize-1));
-    cdd_constraints_to_polytope(&cdd_minimized, minimized);
-    dd_FreeMatrix(min_matrix);
-    dd_FreePolyhedra(cdd_original);
-    dd_FreePolyhedra(cdd_minimized);
-
-    return minimized;
-
-};
-///*
-// * Compute Pontryagin difference C = A-B s.t.:
-// * A-B = {c \in A-B| c+b \in A, \forall b \in B}
-// */
-//polytope * pontryagin_difference(polytope* A, polytope* B){
-//
-//    dd_ErrorType err;
-//    dd_PolyhedraPtr cddA, cddB;
-//    //create cddPoly A,B
-//    polytope_to_cdd_constraints(A, cddA, err);
-
-//    polytope_to_cdd_constraints(B, cddB, err);
-//    //create cddPoly C
-//    dd_PolyhedraPtr cddC;
-//    //foreach vertice \in B: A-b
-//    //add inequalities to C
-
-//    //remove redundancies C
-
-//    //cdd C to polytope C
-
-//    //free cdd parts
-//    return C;
-//}
