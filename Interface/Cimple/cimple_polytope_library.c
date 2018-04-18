@@ -104,7 +104,7 @@ struct abstract_state *abstract_state_alloc(size_t *k,
 
     return_abstract_state->next_state = NULL;
     return_abstract_state->invariant_set = NULL;
-    return_abstract_state->distance_invariant_set = NULL;
+//    return_abstract_state->distance_invariant_set = INFINITY;
 
     return_abstract_state->cells = malloc(sizeof(cell)*cells_count);
     if (return_abstract_state->cells == NULL) {
@@ -199,7 +199,7 @@ dd_PolyhedraPtr polytope_to_cdd(polytope *original,
         }
     }
     constraints->representation=dd_Inequality;
-    *new = dd_DDMatrix2Poly(constraints, err);
+    new = dd_DDMatrix2Poly(constraints, err);
     dd_FreeMatrix(constraints);
     return new;
 };
@@ -277,7 +277,7 @@ bool polytope_is_subset(polytope *P1,
         double valueFirst0 = dd_get_d(verticesFirst->matrix[i][0]);
         if(valueFirst0 == 1){
             for(int j = 0; j<vertex->size; j++){
-                double valueFirstj = dd_get_d(verticesFirst->matrix[i][j+1])
+                double valueFirstj = dd_get_d(verticesFirst->matrix[i][j+1]);
                 gsl_vector_set(vertex,(size_t)j, valueFirstj);
             }
             is_included = polytope_check_state(P2,vertex);
@@ -371,8 +371,15 @@ polytope * polytope_minimize(polytope *original)
 polytope * polytope_minkowski(polytope *P1,
                               polytope *P2)
 {
-
-    return P2;
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr A = polytope_to_cdd(P1, &err);
+    dd_PolyhedraPtr B = polytope_to_cdd(P2, &err);
+    dd_PolyhedraPtr C = cdd_minkowski(A,B);
+    polytope * returnPolytope = cdd_to_polytope(&C);
+    dd_FreePolyhedra(A);
+    dd_FreePolyhedra(B);
+    dd_FreePolyhedra(C);
+    return returnPolytope;
 };
 
 /**
@@ -404,7 +411,7 @@ polytope * polytope_pontryagin(polytope* A,
             //each vertex of A displaced by b
             for(int j = 0; j<verticesA->rowsize; j++){
                 double value_A0 = dd_get_d(verticesA->matrix[j][0]);
-                if(verticesA->matrix[j][0] == 1){
+                if(value_A0 == 1){
                     dd_set_d(tempA->matrix[j][0], 1);
                     for(int k = 1; k<verticesA->colsize; k++){
                         double value_Ak = dd_get_d(verticesA->matrix[j][k]);
@@ -420,7 +427,7 @@ polytope * polytope_pontryagin(polytope* A,
                 }
             }
             dd_PolyhedraPtr cdd_temp;
-            tempA->representation = dd_Inequality;
+            tempA->representation = dd_Generator;
             cdd_temp = dd_DDMatrix2Poly(tempA, &err);
             polytope *tempC = cdd_to_polytope(&cdd_temp);
             dd_FreePolyhedra(cdd_temp);
@@ -487,10 +494,10 @@ dd_PolyhedraPtr cdd_scaled_unit_cube(double scale,
     constraints = dd_CreateMatrix(dimensions*2,dimensions+1);
     for(int i = 0; i<(dimensions); i++){
 
-            dd_set_d(constraints->matrix[2*i][0],-(scale*0.5));
-            dd_set_d(constraints->matrix[2*i][i+1],1);
-            dd_set_d(constraints->matrix[2*i+1][0],(scale*0.5));
+            dd_set_d(constraints->matrix[2*i][0],(scale*0.5));
             dd_set_d(constraints->matrix[2*i][i+1],-1);
+            dd_set_d(constraints->matrix[2*i+1][0],(scale*0.5));
+            dd_set_d(constraints->matrix[2*i+1][i+1],1);
     }
     constraints->representation=dd_Inequality;
     cube = dd_DDMatrix2Poly(constraints, &err);

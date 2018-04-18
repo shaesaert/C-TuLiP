@@ -13,6 +13,7 @@
 #include "setoper.h"
 #include <cdd.h>
 #include "cimple_auxiliary_functions.h"
+#include "cimple_minksum_wrapper.h"
 
 
 /**

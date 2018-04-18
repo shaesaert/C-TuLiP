@@ -41,5 +41,5 @@ void * timer(void * arg);
  * @param mtx
  * @return
  */
-int needQuit(pthread_mutex_t *mtx)
+int needQuit(pthread_mutex_t *mtx);
 #endif //CIMPLE_CIMPLE_AUXILIARY_FUNCTIONS_H

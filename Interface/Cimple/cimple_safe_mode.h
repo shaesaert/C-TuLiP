@@ -69,6 +69,12 @@ int check_backup(gsl_vector *x_real,
                  gsl_matrix *B,
                  polytope *check_polytope);
 
+polytope * compute_invariant_set(polytope* X,
+                                 gsl_matrix *A,
+                                 gsl_matrix *B,
+                                 polytope *W_set,
+                                 polytope *U_set,
+                                 double alpha);
 
 void safe_mode_polytopes(system_dynamics *s_dyn,
                          polytope *current_polytope,

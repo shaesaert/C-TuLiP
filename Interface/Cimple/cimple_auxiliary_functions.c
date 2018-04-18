@@ -1,7 +1,3 @@
-//
-// Created by be107admin on 3/30/18.
-//
-
 #include "cimple_auxiliary_functions.h"
 
 
@@ -10,7 +6,8 @@
  * @param arg
  * @return
  */
-void * timer(void * arg){
+void * timer(void *arg)
+{
     struct timeval sec;
     double* total_time_p = (double*)arg;
     double total_time = *total_time_p;
@@ -22,7 +19,7 @@ void * timer(void * arg){
     printf("\nTime runs: %d.%d\n", (int)sec.tv_sec, (int)sec.tv_usec);
     select(0,NULL,NULL,NULL,&sec);
     pthread_exit(0);
-};
+}
 
 
 /**
@@ -32,7 +29,8 @@ void * timer(void * arg){
  * @return
  */
 double randn (double mu,
-              double sigma) {
+              double sigma)
+{
     double U1, U2, W, mult;
     static double X1, X2;
     static int call = 0;
@@ -58,19 +56,21 @@ double randn (double mu,
     call = !call;
 
     return (mu + sigma * (double) X1);
-};
+}
 
-/* Returns 1 (true) if the mutex is unlocked, which is the
+/**
+ * Returns 1 (true) if the mutex is unlocked, which is the
  * thread's signal to terminate.
  */
 int needQuit(pthread_mutex_t *mtx)
 {
-    switch(pthread_mutex_trylock(mtx)) {
+    switch(pthread_mutex_trylock(mtx)){
         case 0: /* if we got the lock, unlock and return 1 (true) */
             pthread_mutex_unlock(mtx);
             return 1;
         case EBUSY: /* return 0 (false) if the mutex was locked */
             return 0;
+        default:
+            return 1;
     }
-    return 1;
 }
