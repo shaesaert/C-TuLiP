@@ -22,3 +22,9 @@
 # Logs#
 #######
 *.log
+
+#Files#
+#######
+
+test_file.c
+test_file.h
