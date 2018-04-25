@@ -263,6 +263,9 @@ polytope * compute_invariant_set(polytope* X,
     gsl_vector_memcpy(R_i->G,X->G);
     polytope *pre_R_i = pre_alpha(R_i,A,B,W_set,U_set,scaled_unit_cube);
     polytope *R_i_plus = polytope_unite_inequalities(pre_R_i, X);
+    dd_ErrorType err = dd_NoError;
+    dd_WriteMatrix(stdout,dd_CopyGenerators(polytope_to_cdd(R_i_plus,&err)));
+
     polytope *R_scaled = polytope_minkowski(R_i_plus, scaled_unit_cube);
     while(!(polytope_is_subset(R_i, R_scaled))){
         polytope_free(pre_R_i);
