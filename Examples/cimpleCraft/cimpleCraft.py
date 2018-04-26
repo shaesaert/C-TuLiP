@@ -120,7 +120,7 @@ ctrl = synth.synthesize(phi, ignore_sys_init=True)
 
 print("----------------------------------\n Reduce states \n----------------------------------")
 
-Events_init = {('fullGas', True)}
+Events_init = {('inA', True)}
 
 
 ctrl_red = reduce_mealy(ctrl, relabel=False, outputs={'ctrl'}, prune_set=Events_init, combine_trans=False)
@@ -164,3 +164,6 @@ except NameError:
 # write strategy plus control modes at the same time to a statechart
 with open(filename+".xml", "w") as f:
     f.write(dumpsmach.tulip_to_xmi(ctrl_red, ctrl_modes))
+
+with open("cimple_c_from_py.c", "w") as f:
+    f.write(dumpsmach.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
