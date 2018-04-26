@@ -166,4 +166,4 @@ with open(filename+".xml", "w") as f:
     f.write(dumpsmach.tulip_to_xmi(ctrl_red, ctrl_modes))
 
 with open("cimple_c_from_py.c", "w") as f:
-    f.write(dumpsmach.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
+    f.write(dumpsmach.write_init_file(ctrl_red, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
