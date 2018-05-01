@@ -23,17 +23,17 @@ print("""----------------------------------\n System Definition \n--------------
          """)
 # System constants
 input_bound = 1.0
-disturbance_bound = 0.1
+disturbance_bound = 1.0
 
 # The system dynamics
 A = np.array([[1., 0, 2., 0], [0, 1., 0, 2], [0, 0, 0.5, 0], [0, 0, 0, 0.5]])
-B = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [5, -5, 0, 0], [0, 0, 5, -5]])
+B = np.array([[0, 0], [0, 0], [5, 0], [0, 5]])
 E = np.array([[1., 0, 0, 0], [0, 1., 0, 0], [0, 0, 1., 0], [0, 0, 0, 1.]])
 # $x^+=Ax+Bu+E W$
 
 # Size of the sets
 X = box2poly([[0, 100.], [0, 100.], [-5, 5.], [-5, 5.]])
-U = box2poly(input_bound*np.array([[0, 1], [0, 1], [0, 1], [0, 1]]))
+U = box2poly(input_bound*np.array([[-1, 1.], [-1, 1.]]))
 W = box2poly(disturbance_bound*np.array([[-2, 2], [-2, 2], [-0.1, 0.1], [-0.1, 0.1]]))
 print("----------------------------------\n Define system\n----------------------------------")
 # Intermezzo polytope tutorial
@@ -45,9 +45,9 @@ print(str(sys_dyn))
 print("----------------------------------\n Define labelling \n----------------------------------")
 
 cprops = {}
-cprops["inA"] = box2poly([[0, 10], [45, 55], [-0.5, 0.5], [-0.5, 0.5]])
-cprops["inB"] = box2poly([[90, 100], [45, 55], [-0.5, 0.5], [-0.5, 0.5]])
-cprops["inG"] = box2poly([[45, 55], [45, 55], [-0.5, 0.5], [-0.5, 0.5]])
+cprops["inA"] = box2poly([[0, 10], [45, 55], [-1, 1], [-1, 1]])
+cprops["inB"] = box2poly([[90, 100], [45, 55], [-1, 1], [-1, 1]])
+cprops["inG"] = box2poly([[45, 55], [45, 55], [-1, 1], [-1, 1]])
 
 cprops["inObj1"] = box2poly([[15, 35], [30, 70], [-5, 5], [-5, 5]])
 cprops["inObj2"] = box2poly([[65, 85], [30, 70], [-5, 5], [-5, 5]])
@@ -105,12 +105,17 @@ sys_safe |= {'!inObj1'}
 sys_safe |= {'!inObj2'}
 sys_prog = ['goToA', 'goToB']
 
-(ctrl_modes, grspec) = transform2control(disc_dynamics.ts,  statevar='ctrl')
+# (ctrl_modes, grspec) = transform2control(disc_dynamics.ts,  statevar='ctrl')
 
 print("----------------------------------\n Combine sys and spec \n----------------------------------")
 
-phi = grspec | spec.GRSpec(env_vars, sys_vars, env_init, sys_init,
-                           env_safe, sys_safe, env_prog, sys_prog)
+# phi = grspec | spec.GRSpec(env_vars, sys_vars, env_init, sys_init,
+#                            env_safe, sys_safe, env_prog, sys_prog)
+
+phi = spec.GRSpec(env_vars, sys_vars,
+                  env_init, sys_init,
+                  env_safe, sys_safe,
+                  env_prog, sys_prog)
 
 phi.qinit = '\A \E'
 phi.moore = False
@@ -118,12 +123,15 @@ phi.plus_one = False
 
 ctrl = synth.synthesize(phi, ignore_sys_init=True)
 
-print("----------------------------------\n Reduce states \n----------------------------------")
-
-Events_init = {('inA', True)}
-
-
-ctrl_red = reduce_mealy(ctrl, relabel=False, outputs={'ctrl'}, prune_set=Events_init, combine_trans=False)
+with open("cimple_c_from_py.c", "w") as f:
+    f.write(dumpsmach.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
+#
+# print("----------------------------------\n Reduce states \n----------------------------------")
+#
+# Events_init = {('inA', True)}
+#
+#
+# ctrl_red = reduce_mealy(ctrl, relabel=False, outputs={'ctrl'}, prune_set=Events_init, combine_trans=False)
 
 print("----------------------------------\n Output results  \n----------------------------------")
 
@@ -131,8 +139,8 @@ if verbose == 1:
     print(" (Verbose) ")
     try:
         disc_dynamics.ts.save("cimple_aircraft_orig.png")
-        ctrl_modes.save("cimple_aircraft_modes.png")
-        ctrl_red.save('cimple_aircraft_ctrl_red.png')
+        # ctrl_modes.save("cimple_aircraft_modes.png")
+        # ctrl_red.save('cimple_aircraft_ctrl_red.png')
         ctrl.save("cimple_aircraft_ctrl_orig.png")
 
         print(" (Verbose): saved all Finite State Transition Systems ")
@@ -145,10 +153,10 @@ if verbose == 1:
     print(len(ctrl.transitions()))
     print('\n')
 
-    print('nodes in ctrl_red:')
-    print(len(ctrl_red.nodes()))
-    print(len(ctrl_red.transitions()))
-    print('\n')
+    # print('nodes in ctrl_red:')
+    # print(len(ctrl_red.nodes()))
+    # print(len(ctrl_red.transitions()))
+    # print('\n')
 
 
 print("----------------------------------\n Convert controller to Xmi \n----------------------------------")
@@ -160,10 +168,10 @@ try:
     filename = filename[0:-3] + "_gen"
 except NameError:
     filename = "test_gen"
+#
+# # write strategy plus control modes at the same time to a statechart
+# with open(filename+".xml", "w") as f:
+#     f.write(dumpsmach.tulip_to_xmi(ctrl_red, ctrl_modes))
 
-# write strategy plus control modes at the same time to a statechart
-with open(filename+".xml", "w") as f:
-    f.write(dumpsmach.tulip_to_xmi(ctrl_red, ctrl_modes))
-
-with open("cimple_c_from_py.c", "w") as f:
-    f.write(dumpsmach.write_init_file(ctrl_red, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
+# with open("cimple_c_from_py.c", "w") as f:
+#     f.write(dumpsmach.write_init_file(ctrl_red, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
