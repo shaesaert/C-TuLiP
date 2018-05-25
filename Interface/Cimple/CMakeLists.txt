@@ -12,7 +12,8 @@ include_directories(${GUROBI_INCLUDE_DIRS})
 set(MINKSUM_DIR
         "/usr/local/include/MINKSUM_1.8/lib-src"
         "/usr/local/include/MINKSUM_1.8/src"
-        "/usr/local/include/MINKSUM_1.8/wrap-gmp-gmpxx")
+        "/usr/local/include/MINKSUM_1.8/wrap-gmp-gmpxx"
+        )
 include_directories(${MINKSUM_DIR})
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -Werror -O0 -g -m64 -pthread -DGMPRATIONAL")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -m64 -pthread -DGMPRATIONAL")
@@ -43,6 +44,6 @@ target_link_libraries( Cimple
         /usr/local/include/MINKSUM_1.8/lib-src/libMINKSUM.a
         -lgurobi75
         -lcddgmp
-        -lgmpxx
         -lgmp
+        -lgmpxx
         -lm)
