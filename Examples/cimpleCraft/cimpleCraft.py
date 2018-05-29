@@ -7,10 +7,12 @@ import numpy as np
 from polytope import box2poly
 from tulip import hybrid
 from tulip.abstract import prop2part, discretize
+from tulip.abstract.plot import plot_partition
 
-import Interface.DSL as DSL
+sys.path.append('/home/be107admin/C-TuLiP')
+# import Interface.DSL as DSL
 from Interface import Statechart as dumpsmach
-from Interface.Reduce import *
+# from Interface.Reduce import *
 from Interface.Transform import *
 
 print("----------------------------------\n Script options \n----------------------------------")
@@ -34,7 +36,7 @@ E = np.array([[1., 0, 0, 0], [0, 1., 0, 0], [0, 0, 1., 0], [0, 0, 0, 1.]])
 # Size of the sets
 X = box2poly([[0, 100.], [0, 100.], [-5, 5.], [-5, 5.]])
 U = box2poly(input_bound*np.array([[-1, 1.], [-1, 1.]]))
-W = box2poly(disturbance_bound*np.array([[-2, 2], [-2, 2], [-0.1, 0.1], [-0.1, 0.1]]))
+W = box2poly(disturbance_bound*np.array([[-0.5, 0.5], [-0.5, 0.5], [-0.1, 0.1], [-0.1, 0.1]]))
 print("----------------------------------\n Define system\n----------------------------------")
 # Intermezzo polytope tutorial
 #  https://github.com/tulip-control/polytope/blob/master/doc/tutorial.md
@@ -45,12 +47,12 @@ print(str(sys_dyn))
 print("----------------------------------\n Define labelling \n----------------------------------")
 
 cprops = {}
-cprops["inA"] = box2poly([[0, 10], [45, 55], [-1, 1], [-1, 1]])
-cprops["inB"] = box2poly([[90, 100], [45, 55], [-1, 1], [-1, 1]])
-cprops["inG"] = box2poly([[45, 55], [45, 55], [-1, 1], [-1, 1]])
+cprops['inA'] = box2poly([[0, 10], [45, 55], [-5, 5], [-5, 5]])
+cprops['inB'] = box2poly([[90, 100], [45, 55], [-5, 5], [-5, 5]])
+cprops['inG'] = box2poly([[45, 55], [45, 55], [-5, 5], [-5, 5]])
 
-cprops["inObj1"] = box2poly([[15, 35], [30, 70], [-5, 5], [-5, 5]])
-cprops["inObj2"] = box2poly([[65, 85], [30, 70], [-5, 5], [-5, 5]])
+cprops['inObj1'] = box2poly([[15, 35], [30, 70], [-5, 5], [-5, 5]])
+cprops['inObj2'] = box2poly([[65, 85], [30, 70], [-5, 5], [-5, 5]])
 #
 # cprops["noGas"] = box2poly([[0, 100], [0, 100], [-5, 5], [-5, 5], [0, 10]])
 # cprops["gasReserves"] = box2poly([[0, 100], [0, 100], [-5, 5], [-5, 5], [0, 40]])
@@ -62,48 +64,52 @@ if verbose == 1:
     print("partition before refinement")
     print(cpartition)
 
+# plot_partition(cpartition)
+
 print("---------------------------------\n System partition State Space \n----------------------------------")
 
-disc_dynamics = discretize(cpartition, sys_dyn, N=5, min_cell_volume=1, closed_loop=True, conservative=True)
+disc_dynamics = discretize(cpartition, sys_dyn, N=10, min_cell_volume=100, closed_loop=True) #, conservative=True)
 
-states = [state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'inA'}})]
-disc_dynamics.ts.states.initial |= states
+print(disc_dynamics.ppp)
+# states = [state for (state, label) in disc_dynamics.ts.states.find(with_attr_dict={'ap': {'inA'}})]
+# disc_dynamics.ts.states.initial |= states
 
 print("----------------------------------\n Define specification \n----------------------------------")
 
 # Specifications
 # Environment variables and assumptions
-env_vars = ['tens', 'ones', 'gasEmpty']
-env_init = {'tens = "4"', 'ones = "9"', '!gasEmpty'}
+env_vars = set()
+# env_vars['gasEmpty'] = 'boolean'
+# env_vars['tank'] = ['nine', 'eight', 'seven', 'six', 'five', 'four', 'three', 'two', 'one', 'zero']
+# env_init = {'tank = "nine"', '!gasEmpty'}
+env_init = set()
 env_safe = set()
-env_safe |= {'(ones = "9")->(X(ones = "8"))'}
-env_safe |= {'(ones = "8")->(X(ones = "7"))'}
-env_safe |= {'(ones = "7")->(X(ones = "6"))'}
-env_safe |= {'(ones = "6")->(X(ones = "5"))'}
-env_safe |= {'(ones = "5")->(X(ones = "4"))'}
-env_safe |= {'(ones = "4")->(X(ones = "3"))'}
-env_safe |= {'(ones = "3")->(X(ones = "2"))'}
-env_safe |= {'(ones = "2")->(X(ones = "1"))'}
-env_safe |= {'(ones = "1")->(X(ones = "0"))'}
-env_safe |= {'((ones = "0") && !(tens = "0"))->(X(ones = "9"))'}
-env_safe |= {'(tens = "4") && !(ones = "0")->(X(tens = "3"))'}
-env_safe |= {'(tens = "3") && !(ones = "0")->(X(tens = "2"))'}
-env_safe |= {'(tens = "2") && !(ones = "0")->(X(tens = "1"))'}
-env_safe |= {'(tens = "1") && !(ones = "0")->(X(tens = "0"))'}
-env_safe |= {'((tens = "0") && (ones = "3")) -> (X(gasEmpty))'}
-env_safe |= {'inG -> (X(ones = "9") && X(tens = "4") && X(!gasEmpty))'}
-env_prog = list()
+# env_safe = {'(tank = "nine" && !inG)->(X(tank = "eight"))',
+#             '(tank = "eight" && !inG)->(X(tank = "seven"))',
+#             '(tank = "seven" && !inG)->(X(tank = "six"))',
+#             '(tank = "six" && !inG)->(X(tank = "five"))',
+#             '(tank = "five" && !inG)->(X(tank = "four"))',
+#             '(tank = "four" && !inG)->(X(tank = "three"))',
+#             '(tank = "three" && !inG)->(X(tank = "two"))',
+#             '(tank = "two" && !inG)->(X(tank = "one"))',
+#             '(tank = "one" && !inG)->(X(tank = "zero"))',
+#             '(tank = "zero" && gasEmpty) || (tank != "zero" && !gasEmpty)',
+#             'inG -> (X(tank = "nine"))'}
+env_prog = set() #{'gasEmpty'}
 
 # System variables and requirements
-sys_vars = ['goToA', 'goToB']
-sys_init = ['inA', 'goToA', 'goToB']
-sys_safe = set()
-sys_safe |= {'(X(goToB)<->(inB ||(!(inA)))) || (goToB && !(inA))'}
-sys_safe |= {'(X(goToA)<->(inA ||(!(inB)))) || (goToA && !(inB))'}
-sys_safe |= {'!(gasEmpty && !inG)'}
-sys_safe |= {'!inObj1'}
-sys_safe |= {'!inObj2'}
-sys_prog = ['goToA', 'goToB']
+sys_vars = set()
+sys_init = {'inA'}
+# sys_safe = set()
+# sys_safe |= {'(X(goToB)<->(inB ||(!(inA)))) || (goToB && !(inA))'}
+# sys_safe |= {'(X(goToA)<->(inA ||(!(inB)))) || (goToA && !(inB))'}
+# sys_safe |= {'!(!goToA && !goToB)'}
+# sys_safe |= {'(goToA && !inA )-> X(goToA)'}
+# sys_safe |= {'(goToB && !inB )-> X(goToB)'}
+# sys_safe = {'!(gasEmpty && !inG)',
+sys_safe = {'!inObj1',
+            '!inObj2'}
+sys_prog = {'inA', 'inB'}
 
 # (ctrl_modes, grspec) = transform2control(disc_dynamics.ts,  statevar='ctrl')
 
@@ -117,11 +123,17 @@ phi = spec.GRSpec(env_vars, sys_vars,
                   env_safe, sys_safe,
                   env_prog, sys_prog)
 
-phi.qinit = '\A \E'
-phi.moore = False
-phi.plus_one = False
+phi.qinit = '\E \A'
 
-ctrl = synth.synthesize(phi, ignore_sys_init=True)
+ctrl = synth.synthesize(phi, sys=disc_dynamics.ts, ignore_sys_init=True)
+
+#
+# with open("transitions.txt", "w") as g:
+#     g.write("Number of States " + str(len(ctrl.states)) +"\n\n" )
+#     for trans_fro, trans_to, d in ctrl.transitions(data=True):
+#         g.write("next transition: \n")
+#         g.write("int origin_cell =" + str(trans_fro) + ";\n")
+#         g.write("int target_cell =" + str(trans_to) + ";\n\n\n")
 
 with open("cimple_c_from_py.c", "w") as f:
     f.write(dumpsmach.write_init_file(ctrl, sys_dyn, disc_dynamics, 5, 2, 0.0, name="DroneV2"))
