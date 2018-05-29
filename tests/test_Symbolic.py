@@ -4,7 +4,24 @@ import dd
 from omega.symbolic import fol as _fol
 from omega.symbolic import symbolic
 
+from tulip.interfaces import omega as omega_int
+import tulip.synth as synth
+import SymbolicReductions.Lift_Mealyred as comp
+from SymbolicReductions.SymbolicMealy import *
+import itertools
+from omega.logic import bitvector
 
+
+from SymbolicReductions.Bisimulation  import *
+import time
+try:
+    import omega
+    from omega.logic import bitvector as bv
+    from omega.games import gr1
+    from omega.symbolic import symbolic as sym
+    from omega.games import enumeration as enum
+except ImportError:
+    omega = None
 
 def test_add_nodes(n=10):
 
@@ -56,7 +73,7 @@ def test_add_nodes(n=10):
     trMealy.apply_sifting(bdd2, primed, minlev, maxlev, crit=None)
     levels = bdd2._levels()
 
-    node, width = trMealy.add_nodes(bdd2, n1, splitlevel)
+    node, width, nodenumb = trMealy.add_nodes(bdd2, n1, splitlevel)
     len(bdd2)
     exit, entry = trMealy._exit_entry(bdd2, node, width, primed, unprimed)
     trans = bdd2.apply('and', entry, exit)
@@ -93,3 +110,102 @@ def test_add_nodes(n=10):
             assert sol['_n_%d' %i] ==sol["_n_%d'" %i]
 
 
+def test_elevator(n=4):
+    t = [time.clock()]
+
+    # define boolean variables for the buttons & the floors
+
+    psi, f = comp.lift_spec(n)
+    # strategy = omega_int.synthesize_enumerated_streett(psi)
+    use_cudd = False
+
+    spec = psi
+    aut = omega_int._grspec_to_automaton(spec)
+
+    sym.fill_blanks(aut)
+    bdd = omega_int._init_bdd(use_cudd)
+    aut.bdd = bdd
+    a = aut.build()
+
+
+    assert a.action['sys'][0] != bdd.false
+
+    z, yij, xijk = gr1.solve_streett_game(a)
+    # solved game
+
+    if not gr1.is_realizable(z, a):
+        print('WARNING: unrealizable')
+    control, primed_vars = enum._split_vars_per_quantifier(
+        aut.vars, aut.players)
+    print("aut_control")
+    aut.control = control
+    t += [time.clock()]
+    aut = gr1.make_streett_transducer(z, yij, xijk, a)
+    t += [time.clock()]
+    print('made symbolic strategy in {time} sec'.format(time=t[-1]-t[0]))
+
+    mealy = SMealy()
+    mealy.strat2mealy(aut,control, {'bon', '_goal', "fup"})
+    t += [time.clock()]
+    print('made symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    print(mealy.bdd.prune())
+    Bisim(mealy)
+    t += [time.clock()]
+    print('made pruned and bisimulated Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    assert abs(mealy.T) != 1
+    m = mealy.enum()
+    t += [time.clock()]
+    print('made enumerated Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    print(len(m))
+    print(len(m.edges(data=True)))
+    assert True
+
+
+def test_bisim(n=4):
+    t = [time.clock()]
+
+    # define boolean variables for the buttons & the floors
+
+    psi, f = comp.lift_spec(n)
+    # strategy = omega_int.synthesize_enumerated_streett(psi)
+    use_cudd = False
+
+    spec = psi
+    aut = omega_int._grspec_to_automaton(spec)
+
+    sym.fill_blanks(aut)
+    bdd = omega_int._init_bdd(use_cudd)
+    aut.bdd = bdd
+    a = aut.build()
+
+
+    assert a.action['sys'][0] != bdd.false
+
+    z, yij, xijk = gr1.solve_streett_game(a)
+    # solved game
+
+    if not gr1.is_realizable(z, a):
+        print('WARNING: unrealizable')
+    control, primed_vars = enum._split_vars_per_quantifier(
+        aut.vars, aut.players)
+    print("aut_control")
+    aut.control = control
+    t += [time.clock()]
+    aut = gr1.make_streett_transducer(z, yij, xijk, a)
+    t += [time.clock()]
+    print('made symbolic strategy in {time} sec'.format(time=t[-1]-t[0]))
+
+    mealy = SMealy()
+    mealy.strat2mealy(aut,control, {'bon', '_goal', "fup"})
+    t += [time.clock()]
+    print('made symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    print(mealy.bdd.prune())
+
+    print(mealy.Nmax)
+    print(mealy.N_s)
+
+    Bisim(mealy)

@@ -43,6 +43,7 @@ def lift_spec(n):
     env_safe, sys_safe, env_prog, sys_prog = set(), set(), set(), set()
     # How the button behaves
     for i in range(n):
+
         env_vars |= {b[i]}
         env_init |= {'!' + b[i]}
         env_safe |= {'( ' + b[i] + ' && ' + f[i] + ') -> ( X (!' + b[i] + ') )'}
