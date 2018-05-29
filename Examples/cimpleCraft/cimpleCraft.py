@@ -9,7 +9,6 @@ from tulip import hybrid
 from tulip.abstract import prop2part, discretize
 from tulip.abstract.plot import plot_partition
 
-sys.path.append('/home/be107admin/C-TuLiP')
 # import Interface.DSL as DSL
 from Interface import Statechart as dumpsmach
 # from Interface.Reduce import *
