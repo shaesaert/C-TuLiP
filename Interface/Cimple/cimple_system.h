@@ -41,8 +41,6 @@ typedef struct auxiliary_matrices{
 
     gsl_matrix * L_default;
     gsl_matrix * E_default;
-    gsl_matrix * D_vertices;
-    gsl_matrix * D_one_step;
 
 
     //LU = ([Uset->size1*N, n+N*m])
@@ -116,7 +114,7 @@ typedef struct discrete_dynamics{
 
     int abstract_states_count;
     int number_of_original_regions;
-    abstract_state **regions;
+    abstract_state **abstract_states_set;
     abstract_state **original_regions;
     int closed_loop;
     int conservative;
@@ -167,13 +165,13 @@ typedef struct current_state{
  * @param m s_dyn.B.size2
  * @param u_set_size Uset.size1
  * @param N time horizon
- * @param d_ext_i number of rows of vertices disturbances matrix over N time steps
- * @param d_ext_j number of columns of vertices disturbances matrix over N time steps
- * @param d_one_i number of rows of vertices disturbances matrix over one time steps
- * @param d_one_j number of columns of vertices disturbances matrix over one time steps
  * @return
  */
-struct auxiliary_matrices *aux_matrices_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j);
+struct auxiliary_matrices *aux_matrices_alloc(size_t n,
+                                              size_t p,
+                                              size_t m,
+                                              size_t u_set_size,
+                                              size_t N);
 
 /**
  * @brief "Destructor" Deallocates the dynamically allocated memory of the auxiliary matrices
@@ -189,13 +187,14 @@ void aux_matrices_free(auxiliary_matrices *aux_matrices);
  * @param w_set_size
  * @param u_set_size
  * @param N
- * @param d_ext_i
- * @param d_ext_j
- * @param d_one_i
- * @param d_one_j
  * @return
  */
-struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j);
+struct system_dynamics *system_dynamics_alloc (size_t n,
+                                               size_t m,
+                                               size_t p,
+                                               size_t w_set_size,
+                                               size_t u_set_size,
+                                               size_t N);
 
 /**
  * @brief "Destructor" Deallocates the dynamically allocated memory of the system dynamics
@@ -250,8 +249,21 @@ void cost_function_free(cost_function *cost_function);
  * @param time_horizon
  * @return
  */
-struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size_t *polytope_sizes, size_t *hull_sizes, int *orig_polytopes_in_region, size_t *orig_polytope_sizes, size_t *orig_hull_sizes, size_t n, int abstract_states_count, int number_of_original_regions, int closed_loop, int conservative, int ord, size_t time_horizon);
-
+struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region,
+                                                  size_t *polytope_sizes,
+                                                  size_t *hull_sizes,
+                                                  int *orig_polytopes_in_region,
+                                                  size_t *orig_polytope_sizes,
+                                                  size_t *orig_hull_sizes,
+                                                  int *transitions_in_sizes,
+                                                  int *transitions_out_sizes,
+                                                  size_t n,
+                                                  int abstract_states_count,
+                                                  int number_of_original_regions,
+                                                  int closed_loop,
+                                                  int conservative,
+                                                  int ord,
+                                                  size_t time_horizon);
 /**
  * @brief "Destructor" Deallocates the dynamically allocated memory of the discrete dynamics
  * @param d_dyn

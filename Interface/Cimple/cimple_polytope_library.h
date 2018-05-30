@@ -1,7 +1,3 @@
-//
-// Created by be107admin on 9/25/17.
-//
-
 #ifndef CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H
 #define CIMPLE_POLYTOPE_LIBRARY_CIMPLE_H
 
@@ -83,7 +79,7 @@ void cell_free(cell *cell);
  */
 typedef struct abstract_state{
 
-    polytope *hull_over_polytopes;
+    polytope *convex_hull;
 
     int cells_count;
     cell **cells;
@@ -200,6 +196,14 @@ polytope * polytope_unite_inequalities(polytope *P1,
  */
 polytope* polytope_projection(polytope * original,
                               size_t n);
+/**
+ * @brief Multiplication of a polytope with a matrix
+ * @param original
+ * @param scale
+ * @return gsl polytope
+ */
+polytope * polytope_linear_transform(polytope *original,
+                                     gsl_matrix *scale);
 
 /**
  * @brief Remove redundancies from gsl polytope inequalities

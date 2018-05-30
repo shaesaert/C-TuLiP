@@ -1,7 +1,3 @@
-//
-// Created by be107admin on 9/25/17.
-//
-
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include "cimple_polytope_library.h"
@@ -138,8 +134,8 @@ struct abstract_state *abstract_state_alloc(size_t *k,
 
     return_abstract_state->transitions_out_count = transitions_out_count;
 
-    return_abstract_state->hull_over_polytopes = polytope_alloc(k_hull, n);
-    if (return_abstract_state->hull_over_polytopes == NULL) {
+    return_abstract_state->convex_hull = polytope_alloc(k_hull, n);
+    if (return_abstract_state->convex_hull == NULL) {
         free (return_abstract_state);
         return NULL;
     }
@@ -151,7 +147,7 @@ struct abstract_state *abstract_state_alloc(size_t *k,
  * "Destructor" Deallocates the dynamically allocated memory of the region of polytopes
  */
 void abstract_state_free(abstract_state * abstract_state){
-    polytope_free(abstract_state->hull_over_polytopes);
+    polytope_free(abstract_state->convex_hull);
     for(int i = 0; i< abstract_state->cells_count; i++){
         cell_free(abstract_state->cells[i]);
     }
@@ -341,6 +337,65 @@ polytope * polytope_projection(polytope * original,
 
 };
 
+polytope * polytope_linear_transform(polytope *original,
+                                     gsl_matrix *scale){
+
+    dd_ErrorType err = dd_NoError;
+    dd_PolyhedraPtr orig_cdd = polytope_to_cdd(original, &err);
+
+    dd_MatrixPtr vertices = dd_CopyGenerators(orig_cdd);
+
+    dd_MatrixPtr transformed_vertices = dd_CreateMatrix(1, scale->size1+1);
+    dd_MatrixPtr transformed_vertex = dd_CreateMatrix(1, scale->size1+1);
+    bool new_matrix_started = false;
+    gsl_vector *vertex = gsl_vector_alloc((vertices->colsize - 1));
+    gsl_vector *scaled_vertex = gsl_vector_alloc(scale->size1);
+    gsl_vector_set_zero(vertex);
+    gsl_vector_set_zero(scaled_vertex);
+
+    for(int i = 0; i<vertices->rowsize; i++) {
+        //Check whether row represents ray or vertex
+        double is_vertex = dd_get_d(vertices->matrix[i][0]);
+        if (is_vertex == 1) {
+            for (size_t j = 1; j < vertices->colsize; j++) {
+                double value = dd_get_d(vertices->matrix[i][j]);
+                gsl_vector_set(vertex, j-1, value);
+            }
+            gsl_blas_dgemv(CblasNoTrans, 1.0, scale, vertex, 0.0, scaled_vertex);
+
+            if (new_matrix_started) {
+                dd_set_d(transformed_vertex->matrix[0][0], 1);
+                for (size_t j = 0; j < scaled_vertex->size; j++) {
+                    dd_set_d(transformed_vertex->matrix[0][j + 1], gsl_vector_get(scaled_vertex, j));
+                }
+                dd_MatrixAppendTo(&transformed_vertices, transformed_vertex);
+            } else {
+                dd_set_d(transformed_vertices->matrix[0][0], 1);
+                for (size_t j = 0; j < scaled_vertex->size; j++) {
+                    dd_set_d(transformed_vertices->matrix[0][j + 1], gsl_vector_get(scaled_vertex, j));
+                }
+                new_matrix_started = true;
+            }
+
+        }
+    }
+
+    transformed_vertices->representation = dd_Generator;
+    dd_PolyhedraPtr transformed_cdd = dd_DDMatrix2Poly(transformed_vertices, &err);
+    polytope *transformed = cdd_to_polytope(&transformed_cdd);
+
+    //Clean up
+    dd_FreeMatrix(transformed_vertex);
+    dd_FreeMatrix(transformed_vertices);
+    dd_FreePolyhedra(orig_cdd);
+    dd_FreePolyhedra(transformed_cdd);
+    dd_FreeMatrix(vertices);
+    gsl_vector_free(vertex);
+    gsl_vector_free(scaled_vertex);
+
+    return transformed;
+
+};
 /**
  * Remove redundancies from gsl polytope inequalities
  */

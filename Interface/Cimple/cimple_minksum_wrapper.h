@@ -1,7 +1,3 @@
-//
-// Created by be107admin on 11.04.18.
-//
-
 #ifndef CIMPLE_CIMPLE_MINKSUM_WRAPPER_H
 #define CIMPLE_CIMPLE_MINKSUM_WRAPPER_H
 

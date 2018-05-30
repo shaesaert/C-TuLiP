@@ -8,7 +8,7 @@ LDFLAGS = -lm \
           -lgsl \
           -lgslcblas \
           -ldl \
-          -lutil
+          -lutil \
           -lpthread \
           -ltime \
           -lcddgmp \

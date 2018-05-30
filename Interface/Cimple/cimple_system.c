@@ -67,7 +67,11 @@ struct next_safemode_computation_arguments *next_sm_arguments_alloc(current_stat
 /**
  * "Constructor" Dynamically allocates the memory all auxiliary matrices need
  */
-struct auxiliary_matrices *aux_matrices_alloc(size_t n, size_t p, size_t m, size_t u_set_size, size_t N,size_t d_ext_i,size_t d_ext_j, size_t d_one_i, size_t d_one_j){
+struct auxiliary_matrices *aux_matrices_alloc(size_t n,
+                                              size_t p,
+                                              size_t m,
+                                              size_t u_set_size,
+                                              size_t N){
 
     struct auxiliary_matrices *return_aux_matrices = malloc (sizeof (struct auxiliary_matrices));
 
@@ -97,18 +101,6 @@ struct auxiliary_matrices *aux_matrices_alloc(size_t n, size_t p, size_t m, size
 
     return_aux_matrices->E_diag = gsl_matrix_alloc(n*N, p*N);
     if (return_aux_matrices->E_diag == NULL) {
-        free (return_aux_matrices);
-        return NULL;
-    }
-
-    return_aux_matrices->D_vertices = gsl_matrix_alloc(d_ext_i, d_ext_j);
-    if (return_aux_matrices->D_vertices == NULL) {
-        free (return_aux_matrices);
-        return NULL;
-    }
-
-    return_aux_matrices->D_one_step = gsl_matrix_alloc(d_one_i, d_one_j);
-    if (return_aux_matrices->D_one_step == NULL) {
         free (return_aux_matrices);
         return NULL;
     }
@@ -156,8 +148,6 @@ struct auxiliary_matrices *aux_matrices_alloc(size_t n, size_t p, size_t m, size
  * "Destructor" Deallocates the dynamically allocated memory of the auxiliary matrices
  */
 void aux_matrices_free(auxiliary_matrices *aux_matrices){
-    gsl_matrix_free(aux_matrices->D_vertices);
-    gsl_matrix_free(aux_matrices->D_one_step);
     gsl_matrix_free(aux_matrices->L_default);
     gsl_matrix_free(aux_matrices->E_default);
     gsl_vector_free(aux_matrices->MU);
@@ -175,7 +165,12 @@ void aux_matrices_free(auxiliary_matrices *aux_matrices){
 /**
  * "Constructor" Dynamically allocates the memory the complete system dynamics need
  */
-struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, size_t w_set_size, size_t u_set_size, size_t N, size_t d_ext_i, size_t d_ext_j, size_t d_one_i, size_t d_one_j) {
+struct system_dynamics *system_dynamics_alloc (size_t n,
+                                               size_t m,
+                                               size_t p,
+                                               size_t w_set_size,
+                                               size_t u_set_size,
+                                               size_t N) {
 
     struct system_dynamics *return_dynamics = malloc (sizeof (struct system_dynamics));
     if (return_dynamics == NULL){
@@ -214,7 +209,11 @@ struct system_dynamics *system_dynamics_alloc (size_t n, size_t m, size_t p, siz
         free (return_dynamics);
         return NULL;
     }
-    return_dynamics->aux_matrices = aux_matrices_alloc(n, p, m, u_set_size, N, d_ext_i, d_ext_j, d_one_i, d_one_j);
+    return_dynamics->aux_matrices = aux_matrices_alloc(n,
+                                                       p,
+                                                       m,
+                                                       u_set_size,
+                                                       N);
     if (return_dynamics->aux_matrices == NULL) {
         free(return_dynamics);
         return NULL;
@@ -308,25 +307,51 @@ void cost_function_free(cost_function *cost_function){
 /**
  * "Constructor" Dynamically allocates the memory for the discrete abstraction of the system
  */
-struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size_t *polytope_sizes, size_t *hull_sizes, int *orig_polytopes_in_region, size_t *orig_polytope_sizes, size_t *orig_hull_sizes, size_t n, int abstract_states_count, int number_of_original_regions, int closed_loop, int conservative, int ord, size_t time_horizon){
+struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region,
+                                                  size_t *polytope_sizes,
+                                                  size_t *hull_sizes,
+                                                  int *orig_polytopes_in_region,
+                                                  size_t *orig_polytope_sizes,
+                                                  size_t *orig_hull_sizes,
+                                                  int *transitions_in_sizes,
+                                                  int *transitions_out_sizes,
+                                                  size_t n,
+                                                  int abstract_states_count,
+                                                  int number_of_original_regions,
+                                                  int closed_loop,
+                                                  int conservative,
+                                                  int ord,
+                                                  size_t time_horizon){
 
     struct discrete_dynamics *return_discrete_dynamics = malloc (sizeof (struct discrete_dynamics));
 
-    return_discrete_dynamics->regions = malloc(sizeof(abstract_state)*abstract_states_count);
+    return_discrete_dynamics->abstract_states_set = malloc(sizeof(abstract_state)*abstract_states_count);
     int polytope_count = 0;
     for(int i =0; i < abstract_states_count; i++){
 
-        return_discrete_dynamics->regions[i] = abstract_state_alloc(polytope_sizes+polytope_count, hull_sizes[i],n,abstract_states_count,abstract_states_count,polytopes_in_region[i], (int) time_horizon);
+        return_discrete_dynamics->abstract_states_set[i] = abstract_state_alloc(polytope_sizes+polytope_count,
+                                                                                hull_sizes[i],
+                                                                                n,
+                                                                                transitions_in_sizes[i],
+                                                                                transitions_out_sizes[i],
+                                                                                polytopes_in_region[i],
+                                                                                (int) time_horizon);
         polytope_count += polytopes_in_region[i];
     }
-    if (return_discrete_dynamics->regions == NULL) {
+    if (return_discrete_dynamics->abstract_states_set == NULL) {
         free (return_discrete_dynamics);
         return NULL;
     }
     return_discrete_dynamics->original_regions = malloc(sizeof(abstract_state)*number_of_original_regions);
     int orig_polytope_count = 0;
     for(int j =0; j < number_of_original_regions; j++){
-        return_discrete_dynamics->original_regions[j] = abstract_state_alloc(orig_polytope_sizes+orig_polytope_count, orig_hull_sizes[j],n,number_of_original_regions,number_of_original_regions,orig_polytopes_in_region[j], (int) time_horizon);
+        return_discrete_dynamics->original_regions[j] = abstract_state_alloc(orig_polytope_sizes+orig_polytope_count,
+                                                                             orig_hull_sizes[j],
+                                                                             n,
+                                                                             number_of_original_regions,
+                                                                             number_of_original_regions,
+                                                                             orig_polytopes_in_region[j],
+                                                                             (int) time_horizon);
         orig_polytope_count += orig_polytopes_in_region[j];
     }
     if (return_discrete_dynamics->original_regions == NULL) {
@@ -349,12 +374,12 @@ struct discrete_dynamics *discrete_dynamics_alloc(int *polytopes_in_region, size
 void discrete_dynamics_free(discrete_dynamics *d_dyn){
 
     for(int i = 0; i<d_dyn->abstract_states_count; i++){
-        abstract_state_free(d_dyn->regions[i]);
+        abstract_state_free(d_dyn->abstract_states_set[i]);
     }
     for(int j = 0; j<d_dyn->number_of_original_regions; j++){
         abstract_state_free(d_dyn->original_regions[j]);
     }
-    free(d_dyn->regions);
+    free(d_dyn->abstract_states_set);
     free(d_dyn->original_regions);
     free(d_dyn);
 }
