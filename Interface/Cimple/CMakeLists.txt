@@ -37,7 +37,7 @@ set(SOURCE_FILES
         cimple_mpc_computation.h
         cimple_safe_mode.c
         cimple_safe_mode.h)
-add_executable(Cimple ${SOURCE_FILES} ${MINKSUM_SOURCE})
+add_executable(Cimple ${SOURCE_FILES})
 target_link_libraries( Cimple
         ${gsl_LIBRARIES}
         ${GUROBI_LIBRARIES}
