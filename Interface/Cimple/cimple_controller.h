@@ -50,8 +50,8 @@ void apply_control(gsl_vector *x,
  * @param w
  */
 void simulate_disturbance(gsl_vector *w,
-                     double mu,
-                     double sigma);
+                          double mu,
+                          double sigma);
 
 
 void * main_computation(void *arg);

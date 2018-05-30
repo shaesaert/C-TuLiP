@@ -162,11 +162,10 @@ void search_better_path(gsl_matrix *low_u,
  * [L_full; M_full] polytope intersection of required and allowed polytopes
  *
  */
-void set_path_constraints(gsl_matrix* L_full,
-                          gsl_vector *M_full,
-                          system_dynamics * s_dyn,
-                          polytope *list_polytopes[],
-                          size_t N);
+polytope * set_path_constraints(current_state * now,
+                                system_dynamics * s_dyn,
+                                polytope **list_polytopes,
+                                size_t N);
 
 
 #endif //CIMPLE_CIMPLE_MPC_COMPUTATION_H

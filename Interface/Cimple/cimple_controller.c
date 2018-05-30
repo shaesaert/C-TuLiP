@@ -48,25 +48,25 @@ void ACT(int target,
 
         }else{
             if(i==0){
-                pthread_t main_computation_id;
+//                pthread_t main_computation_id;
 //                pthread_t safe_mode_computation_id;
-                polytope *current = polytope_alloc(d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size2);
-                gsl_matrix_memcpy(current->H, d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H);
-                gsl_vector_memcpy(current->G,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->G);
+                polytope *current = polytope_alloc(d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size2);
+                gsl_matrix_memcpy(current->H, d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H);
+                gsl_vector_memcpy(current->G,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->G);
 
-                polytope *safe = polytope_alloc(d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size2);
-                gsl_matrix_memcpy(safe->H, d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H);
-                gsl_vector_memcpy(safe->G,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->G);
-//                for (int j = 0; j < d_dyn->regions[now->current_abs_state]->cells_count; j++) {
-//                    if (polytope_check_state(d_dyn->regions[now->current_abs_state]->cells[j]->polytope_description, now->x)){
+                polytope *safe = polytope_alloc(d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size2);
+                gsl_matrix_memcpy(safe->H, d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H);
+                gsl_vector_memcpy(safe->G,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->G);
+//                for (int j = 0; j < d_dyn->abstract_states_set[now->current_abs_state]->cells_count; j++) {
+//                    if (polytope_check_state(d_dyn->abstract_states_set[now->current_abs_state]->cells[j]->polytope_description, now->x)){
 //
-//                        polytope *current = polytope_alloc(d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size2);
-//                        gsl_matrix_memcpy(current->H, d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H);
-//                        gsl_vector_memcpy(current->G,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->G);
+//                        polytope *current = polytope_alloc(d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size2);
+//                        gsl_matrix_memcpy(current->H, d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H);
+//                        gsl_vector_memcpy(current->G,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->G);
 //
-//                        polytope *safe = polytope_alloc(d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H->size2);
-//                        gsl_matrix_memcpy(safe->H, d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->H);
-//                        gsl_vector_memcpy(safe->G,d_dyn->regions[now->current_abs_state]->cells[0]->polytope_description->G);
+//                        polytope *safe = polytope_alloc(d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size1,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H->size2);
+//                        gsl_matrix_memcpy(safe->H, d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->H);
+//                        gsl_vector_memcpy(safe->G,d_dyn->abstract_states_set[now->current_abs_state]->cells[0]->polytope_description->G);
 //                        break;
 //                    }
 //                }
@@ -74,25 +74,29 @@ void ACT(int target,
 //                pthread_create(&safe_mode_computation_id, NULL, total_safe_mode_computation, (void*)total_sm_arguments);
 //                pthread_join(safe_mode_computation_id, NULL);
 
-                control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
-                pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
-                pthread_join(main_computation_id, NULL);
+//                control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
+//                pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
+//                pthread_join(main_computation_id, NULL);
+
+                get_input(&u.matrix, now, d_dyn, s_dyn, target, f_cost, current_time_horizon, polytope_list_backup);
 
                 //Clean up
                 polytope_free(safe);
                 polytope_free(current);
-                free(cc_arguments);
+//                free(cc_arguments);
 //                free(total_sm_arguments);
             }else{
 //                pthread_t next_safemode_id;
-                pthread_t main_computation_id;
+//                pthread_t main_computation_id;
 //                next_safemode_computation_arguments *next_sm_arguments = next_sm_arguments_alloc(now, u_safemode, s_dyn, d_dyn->time_horizon, f_cost, polytope_list_safemode);
 //                pthread_create(&next_safemode_id, NULL, next_safemode_computation, (void*)next_sm_arguments);
 //                pthread_join(next_safemode_id, NULL);
-                control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
-                pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
-                pthread_join(main_computation_id, NULL);
-                free(cc_arguments);
+//                control_computation_arguments *cc_arguments = cc_arguments_alloc(now, &u.matrix, s_dyn, d_dyn,f_cost, current_time_horizon, target, polytope_list_backup);
+//                pthread_create(&main_computation_id, NULL, main_computation, (void*)cc_arguments);
+//                pthread_join(main_computation_id, NULL);
+//                free(cc_arguments);
+                get_input(&u.matrix, now, d_dyn, s_dyn, target, f_cost, current_time_horizon, polytope_list_backup);
+
 //                free(next_sm_arguments);
             }
 
@@ -104,33 +108,35 @@ void ACT(int target,
         simulate_disturbance(w, 0, 0.01);
         //get timer back
         pthread_join(timer_id, NULL);
-        if(main_computation_completed){
-            gsl_vector_view u_apply = gsl_matrix_column(&u.matrix,0);
-            apply_control(now->x, &u_apply.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
-            main_computation_completed = 0;
-
-        }else if(backup_applicable){
-
-            gsl_vector_view u_apply = gsl_matrix_column(u_backup,i);
-            apply_control(now->x, &u_apply.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
-
-        }else{
-            //goto safemode
-            gsl_vector_view u_safe = gsl_matrix_column(u_safemode,0);
-            apply_control(now->x, &u_safe.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
-
-        }
+        gsl_vector_view u_apply = gsl_matrix_column(&u.matrix,0);
+        apply_control(now->x, &u_apply.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+//        if(main_computation_completed){
+//            gsl_vector_view u_apply = gsl_matrix_column(&u.matrix,0);
+//            apply_control(now->x, &u_apply.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+//            main_computation_completed = 0;
+//
+//        }else if(backup_applicable){
+//
+//            gsl_vector_view u_apply = gsl_matrix_column(u_backup,i);
+//            apply_control(now->x, &u_apply.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+//
+//        }else{
+//            //goto safemode
+//            gsl_vector_view u_safe = gsl_matrix_column(u_safemode,0);
+//            apply_control(now->x, &u_safe.vector, s_dyn->A, s_dyn->B, s_dyn->E, w, i);
+//
+//        }
 
         int new_cell_found = 0;
-        for (int j = 0; j < d_dyn->regions[now->current_abs_state]->cells_count; j++) {
-            if (polytope_check_state(d_dyn->regions[now->current_abs_state]->cells[j]->polytope_description, now->x)){
+        for (int j = 0; j < d_dyn->abstract_states_set[now->current_abs_state]->cells_count; j++) {
+            if (polytope_check_state(d_dyn->abstract_states_set[now->current_abs_state]->cells[j]->polytope_description, now->x)){
                 new_cell_found = 1;
                 break;
             }
         }
         if(!new_cell_found){
-            for (int j = 0; j < d_dyn->regions[target]->cells_count; j++) {
-                if (polytope_check_state(d_dyn->regions[target]->cells[j]->polytope_description, now->x)){
+            for (int j = 0; j < d_dyn->abstract_states_set[target]->cells_count; j++) {
+                if (polytope_check_state(d_dyn->abstract_states_set[target]->cells[j]->polytope_description, now->x)){
                     new_cell_found = 1;
                     now->current_abs_state=target;
                     break;
@@ -139,8 +145,8 @@ void ACT(int target,
         }
         if(!new_cell_found){
             for(int k=0; k<d_dyn->abstract_states_count;k++){
-                for (int j = 0; j < d_dyn->regions[k]->cells_count; j++) {
-                    if (polytope_check_state(d_dyn->regions[k]->cells[j]->polytope_description, now->x)){
+                for (int j = 0; j < d_dyn->abstract_states_set[k]->cells_count; j++) {
+                    if (polytope_check_state(d_dyn->abstract_states_set[k]->cells[j]->polytope_description, now->x)){
                         now->current_abs_state=k;
                         break;
                     }

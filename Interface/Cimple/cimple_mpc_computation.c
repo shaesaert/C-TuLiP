@@ -1,5 +1,6 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector_double.h>
+#include <gsl/gsl_vector.h>
 #include "cimple_mpc_computation.h"
 
 /**
@@ -343,11 +344,11 @@ void get_input (gsl_matrix * low_u,
     if (d_dyn->conservative == 1){
         // Take convex hull or polytope as starting polytope P1
 
-        // if hull_over_polytopes != NULL => hull was computed => several polytopes in that region
-        if (d_dyn->regions[start]->hull_over_polytopes->H != NULL){
-            P1 = d_dyn->regions[start]->hull_over_polytopes;
+        // if convex_hull != NULL => hull was computed => several polytopes in that region
+        if (d_dyn->abstract_states_set[start]->convex_hull->H != NULL){
+            P1 = d_dyn->abstract_states_set[start]->convex_hull;
         } else{
-            P1 = d_dyn->regions[start]->cells[0]->polytope_description;
+            P1 = d_dyn->abstract_states_set[start]->cells[0]->polytope_description;
         }
     } else{
         // Take original proposition preserving abstract state as constraint
@@ -356,7 +357,7 @@ void get_input (gsl_matrix * low_u,
         if (d_dyn->original_regions[start]->cells_count == 1){
             P1 = d_dyn->original_regions[start]->cells[0]->polytope_description;
         } else {
-            fprintf(stderr, "\nIn Region of polytopes(%d): `conservative = False` arg requires that original regions be convex\n", now->current_abs_state);
+            fprintf(stderr, "\nIn Region of polytopes(%d): `conservative = False` arg requires that original abstract_states_set be convex\n", now->current_abs_state);
             exit(EXIT_FAILURE);
         }
     }
@@ -366,8 +367,8 @@ void get_input (gsl_matrix * low_u,
     //by finding polytope that is easiest to reach in target region
 
     // for each polytope in target region
-    for (int i = 0; i < d_dyn->regions[target_abs_state]->cells_count; i++){
-        polytope *P3 = d_dyn->regions[target_abs_state]->cells[i]->polytope_description;
+    for (int i = 0; i < d_dyn->abstract_states_set[target_abs_state]->cells_count; i++){
+        polytope *P3 = d_dyn->abstract_states_set[target_abs_state]->cells[i]->polytope_description;
 
         //Finding a path to target region
         if (err_weight > 0){
@@ -443,11 +444,8 @@ void search_better_path(gsl_matrix *low_u,
     for(int i = 0; i<N+1; i++){
         sum_polytope_sizes += polytope_list[i]->H->size1;
     }
-    gsl_matrix *L_full = gsl_matrix_alloc(sum_polytope_sizes+N*(s_dyn->U_set->H->size1), n+N*m);
-    gsl_vector *M_full = gsl_vector_alloc(sum_polytope_sizes+N*(s_dyn->U_set->H->size1));
-    gsl_matrix_set_zero(L_full);
-    gsl_vector_set_zero(M_full);
-    set_path_constraints(L_full, M_full, s_dyn, polytope_list, N);
+
+    polytope *constraints = set_path_constraints(now, s_dyn, polytope_list, N);
 
     //Updating backup list of polytopes
     //If polytope list doesn't have to be initialized completely, old ones have first to be destroyed:
@@ -468,62 +466,51 @@ void search_better_path(gsl_matrix *low_u,
         polytope_free(polytope_list[i]);
     }
     free(polytope_list);
-    // Remove first constraints on x(0) they are obviously already satisfied
-    // L_x = L[{(polytope[0]+1),(dim_n(L))},{1,n}]
-    gsl_matrix_view L_x = gsl_matrix_submatrix(L_full, P1->H->size1, 0, (L_full->size1)-(P1->H->size1), n);
-    // L_u = L[{(polytope[0]+1),(dim_n(L))},{(n+1),(dim_m(L))}]
-    gsl_matrix_view L_u = gsl_matrix_submatrix(L_full, P1->H->size1, n, (L_full->size1)-(P1->H->size1), L_full->size2 - n);
-    // M_view = M[{(polytope[0]+1),(dim_n(M))}]
-    gsl_vector_view M_view = gsl_vector_subvector(M_full, P1->H->size1, M_full->size-P1->H->size1);
-
-    //M = M-(L_x.x)
-    gsl_vector * L_x_dot_X0 = gsl_vector_alloc((L_full->size1)-(P1->H->size1));
-    gsl_blas_dgemv(CblasNoTrans, 1.0, &L_x.matrix, now->x, 0.0, L_x_dot_X0);
-    gsl_vector_sub(&M_view.vector, L_x_dot_X0);
-    //Clean up!
-    gsl_vector_free(L_x_dot_X0);
 
 
     if (ord == 2){
         gsl_matrix * P = gsl_matrix_alloc(N*m, N*m);
         gsl_vector * q = gsl_vector_alloc(N*m);
 
-        polytope *opt_constraints = set_cost_function(P, q, &L_u.matrix, &M_view.vector, now, s_dyn, f_cost, N);
+        polytope *opt_constraints = set_cost_function(P, q, constraints->H, constraints->G, now, s_dyn, f_cost, N);
         compute_optimal_control_qp(low_u, low_cost, P, q, opt_constraints, N, n);
         polytope_free(opt_constraints);
         gsl_vector_free(q);
         gsl_matrix_free(P);
 
     }
-    gsl_matrix_free(L_full);
-    gsl_vector_free(M_full);
+    polytope_free(constraints);
 };
 
 
 /**
  * Compute a polytope that constraints the system over the next N time steps to fullfill the GR(1) specifications
  */
-void set_path_constraints(gsl_matrix *L_full,
-                          gsl_vector *M_full,
-                          system_dynamics * s_dyn,
-                          polytope **list_polytopes,
-                          size_t N){
+polytope * set_path_constraints(current_state * now,
+                                system_dynamics * s_dyn,
+                                polytope **list_polytopes,
+                                size_t N){
     //Disturbance assumed at every step and full dimension of s_dyn.Wset
 
     // Help variables
     size_t n = s_dyn->A->size2;  // State space dimension
-    size_t p = s_dyn->E->size2;  // Disturbance space dimension
+    size_t m = s_dyn->B->size2;
     size_t sum_polytope_dim = 0; // Sum of dimension n of all polytopes in the list
-    for(size_t i = 0; i < N+1; i++){
+    polytope *scaled_W_set = polytope_linear_transform(s_dyn->W_set, s_dyn->E); // multiplication: EW
 
-        sum_polytope_dim += list_polytopes[i]->H->size1;
+
+    polytope **robust_polytope_list = malloc(sizeof(polytope)*(N+1));
+    for(size_t i = 0; i < N+1; i++){
+        //Subtract EW of polytope to make them robust against disturbances
+        robust_polytope_list[i] = polytope_pontryagin(list_polytopes[i], scaled_W_set);
+        sum_polytope_dim += robust_polytope_list[i]->H->size1;
 
     }
 
-    /* INITIALIZE MATRICES: Lk, Mk, Gk, H_diag*/
-    gsl_matrix_view Lk = gsl_matrix_submatrix(L_full, 0, 0, sum_polytope_dim, L_full->size2);
-    gsl_vector_view Mk = gsl_vector_subvector(M_full, 0, sum_polytope_dim);
-
+    /* INITIALIZE MATRICES: Lk, Mk, constraints*/
+    polytope *constraints = polytope_alloc(sum_polytope_dim, n*(N+1));
+    gsl_matrix_set_zero(constraints->H);
+    gsl_vector_set_zero(constraints->G);
     /*
      *     |G_0|
      *     |G_1|
@@ -534,88 +521,76 @@ void set_path_constraints(gsl_matrix *L_full,
      *   with M = |Mk|
      *            |Mu|
      * */
-    //Reset Mk
-    gsl_vector_set_zero(&Mk.vector);
-
-    gsl_matrix *Gk = gsl_matrix_alloc(sum_polytope_dim, p*(N+1));
 
     /*
-     *                          |0            0          0        0      0|
-     *                          |H_1.E        0          0        0      0|
-     *Gk =  H_diag.E_default  = |H_2.A.E    H_2.E        0        0      0| dim[sum_polytope_dim x p*N]
-     *                          |H_3.A^2.E  H_3.A.E    H_3.E      0      0|
-     *                          |H_4.A^3.E  H_4.A^3.E  H_4.A.E  H_4.E    0|
-     * */
-    gsl_matrix_set_zero(Gk);
-    gsl_matrix *H_diag= gsl_matrix_alloc(sum_polytope_dim, n*(N+1));
-    gsl_matrix_set_zero(H_diag);
-
-    /*
-     *          |H_0 0  0  0  0 |
-     *          |0 H_1  0  0  0 |
-     * H_diag=  |0  0  H_2 0  0 | dim[sum_polytope_dim x n*N]
-     *          |0  0   0 H_3 0 |
-     *          |0  0   0  0 H_4|
+     *                 |H_0 0  0  0  0 |
+     *                 |0 H_1  0  0  0 |
+     * constaints->H=  |0  0  H_2 0  0 | dim[sum_polytope_dim x n*N]
+     *                 |0  0   0 H_3 0 |
+     *                 |0  0   0  0 H_4|
      * */
 
     //Loop over N and polytopes in parallel
     size_t polytope_count = 0;
     for(int i = 0; i<N+1; i++){
 
-        polytope *polytope_step_i = list_polytopes[i];
-
-        //Set diagonal block N of H_diag
+        //Set diagonal block N of constaints->H
         for(size_t j = 0; j<n; j++){
 
-            for(size_t k = 0; k<polytope_step_i->H->size1; k++){
-                gsl_matrix_set(H_diag,polytope_count+k, j+(i*n), gsl_matrix_get(polytope_step_i->H,k,j));
+            for(size_t k = 0; k<robust_polytope_list[i]->H->size1; k++){
+                gsl_matrix_set(constraints->H,polytope_count+k, j+(i*n), gsl_matrix_get(robust_polytope_list[i]->H,k,j));
             }
         }
 
-        // Build guarantee Matrix       M
-        for(size_t j = 0; j<polytope_step_i->G->size; j++){
+        // Build constraints->g
+        for(size_t j = 0; j<robust_polytope_list[i]->G->size; j++){
             // Set entries Mk[j+polytope_count] = G_i[j]
-            gsl_vector_set(&Mk.vector,j+polytope_count,gsl_vector_get(polytope_step_i->G,j));
+            gsl_vector_set(constraints->G,j+polytope_count,gsl_vector_get(robust_polytope_list[i]->G,j));
         }
 
-        polytope_count += polytope_step_i->H->size1;
+        polytope_count += robust_polytope_list[i]->H->size1;
 
     }
-
     /*Update L and M*/
 
-    // Lk = H_diag.L_default
-    gsl_matrix_view L_default_view = gsl_matrix_submatrix(s_dyn->aux_matrices->L_default,0,0,(N+1),(N+1));
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, &L_default_view.matrix ,0.0,&Lk.matrix);
+    // Lk = H_constaints->Hdiag.L_default
+    gsl_matrix_view L_default_view = gsl_matrix_submatrix(s_dyn->aux_matrices->L_default,0,0,n*(N+1),(m*N)+n);
+    gsl_matrix *L_full = gsl_matrix_alloc(sum_polytope_dim, (m*N)+n);
+    gsl_vector *M_full = gsl_vector_alloc(sum_polytope_dim);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, constraints->H, &L_default_view.matrix ,0.0,L_full);
 
-    // Gk = H_diag.E_default
-    gsl_matrix_view E_default_view = gsl_matrix_submatrix(s_dyn->aux_matrices->E_default,0,0,(N+1),(N+1));
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0, H_diag, &E_default_view.matrix,0.0,Gk);
-
-    /*Find maxima of Gk.Dextremes*/
-    //TODO: if Gk non zero else...
-    gsl_matrix_view D_vertices_view = gsl_matrix_submatrix(s_dyn->aux_matrices->D_vertices,
-                                                           s_dyn->aux_matrices->D_vertices->size1-(N+1),
-                                                           0,
-                                                           (N+1),
-                                                           s_dyn->aux_matrices->D_vertices->size2);
-    gsl_matrix * maxima = gsl_matrix_alloc(Gk->size1, D_vertices_view.matrix.size2);
-    //Calculate Gk.Dextremes (extremum of each dimension of each polytope)
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Gk, &D_vertices_view.matrix,0.0, maxima);
-    gsl_vector *D_hat = gsl_vector_alloc(sum_polytope_dim);
-    //find the maximum for each dimension of each polytope
-    for(size_t i = 0; i < sum_polytope_dim; i++){
-        gsl_vector_view max_row = gsl_matrix_row(maxima, i);
-        gsl_vector_set(D_hat, i, gsl_vector_max(&max_row.vector));
-    }
     //Update M such that it includes the uncertainty of noise
-    gsl_vector_sub(&Mk.vector, D_hat);
+    gsl_vector_memcpy(M_full, constraints->G);
 
+
+
+    // Remove first constraints on x(0) they are obviously already satisfied
+    // L_x = L[{(polytope[0]+1),(dim_n(L))},{1,n}]
+    gsl_matrix_view L_x = gsl_matrix_submatrix(L_full, robust_polytope_list[0]->H->size1, 0, (L_full->size1)-(robust_polytope_list[0]->H->size1), n);
+    // L_u = L[{(polytope[0]+1),(dim_n(L))},{(n+1),(dim_m(L))}]
+    gsl_matrix_view L_u = gsl_matrix_submatrix(L_full, robust_polytope_list[0]->H->size1, n, (L_full->size1)-(robust_polytope_list[0]->H->size1), L_full->size2 - n);
+    // M_view = M[{(polytope[0]+1),(dim_n(M))}]
+    gsl_vector_view M_view = gsl_vector_subvector(M_full, robust_polytope_list[0]->H->size1, M_full->size-robust_polytope_list[0]->H->size1);
+
+    //M = M-(L_x.x)
+    gsl_vector * L_x_dot_X0 = gsl_vector_alloc((L_full->size1)-(robust_polytope_list[0]->H->size1));
+    gsl_blas_dgemv(CblasNoTrans, 1.0, &L_x.matrix, now->x, 0.0, L_x_dot_X0);
+    gsl_vector_sub(&M_view.vector, L_x_dot_X0);
+
+    polytope * return_constraints = polytope_alloc(constraints->H->size1-robust_polytope_list[0]->H->size1, ((constraints->H->size2)-(robust_polytope_list[0]->H->size2)));
+
+    gsl_matrix_memcpy(return_constraints->H, &L_u.matrix);
+    gsl_vector_memcpy(return_constraints->G, &M_view.vector);
     //Clean up!
-    gsl_matrix_free(Gk);
-    gsl_matrix_free(H_diag);
-    gsl_matrix_free(maxima);
-    gsl_vector_free(D_hat);
+    polytope_free(scaled_W_set);
+    polytope_free(constraints);
+    for(size_t i = 0; i < N+1; i++){
+        polytope_free(robust_polytope_list[i]);
+    }
+    free(robust_polytope_list);
+    gsl_vector_free(L_x_dot_X0);
+
+    return return_constraints;
 
 };
 
