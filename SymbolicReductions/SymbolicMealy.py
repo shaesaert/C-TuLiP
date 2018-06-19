@@ -48,7 +48,7 @@ class SMealy(Context):
         self.N_s = None  # BDD symbolic set of nodes
         self.N_init = None  # BDD the initial state of the Mealy machine
 
-    def strat2mealy(self,aut,control,aux):
+    def strat2mealy(self,aut,control,aux,remove_aux = True):
         t = [time.clock()]
         assert isinstance(aux,set)
         use_cudd = False # todo : implement in CUDD
@@ -66,8 +66,11 @@ class SMealy(Context):
         self.aux = {key: vars[key] for key in vars.keys() & aux}
         self.vars.update(self.aux)
         # assert aux is owned by environment
-        assert set({vars[key]['owner'] == 'sys' for key in self.aux.keys()}) == {True}, set(
-            {vars[key]['owner'] == 'sys' for key in self.aux.keys()})
+        if aux == set():
+            pass
+        else:
+            assert set({vars[key]['owner'] == 'sys' for key in self.aux.keys()}) == {True}, set(
+                {vars[key]['owner'] == 'sys' for key in self.aux.keys()})
 
 
         for a in aux:
@@ -133,7 +136,10 @@ class SMealy(Context):
         t += [time.clock()]
         print('computed full transition in {time} sec'.format(time=t[-1] - t[-2]))
 
-        trans = self.exist(set(self.aux), trans_full)
+        if remove_aux == True:
+            trans = self.exist(set(self.aux), trans_full)
+        else:
+            trans= trans_full
         t += [time.clock()]
         print('removed superfluous aux in {time} sec'.format(time=t[-1] - t[-2]))
         bdd3.incref(trans)

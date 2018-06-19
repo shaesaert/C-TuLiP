@@ -93,7 +93,7 @@ def lift_spec(n):
     psi.qinit = '\A \E'
     psi.moore = False
     psi.plus_one = False
-    return psi,f
+    return psi,f,sys_prog
 
 
 def test_timing(range_floors, reduce=False):

@@ -24,6 +24,7 @@ except ImportError:
 import time
 import dd
 
+
 def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
     """Reordering of the BDD along levels"""
     t = [time.clock()]
@@ -39,7 +40,7 @@ def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
 
 
 
-    fullstrath =  bdd.apply('and', u, v)
+    fullstrath = bdd.apply('and', u, v)
 
     n1 = dd.bdd.copy_bdd(fullstrath, bdd, bdd2)
     bdd2.incref(n1)
@@ -71,6 +72,7 @@ def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
 
     return  splitlevel,n1
 
+
 def len_decision(bdd2, level):
     set_nodes = set()
     levels = bdd2._levels()
@@ -81,6 +83,7 @@ def len_decision(bdd2, level):
 
     set_n = set_nodes.difference({1,-1})
     return len(set_n)
+
 
 def complement(bdd3,node,newnode):
     if bdd3._succ[abs(node)][2] >0:
@@ -122,8 +125,6 @@ def complement(bdd3,node,newnode):
         return -newnode
     else:
         return newnode
-
-
 
 
 def add_nodes(bdd,n1, splitlevel):
@@ -223,6 +224,7 @@ def add_nodes(bdd,n1, splitlevel):
     #dd.bdd.reorder(bdd)
 
     return newnode, width, nodenumb
+
 
 def exit_entry(aut,bdd,node,width):
     control, primed_vars = enum._split_vars_per_quantifier(

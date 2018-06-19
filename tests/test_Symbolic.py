@@ -11,7 +11,7 @@ from SymbolicReductions.SymbolicMealy import *
 import itertools
 from omega.logic import bitvector
 
-
+from SymbolicReductions.OptimistPrune import opt_Prune
 from SymbolicReductions.Bisimulation  import *
 import time
 try:
@@ -110,12 +110,12 @@ def test_add_nodes(n=10):
             assert sol['_n_%d' %i] ==sol["_n_%d'" %i]
 
 
-def test_elevator(n=4):
+def test_elevator(n=6):
     t = [time.clock()]
 
     # define boolean variables for the buttons & the floors
 
-    psi, f = comp.lift_spec(n)
+    psi, f,sys_prog = comp.lift_spec(n)
     # strategy = omega_int.synthesize_enumerated_streett(psi)
     use_cudd = False
 
@@ -169,7 +169,7 @@ def test_bisim(n=4):
 
     # define boolean variables for the buttons & the floors
 
-    psi, f = comp.lift_spec(n)
+    psi, f, sys_prog = comp.lift_spec(n)
     # strategy = omega_int.synthesize_enumerated_streett(psi)
     use_cudd = False
 
@@ -209,3 +209,65 @@ def test_bisim(n=4):
     print(mealy.N_s)
 
     Bisim(mealy)
+
+def test_optimist(n=6):
+    t = [time.clock()]
+
+    # define boolean variables for the buttons & the floors
+
+    psi, f,sys_prog = comp.lift_spec(n)
+    # strategy = omega_int.synthesize_enumerated_streett(psi)
+    use_cudd = False
+
+    spec = psi
+    aut = omega_int._grspec_to_automaton(spec)
+
+    sym.fill_blanks(aut)
+    bdd = omega_int._init_bdd(use_cudd)
+    aut.bdd = bdd
+    a = aut.build()
+
+
+    assert a.action['sys'][0] != bdd.false
+
+    z, yij, xijk = gr1.solve_streett_game(a)
+    # solved game
+
+    if not gr1.is_realizable(z, a):
+        print('WARNING: unrealizable')
+    control, primed_vars = enum._split_vars_per_quantifier(
+        aut.vars, aut.players)
+    print("aut_control")
+    aut.control = control
+    t += [time.clock()]
+    aut = gr1.make_streett_transducer(z, yij, xijk, a)
+    t += [time.clock()]
+    print('made symbolic strategy in {time} sec'.format(time=t[-1]-t[0]))
+
+    mealy = SMealy()
+    mealy.strat2mealy(aut,control, {'bon', '_goal', "fup"},remove_aux=False)  # do not remove auxiliaries yet
+    t += [time.clock()]
+    print('made symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    #print(mealy.bdd.prune())
+
+    print(mealy.Nmax)
+    print(mealy.N_s)
+    #Bisim(mealy)
+
+    mealy = opt_Prune(mealy,sys_prog,lazy=True)
+
+    print(mealy.bdd.prune())
+    #Bisim(mealy)
+    t += [time.clock()]
+    # print('made pruned and bisimulated Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+    print('made pruned and bisimulated Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    assert abs(mealy.T) != 1
+    m = mealy.enum()
+    t += [time.clock()]
+    print('made enumerated Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+    print(len(m))
+    print(len(m.edges(data=True)))
+    assert True
