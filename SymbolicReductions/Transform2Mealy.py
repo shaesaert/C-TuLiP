@@ -39,7 +39,6 @@ def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
     bdd = aut.bdd
 
 
-
     fullstrath = bdd.apply('and', u, v)
 
     n1 = dd.bdd.copy_bdd(fullstrath, bdd, bdd2)
@@ -59,7 +58,7 @@ def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
     strat2split(bdd2, unprimed, primed, keeporder=keeporder)
     t += [time.clock()]
     print('Sorted BDD in {time} sec'.format(time=t[-1] - t[-2]))
-    if not keeporder:
+    if not keeporder: # keeporder is preferred!!!! It speeds up some of the later computations
         # find grouped levels and sort within those groups
         minlev, maxlev = set2levels(bdd2, unprimed)[0], set2levels(bdd2, unprimed)[-1]
         apply_sifting(bdd2, unprimed, minlev, maxlev)

@@ -53,53 +53,54 @@ class SMealy(Context):
         assert isinstance(aux,set)
         use_cudd = False # todo : implement in CUDD
 
+        # initialize the BDD
         bdd3 = omega_int._init_bdd(use_cudd)  # create clean BDD
-
         bdd_node = dd.bdd.copy_vars(aut.bdd, bdd3)  # fill with vars
         self.bdd = bdd3
         vars = symbolic._prime_and_order_table(aut.vars)
-
         self.Y = {key: vars[key] for key in vars.keys() & control['sys']}
         self.X = {key: vars[key] for key in vars.keys() & control['env']}
         self.vars.update(self.Y)
         self.vars.update(self.X)
         self.aux = {key: vars[key] for key in vars.keys() & aux}
         self.vars.update(self.aux)
-        # assert aux is owned by environment
+
+        # assert aux is owned by environment and remove
         if aux == set():
             pass
         else:
             assert set({vars[key]['owner'] == 'sys' for key in self.aux.keys()}) == {True}, set(
                 {vars[key]['owner'] == 'sys' for key in self.aux.keys()})
-
-
         for a in aux:
             if a in self.Y:
                 self.Y.pop(a)
 
-
+        # 1. re-order the variables in the BDD unprimed to primed
         splitlevel, n1 = trMealy.strat2mealy(aut, bdd3)
         t += [time.clock()]
-        #print('initialised symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
+        # 2. Add nodes to this split level
+        # (This implementation could be replaced by one similar to the one used for symbolic bisimulations -- SIGREF)
 
         node, width, nodenumb = trMealy.add_nodes(bdd3, n1, splitlevel)
         t += [time.clock()]
-        print('added nodes  symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+        log.debug('added nodes  symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+
         self.Nmax = nodenumb
 
-
+        # 3. Existential quantification to compute upper and lower part
         exi, entry = trMealy.exit_entry(aut, bdd3, node, width)
         trans_part = bdd3.apply('and', entry, exi)
         t += [time.clock()]
-        print('computed part one of transition in {time} sec'.format(time=t[-1] - t[-2]))
+        log.debug('computed part one of transition in {time} sec'.format(time=t[-1] - t[-2]))
 
-        ## add initial condition
+        # 4. add initial condition
         # initial node will be 1,1,..1,1, and should be unused
         c = ''
         self.n0 = dict({"n":int(2**width-1)})
-
         node_pairs = dict()
         bitnames =[]
+        # create the corresponding expression
         for i in range(0, width):
             # create string of  var
             c += " _n_%d /\ " % i
@@ -107,41 +108,40 @@ class SMealy(Context):
             node_pairs["_n_%d'" % i ] = "_n_%d" % i
         init_state = bdd3.add_expr(c[:-3:])
 
-        # check that initial doesn't exist yet
+        #   check that initial doesn't exist yet
         u = bdd3.apply('and', init_state, exi)
         assert u == bdd3.false
 
-        # get initial input/output
+        #   get initial input/output
         (init_aut,) = aut.init['env']
         expr = aut.bdd.to_expr(init_aut)
 
 
-        #init_trans = dd.bdd.copy_bdd(init_aut, aut.bdd, bdd3)
+        #    finally add the initial state with transition combi to the BDD
         init_trans = bdd3.add_expr(expr)
         init_aux = bdd3.apply('and', init_trans, init_state)
         init = bdd3.apply('and', init_aux, entry)
         t += [time.clock()]
-        print('computed part two of transition in {time} sec'.format(time=t[-1] - t[-2]))
+        log.debug('computed part two of transition in {time} sec'.format(time=t[-1] - t[-2]))
 
+        # filling up the rest of the information
         self.N["n"] = dict({'owner': 'sys', 'type': 'int', 'signed' :False, 'dom':(0, 2**width-1),'width' :width, 'len': 2**width, 'bitnames': bitnames})
         self.Next = symbolic._prime_and_order_table(self.N)
         self.vars.update(self.Next.copy())
         self.Next.__delitem__("n")
 
 
-
-
-
         trans_full = bdd3.apply('or', init, trans_part)
         t += [time.clock()]
-        print('computed full transition in {time} sec'.format(time=t[-1] - t[-2]))
+        log.debug('computed full transition in {time} sec'.format(time=t[-1] - t[-2]))
 
         if remove_aux == True:
             trans = self.exist(set(self.aux), trans_full)
         else:
             trans= trans_full
         t += [time.clock()]
-        print('removed superfluous aux in {time} sec'.format(time=t[-1] - t[-2]))
+        log.debug('removed superfluous aux in {time} sec'.format(time=t[-1] - t[-2]))
+
         bdd3.incref(trans)
         bdd3.incref(init_state)
         bdd3.decref(exi)
@@ -155,7 +155,6 @@ class SMealy(Context):
 
 
         # add state space bdd
-
         binary_nodes = list(itertools.product([0, 1], repeat=width))
 
         bitindex = 0

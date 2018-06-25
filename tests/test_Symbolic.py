@@ -110,7 +110,7 @@ def test_add_nodes(n=10):
             assert sol['_n_%d' %i] ==sol["_n_%d'" %i]
 
 
-def test_elevator(n=6):
+def test_elevator(n=4):
     t = [time.clock()]
 
     # define boolean variables for the buttons & the floors
@@ -210,7 +210,7 @@ def test_bisim(n=4):
 
     Bisim(mealy)
 
-def test_optimist(n=6):
+def test_optimist(n=4):
     t = [time.clock()]
 
     # define boolean variables for the buttons & the floors
@@ -258,7 +258,7 @@ def test_optimist(n=6):
     mealy = opt_Prune(mealy,sys_prog,lazy=True)
 
     print(mealy.bdd.prune())
-    #Bisim(mealy)
+    Bisim(mealy)
     t += [time.clock()]
     # print('made pruned and bisimulated Mealy in {time} sec'.format(time=t[-1]-t[-2]))
     print('made pruned and bisimulated Mealy in {time} sec'.format(time=t[-1]-t[-2]))

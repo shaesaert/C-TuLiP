@@ -72,7 +72,7 @@ def opt_Prune(mealy,sys_prog,lazy=False):
     #
     # goals =  mealy.add_expr('f1')
 
-    goals =  mealy.add_expr('{var} = {value}'.format(var="_goal", value=mealy.vars['_goal']['dom'][-1]))
+    goals =  mealy.add_expr('{var} = {value}'.format(var="_goal",value=0)) # value=mealy.vars['_goal']['dom'][-1]
 
     target = bdd.apply('and',goals,mealy.T) # all states get labeled with k=0
 
