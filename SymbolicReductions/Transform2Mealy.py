@@ -40,10 +40,9 @@ def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
 
 
     fullstrath = bdd.apply('and', u, v)
-
     n1 = dd.bdd.copy_bdd(fullstrath, bdd, bdd2)
     bdd2.incref(n1)
-
+    dd.bdd.reorder(bdd2)
     t += [time.clock()]
     print('combined strategies and copied BDD in {time} sec'.format(time=t[-1] - t[-2]))
 
@@ -57,7 +56,7 @@ def strat2mealy(aut,bdd2,qinit='\A \E',keeporder=True):
     # sort on unprimed and primed groups
     strat2split(bdd2, unprimed, primed, keeporder=keeporder)
     t += [time.clock()]
-    print('Sorted BDD in {time} sec'.format(time=t[-1] - t[-2]))
+    print('Split BDD in {time} sec'.format(time=t[-1] - t[-2]))
     if not keeporder: # keeporder is preferred!!!! It speeds up some of the later computations
         # find grouped levels and sort within those groups
         minlev, maxlev = set2levels(bdd2, unprimed)[0], set2levels(bdd2, unprimed)[-1]
@@ -133,6 +132,7 @@ def add_nodes(bdd,n1, splitlevel):
     dd.bdd._shift(bdd, level_n, splitlevel, levels)
     # negate dummy var
     notn_node = bdd.add_expr("~ _n_0")
+    notn_node = bdd.apply('and', n1, notn_node)
     notn_node = bdd.apply('and', n1, notn_node)
 
     # clean BDD
@@ -306,11 +306,13 @@ def _exit_entry(bdd, node, width, primed, unprimed):
 
     return exit_e,entry
 
+
 def unpack(varnames, vars):
     varlist = list()
     for var in varnames:
         varlist += vars[var]['bitnames']
     return varlist
+
 
 def set2levels(bdd, varnames):
     levels = list(map(lambda var: bdd.vars[var], varnames))
@@ -342,7 +344,6 @@ def strat2split(bdd2,unprimed, primed,keeporder=False):
                 _ = dd.bdd._shift(bdd2, p_level, target, levels)
             target -= 1 # next target is plus one
         print(bdd2.vars)
-
 
 
 def sortgroups(bdd2, gr1, gr2):
@@ -437,3 +438,90 @@ def shift(bdd, start, end, levels, crit=None):
     return sizes
 
 
+def add_sets(mealy,n1, splitlevel):
+    global new_nodes
+    global count
+    count = -1
+    new_nodes = dict()
+    # clean BDD
+    mealy.bdd.incref(n1)
+    mealy.bdd.collect_garbage()
+
+
+    print('Unique variable and set for each node')
+
+    # next is not needed for the set inclusion
+
+
+    levels = mealy.bdd._levels()
+    visited = dict()
+    new_nodes = dict()
+    count = -1
+    # for each string of nodes starting at
+    #  node in nodelist set node edge to bit value of the node count
+    nodelist = levels[splitlevel]
+    startlevel = splitlevel
+    #binary_nodes = list(itertools.product([0, 1], repeat=width))
+    # initial node will be 1,1,..1,1, and should be unused
+    n2 = set_nodes(n1, mealy, visited, new_nodes, splitlevel)
+    new_count = count
+    print("number of added sets", new_count)
+
+    # movefrom = mealy.bdd.vars['k_0']
+    # levels = mealy.bdd._levels()
+
+    # for i in range(count+1):
+    #     dd.bdd._shift(mealy.bdd, movefrom, splitlevel, levels)
+    #     movefrom += 1
+    #     splitlevel += 1
+
+
+    return n2, count,new_nodes
+
+
+
+def set_nodes(sig, mealy,visited,new_nodes,splitlevel):
+    # visited  = table of visited nodes
+    # count = count for next node
+    if sig in visited:
+        return  visited[sig]
+    if abs(sig) == 1:
+        return sig
+
+
+    # which var
+    i, _, _ = mealy.bdd._succ[abs(sig)] # the level
+    ni = mealy.bdd.var_at_level(i)
+
+    if i < splitlevel: # var = n then
+        # still in level of the nodes levels
+
+        ni_high = mealy.bdd.cofactor(sig, {ni:1}) # this could be positive or negative
+        ni_low = mealy.bdd.cofactor(sig, {ni:0})
+
+        high = set_nodes(ni_high, mealy, visited,new_nodes, splitlevel)
+        low = set_nodes(ni_low, mealy, visited,new_nodes, splitlevel)
+
+        #find / add node at level i with high and with low
+        result = mealy.bdd.find_or_add(i, low, high)
+    else:
+        result = newcount_k(mealy)
+        new_nodes['k_%d' % count] = sig
+
+
+    visited[sig] = result
+
+    return result
+
+def newcount_k(mealy):
+    global count
+    count += 1
+    print(count,)
+    lev = mealy.bdd.add_var('k_%d' % count)
+    K=dict()
+    K['k_%d' % count] = dict({'owner': 'sys', 'type': 'bool',  'bitnames': ['k%d' % count]})
+    mealy.vars.update(K)
+
+    k_0 = mealy.add_expr('{var}'.format(var="k_%d" % count))
+
+    return k_0

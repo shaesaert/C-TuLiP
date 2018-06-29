@@ -19,6 +19,7 @@ from tulip.interfaces import omega as omega_int
 from omega.logic import bitvector
 import itertools
 
+from omega.games import enumeration as enum
 
 log = logging.getLogger(__name__)
 
@@ -126,6 +127,7 @@ class SMealy(Context):
 
         # filling up the rest of the information
         self.N["n"] = dict({'owner': 'sys', 'type': 'int', 'signed' :False, 'dom':(0, 2**width-1),'width' :width, 'len': 2**width, 'bitnames': bitnames})
+        self.N["n"] = dict({'owner': 'sys', 'type': 'int', 'signed' :False, 'dom':(0, 2**width-1),'width' :width, 'len': 2**width, 'bitnames': bitnames})
         self.Next = symbolic._prime_and_order_table(self.N)
         self.vars.update(self.Next.copy())
         self.Next.__delitem__("n")
@@ -191,7 +193,172 @@ class SMealy(Context):
 
         self.N_s = Nnodes
 
+    def strat2comp(self,aut,control,aux,remove_aux = True):
+        t = [time.clock()]
+        assert isinstance(aux,set)
+        use_cudd = False # todo : implement in CUDD
 
+        # initialize the BDD
+        bdd3 = omega_int._init_bdd(use_cudd)  # create clean BDD
+        bdd_node = dd.bdd.copy_vars(aut.bdd, bdd3)  # fill with vars
+        self.bdd = bdd3
+        vars = symbolic._prime_and_order_table(aut.vars)
+        self.Y = {key: vars[key] for key in vars.keys() & control['sys']}
+        self.X = {key: vars[key] for key in vars.keys() & control['env']}
+        self.vars.update(self.Y)
+        self.vars.update(self.X)
+        self.aux = {key: vars[key] for key in vars.keys() & aux}
+        self.vars.update(self.aux)
+
+        # assert aux is owned by environment and remove
+        if aux == set():
+            pass
+        else:
+            assert set({vars[key]['owner'] == 'sys' for key in self.aux.keys()}) == {True}, set(
+                {vars[key]['owner'] == 'sys' for key in self.aux.keys()})
+        for a in aux:
+            if a in self.Y:
+                self.Y.pop(a)
+
+        # 1. re-order the variables in the BDD unprimed to primed
+        splitlevel, n1 = trMealy.strat2mealy(aut, bdd3)
+        t += [time.clock()]
+
+        # 2. Add nodes to this split level
+        # (This implementation could be replaced by one similar to the one used for symbolic bisimulations -- SIGREF)
+
+
+
+        entry,count,new_nodes = trMealy.add_sets(self, n1, splitlevel)
+        t += [time.clock()]
+        log.debug('added nodesets for symbolic Mealy in {time} sec'.format(time=t[-1]-t[-2]))
+        control, primed_vars = enum._split_vars_per_quantifier(
+            aut.vars, aut.players)
+        vars = symbolic._prime_and_order_table(aut.vars)
+
+        unprimed = trMealy.unpack(control['sys'] | control['env'], vars)
+        primed = trMealy.unpack(primed_vars['env'] | primed_vars['sys'], vars)
+        unprime_vars = {stx.prime(var): var for var in unprimed}
+        unprimed_in = trMealy.unpack(control['env'], vars)
+        unprimed_out = trMealy.unpack(control['sys'], vars)
+
+        self.Nmax = count+1
+        for k in new_nodes:
+            new = bdd3.rename(new_nodes[k], unprime_vars)
+            new_nodes[k] = bdd3.apply('and', entry, new)
+            new_nodes[k] = self.exist(set(self.aux), new_nodes[k])
+            bdd3.incref(new_nodes[k])
+
+        bdd3.decref(n1)
+
+        self.bdd.collect_garbage()
+
+        print(self.bdd.vars)
+
+
+        print(self.bdd.prune())
+        print(set(self.Y.keys())|set(self.X.keys()))
+        minlev, maxlev = trMealy.set2levels(bdd3, set(self.Y.keys())|set(self.X.keys()))[0], trMealy.set2levels(bdd3, set(self.Y.keys())|set(self.X.keys()))[-1]
+        trMealy.apply_sifting(bdd3, list(set(self.Y.keys())|set(self.X.keys())), minlev, maxlev)
+        # minlev, maxlev = trMealy.set2levels(bdd3, k_set)[0], set2levels(bdd2, primed)[-1]
+        # apply_sifting(bdd2, primed, minlev, maxlev)
+        minlev, maxlev = trMealy.set2levels(bdd3, set(new_nodes.keys()))[0], \
+                         trMealy.set2levels(bdd3, set(new_nodes.keys()))[-1]
+        trMealy.apply_sifting(bdd3, list(set(new_nodes.keys())), minlev, maxlev)
+
+        # create compatibility classes
+        imp_set = bdd3.true
+        c_set = set()
+        k_set = set()
+        c2k = dict()
+        added_count =-1
+        index_max = 0
+        for k in range(count,-1,-1):
+            print(k,)
+            lev = self.bdd.add_var("c_%d" % k)
+            added_count +=1
+            K = dict()
+            K["c_%d" % k] = dict({'owner': 'sys', 'type': 'bool', 'bitnames': ["c%d" % k]})
+            c_set |= {"c_%d" % k}
+            k_set |= {"k_%d" % k}
+            c2k["c_%d" % k] = "k_%d" % k
+            self.vars.update(K)
+            levels = self.bdd._levels()
+            dd.bdd._shift(self.bdd, lev, 0, levels)
+            #print('compute high',imp_set, new_nodes["k_%d" % k])
+            high = bdd3.apply('and', imp_set, new_nodes["k_%d" % k])
+            low = imp_set
+            bdd3.decref(imp_set)
+            # find / add node at level i with high and with low
+            imp_set = self.bdd.find_or_add(0, low, high)
+            bdd3.incref(imp_set)
+
+            t += [time.clock()]
+            print('Compute {time}'.format(time=t[-1]-t[-2]),)
+            print('   before sifting', len(bdd3),)
+            levels = self.bdd._levels()
+            minlev = 0
+            maxlev = added_count
+            indexing  = [ (len(levels[level]),level)  for level in levels.keys() if ((level<= maxlev) and (level != index_max))]
+            sorted(indexing, reverse = True)
+
+            # if minlev < maxlev:
+            #    maxlev = min(20,added_count)
+            #
+            #    l = trMealy.reorder_var_bounded(bdd3, "c_%d" % k, levels, minlev, maxlev, crit=None)
+            #    # sort max ten up and down
+            #    minlev = max(indexing[0][-1]-10,0)
+            #    maxlev = min(indexing[0][-1]+10,added_count)
+            #    l = trMealy.reorder_var_bounded(bdd3,bdd3.var_at_level(indexing[0][-1]), levels, minlev, maxlev, crit=None)
+            #
+            # t += [time.clock()]
+            # print('   after sifting', len(bdd3))
+            # print('Compute {time1}, {time2}'.format(time1=t[-2]-t[-3], time2=t[-1]-t[-2]),)
+
+
+
+
+        # 3. Existential quantification to compute upper and lower part
+        t += [time.clock()]
+
+        #imp_set = self.exist(set(self.aux), imp_set)
+        log.debug('computed part one of transition in {time} sec'.format(time=t[-1] - t[-2]))
+        comp_sets1 = self.exist(set(self.Y.keys()) | k_set,imp_set) # this should not be done for all var,
+        #  only existence for uotput and state, then uniform quantification over all input var.
+        # keep only c variables
+        comp_sets2 = bdd3.quantify(comp_sets1, set(unprimed_in), forall=True) # this should not be done for all var,
+
+        comp_sets = bdd3.rename(comp_sets2, c2k)
+        # rename them to k
+        comp_set_old = None
+        t += [time.clock()]
+
+        while (comp_set_old != comp_sets):
+            comp_set_old = comp_sets
+            imp_setnew = bdd3.apply('and', imp_set, comp_sets)
+            print('Support compatibility set ', bdd3.support(imp_setnew))
+
+            print('change imp_sets',imp_set,imp_setnew)
+            # remove all implied sets that are impossible
+            comp_sets1 = self.exist(set(self.Y.keys()) | k_set, imp_setnew)  # this should not be done for all var,
+            #  only existence for uotput and state, then uniform quantification over all input var.
+            # keep only c variables
+            comp_sets2 = self.forall(set(self.X.keys()), comp_sets1)
+
+            print('1',bdd3.support(comp_sets1), bdd3.support(comp_sets1).symmetric_difference(c_set))
+            print('2',bdd3.support(comp_sets2), bdd3.support(comp_sets2).symmetric_difference(c_set))
+
+            comp_sets = bdd3.rename(comp_sets2, c2k)
+            print('change compsets',comp_sets,comp_sets2)
+
+
+
+
+            print('compat',comp_sets,comp_set_old)
+            t += [time.clock()]
+            print('{time}'.format(time=t[-2] - t[-1]),)
+
+        print('Support compatibility set ',bdd3.support(imp_set))
 
     def enum(self):
 

@@ -271,3 +271,42 @@ def test_optimist(n=4):
     print(len(m))
     print(len(m.edges(data=True)))
     assert True
+
+
+
+def test_compatibility(n=3):
+    t = [time.clock()]
+
+    # define boolean variables for the buttons & the floors
+
+    psi, f, sys_prog = comp.lift_spec(n)
+    # strategy = omega_int.synthesize_enumerated_streett(psi)
+    use_cudd = False
+
+    spec = psi
+    aut = omega_int._grspec_to_automaton(spec)
+
+    sym.fill_blanks(aut)
+    bdd = omega_int._init_bdd(use_cudd)
+    aut.bdd = bdd
+    a = aut.build()
+
+    assert a.action['sys'][0] != bdd.false
+
+    z, yij, xijk = gr1.solve_streett_game(a)
+    # solved game
+
+    if not gr1.is_realizable(z, a):
+        print('WARNING: unrealizable')
+    control, primed_vars = enum._split_vars_per_quantifier(
+        aut.vars, aut.players)
+    print("aut_control")
+    aut.control = control
+    t += [time.clock()]
+    aut = gr1.make_streett_transducer(z, yij, xijk, a)
+    t += [time.clock()]
+    print('made symbolic strategy in {time} sec'.format(time=t[-1] - t[0]))
+
+    mealy = SMealy()
+    mealy.strat2comp(aut, control, {'bon', '_goal', "fup"}, remove_aux=False)  # do not remove auxiliaries yet
+    print(mealy.bdd.vars)
